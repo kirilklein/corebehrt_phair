@@ -22,7 +22,7 @@ from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.evaluation.utils import check_data_for_overlap
 from ehr2vec.evaluation.visualization import plot_most_important_features
 from ehr2vec.feature_importance.perturb import PerturbationModel
-from ehr2vec.feature_importance.perturb_utils import average_sigmas, log_most_important_features_for_perturbation_model, compute_concept_frequency
+from ehr2vec.feature_importance.perturb_utils import average_sigmas, compute_concept_frequency
 from ehr2vec.trainer.trainer import EHRTrainer
 
 
@@ -75,12 +75,14 @@ def finetune_fold(cfg, train_data:Data, val_data:Data,
     else:
         concept_frequency = None
     # initialize perturbation model
-    perturbation_model = PerturbationModel(finetuned_model, cfg.model, concept_frequency)
+    perturbation_model = PerturbationModel(finetuned_model, cfg.model, 
+                                           concept_frequency, 
+                                           vocabulary=train_data.vocabulary)
     logger.info("Trainable parameters in the perturbation model")
     for name, param in perturbation_model.named_parameters():
         if param.requires_grad:
             logger.info(f"{name}: {param.size()}")
-    assert len(train_data.vocabulary)==len(perturbation_model.get_sigmas_weights()), f"Vocabulary size {len(train_data.vocabulary)} does not match sigmas size {len(perturbation_model.get_sigmas_weights())}"
+    assert len(train_data.vocabulary)==len(perturbation_model.sigmas), f"Vocabulary size {len(train_data.vocabulary)} does not match sigmas size {len(perturbation_model.sigmas)}"
     modelmanager.model_path = None # to initialize training components form scratch
     
     optimizer, sampler, scheduler, cfg = modelmanager.initialize_training_components(
@@ -114,7 +116,7 @@ def finetune_fold(cfg, train_data:Data, val_data:Data,
         trainer._evaluate(checkpoint['epoch'], mode='test')
     # save sigmas from the model
     perturbation_model.save_sigmas(join(fi_folder, f'sigmas_fold_{fold}.pt'))
-    log_most_important_features_for_perturbation_model(perturbation_model, train_data.vocabulary)
+    perturbation_model.log_most_important_sigmas(num_features=20)
 
 
 def _limit_patients(indices_or_pids: list, split: str)->list:
