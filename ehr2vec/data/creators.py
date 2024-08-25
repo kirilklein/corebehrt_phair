@@ -155,6 +155,6 @@ class DeathCreator(BaseCreator):
         if 'SEGMENT' not in concepts.columns:
             raise ValueError("Make sure SEGMENT is created before DeathCreator is used.")
         last_segments = concepts.groupby('PID')['SEGMENT'].last().to_dict()
-        return [last_segments[pid] for pid in patients_info['PID']] 
+        return [last_segments.get(pid, 1) for pid in patients_info['PID']] 
     
 
