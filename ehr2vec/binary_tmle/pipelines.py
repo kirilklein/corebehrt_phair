@@ -5,17 +5,18 @@ import numpy as np
 
 
 # Helper function for a single bootstrap iteration
-def single_bootstrap_iteration(model, n, ate_th_data, estimators):
+def single_bootstrap_iteration(model, n, ate_th_data, estimators, estimator_args={}):
     data = simulate_binary_data(n, **model, seed=None)
     results = {}
     for estimator in estimators:
-        ate, _ = estimator(data)
+        args = estimator_args.get(estimator.__name__, {})
+        ate, _ = estimator(data, **args)
         results[estimator.__name__] = ate_th_data - ate
     return results
 
 def compute_and_store_results_bootstrap(model_name: str, model: dict,  n: int,  
                               ate_th_data: float, diffs: dict, stds: dict,
-                              estimators: list, n_bootstrap: int):
+                              estimators: list, n_bootstrap: int, estimator_args: dict={}):
     """
     Compute and store diffs and stds for a given model and the list of estimators using bootstrapping.
     We simulate the population n_bootstrap times and compute the difference between the theoretical ATE and the estimated ATE for each estimator.
@@ -29,7 +30,7 @@ def compute_and_store_results_bootstrap(model_name: str, model: dict,  n: int,
         estimators: list of estimators to use
         n_bootstrap: number of bootstraps to use
     """
-    results = Parallel(n_jobs=-1)(delayed(single_bootstrap_iteration)(model, n, ate_th_data, estimators) for _ in range(n_bootstrap))
+    results = Parallel(n_jobs=-1)(delayed(single_bootstrap_iteration)(model, n, ate_th_data, estimators, estimator_args) for _ in range(n_bootstrap))
     
     # Initialize temporary storage for differences
     diff_temp = {estimator.__name__: [] for estimator in estimators}
@@ -46,7 +47,7 @@ def compute_and_store_results_bootstrap(model_name: str, model: dict,  n: int,
     # Helper function to compute and store results
 def compute_and_store_results(model_name: str, model: dict,  n: int,  
                               ate_th_data: float, diffs: dict, stds: dict,
-                              estimators: list):
+                              estimators: list, estimator_args: dict={}):
     """
     Compute and store diffs and stds for a given model and the list of estimators.
     Args:
@@ -61,7 +62,8 @@ def compute_and_store_results(model_name: str, model: dict,  n: int,
     data = simulate_binary_data(n, **model, seed=42)
     
     for estimator in estimators:
-        ate, ate_std = estimator(data)
+        args = estimator_args.get(estimator.__name__, {})
+        ate, ate_std = estimator(data, **args)
         diffs[estimator.__name__][model_name].append(ate_th_data - ate)
         stds[estimator.__name__][model_name].append(ate_std)
 
@@ -73,7 +75,7 @@ def convert_to_numpy(diffs: dict, stds: dict)->tuple:
             stds[estimator][model_name] = np.array(stds[estimator][model_name])
     return diffs, stds
 
-def get_scores_for_models_and_estimators(patient_numbers: int, models: dict, estimators: list, n_bootstraps: int = 1)->tuple:
+def get_scores_for_models_and_estimators(patient_numbers: int, models: dict, estimators: list, n_bootstraps: int = 1, estimator_args: dict={})->tuple:
     """
     Compute differences between theoretical and estimated ATEs for different models and estimators.
     Args:
@@ -94,8 +96,10 @@ def get_scores_for_models_and_estimators(patient_numbers: int, models: dict, est
         for n in patient_numbers:
             print(f"n={n}", end=' ')
             if n_bootstraps>1:
-                compute_and_store_results_bootstrap(model_name, model, n, ate_th_data, diffs, stds, estimators, n_bootstraps)
+                compute_and_store_results_bootstrap(model_name, model, n, ate_th_data, diffs, stds, estimators, n_bootstraps, estimator_args)
             else:
-                compute_and_store_results(model_name, model, n, ate_th_data, diffs, stds, estimators)
+                compute_and_store_results(model_name, model, n, ate_th_data, diffs, stds, estimators, estimator_args)
     diffs, stds = convert_to_numpy(diffs, stds)
     return diffs, stds
+
+    

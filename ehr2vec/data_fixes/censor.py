@@ -11,16 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 class Censorer:
-    def __init__(self, n_hours: int, vocabulary:dict=None, censor_diagnoses_at_end_of_visit=False) -> None:
+    def __init__(self, n_hours: int, n_hours_diag_censoring: int, vocabulary:dict=None, censor_diag_end_of_visit: bool=False) -> None:
         """Censor the features based on the event timestamp.
         n_hours if positive, censor all items that occur n_hours after event."""
         self.n_hours = n_hours
         self.vocabulary = vocabulary
         self.background_length = None
-        self.censor_diagnoses_at_end_of_visit = censor_diagnoses_at_end_of_visit
-        if self.censor_diagnoses_at_end_of_visit:
-            self.diagnoses_codes = [v for k, v in self.vocabulary if k.startswith('D')]
-        
+        self.n_hours_diag_censoring = n_hours_diag_censoring
+        self.censor_diagnoses_at_end_of_visit = censor_diag_end_of_visit
+        self.censor_diag_separately = self.censor_diagnoses_at_end_of_visit or (self.n_hours_diag_censoring!=self.n_hours)
+        if self.censor_diag_separately:
+            self.diagnoses_codes = self.get_diagnoses_codes()
+            self.sep_code = self.vocabulary.get('[SEP]', -1)
+
     def __call__(self, features: dict, index_dates: list) -> tuple:
         sample_concepts = features["concept"][0]
         self.background_length = self.compute_background_length(sample_concepts)
@@ -28,6 +31,13 @@ class Censorer:
         features = self.censor(features, index_dates)
         return features
     
+    def get_diagnoses_codes(self) -> set:
+        """
+        Return the diagnoses codes.
+        Codes starting with 'D'.
+        """
+        return set([v for k, v in self.vocabulary.items() if k.startswith('D') and (k!='Death')])
+
     def compute_background_length(self, sample_concepts) -> List[bool]:
         """Precompute background flags for the vocabulary."""
         tokenized_flag = self._identify_if_tokenized(sample_concepts)
@@ -63,37 +73,100 @@ class Censorer:
         """Generate flags indicating which items to censor, based on index_timestamp and self.n_hours."""
         absolute_positions = patient['abspos']
         censor_flags = [position  <= (index_timestamp + self.n_hours) for position in absolute_positions]
-        if self.censor_diagnoses_at_end_of_visit:
-            censor_flags = self._censor_diagnoses_at_end_of_visit(patient, censor_flags)
+        if sum(censor_flags) == 0:
+            return censor_flags
+        if self.censor_diag_separately:
+            if self.censor_diagnoses_at_end_of_visit:
+                diag_censor_flags = self._generate_sep_diag_censor_flags_end_of_visit(patient, index_timestamp)
+            else:
+                diag_censor_flags = self._generate_sep_diag_censor_flags(patient, index_timestamp)
+            censor_flags = self._combine_lists_with_or(censor_flags, diag_censor_flags)
         return censor_flags
     
-    def _censor_diagnoses_at_end_of_visit(self, patient: Dict[str, list], 
-                                          censor_flags: List[bool]) -> List[bool]:
-        """Include diagnoses up to the end of the visit."""
-        last_segment = self._get_last_segment(censor_flags, patient['segment'])
-        last_index_to_include = self._return_last_index_of_element(patient['segment'], last_segment)
-        diagnoses_flags = self._get_diagnoses_flags(patient['concept'])
-        new_censor_flags = self._combine_flags_with_diagnoses_flags(
-            censor_flags, diagnoses_flags, last_index_to_include) 
-        return new_censor_flags
+    def _generate_sep_diag_censor_flags(self, patient: Dict[str, list], index_timestamp: float) -> List[bool]:
+        """
+        Censor diagnoses n_hours after the event.
+        All diagnoses up to n_hours after index_timestamp are included.
+        """
+        diagnoses_sep_flags = self.get_combined_diag_sep_flags(patient['concept'])
+        abs_pos_flags = [True if abspos <= (index_timestamp + self.n_hours_diag_censoring) else False for abspos in patient['abspos']]
+        return self._combine_lists_with_and(diagnoses_sep_flags, abs_pos_flags)
+
+    def _generate_sep_diag_censor_flags_end_of_visit(self, patient: Dict[str, list], index_timestamp: float) -> List[bool]:
+        """
+        Include diagnoses up to the end of the visit.
+        Here, all diagnoses are included up to the end of the visit with index_timestamp.
+        """
+        last_segment = self._get_last_segment_before_timestamp(patient['segment'], patient['abspos'], index_timestamp)
+        last_index_to_include = self._return_last_index_for_element(patient['segment'], last_segment)
+        diagnoses_sep_flags = self.get_combined_diag_sep_flags(patient['concept'])
+        return [
+        i <= last_index_to_include and flag 
+        for i, flag in enumerate(diagnoses_sep_flags)
+            ]
+    
+    def get_combined_diag_sep_flags(self, concepts: List[Union[int, str]]) -> List[bool]:
+        """
+        Combining diagnoses and separator flags.
+        Only SEP tokens after diagnoses are included.
+        """
+        diagnoses_flags = self._get_diagnoses_flags(concepts)
+        sep_flags = self._get_sep_flags(concepts)
+        return self._combine_diag_sep(diagnoses_flags, sep_flags)
     
     @staticmethod
-    def _combine_flags_with_diagnoses_flags(censor_flags: List[bool], 
-                                            diagnoses_flags: List[bool], 
-                                            last_index_to_include:int) -> List[bool]:
-        return [flag or (diagnoses_flag and (i<=last_index_to_include))    \
-                            for i, (flag, diagnoses_flag) \
-                                in enumerate(zip(censor_flags, diagnoses_flags))]
+    def _combine_diag_sep(diag_flags:List[bool], sep_flags:List[bool]) -> List[bool]:
+        """
+        Combining diagnoses and separator flags.
+        We want to exclude SEP for visits with no diagnoses. Otherwise issues with the model (more visits than expected->indexing error in visit embeddings)
+        example: 
+        concepts = [D1, SEP, D2, D3, SEP, M1, SEP]
+        diag_flags = [T, F, T, T, F, F, F]
+        sep_flags = [F, T, F, F, T, F, T]
+        result = [T, T, T, T, T, F, F]
+        """
+        result = []
+        diag_seen = False  # Tracks if a diagnosis (True in diag_flags) has been seen since the last separator
 
-    def _get_diagnoses_flags(self, concept):
+        for diag, sep in zip(diag_flags, sep_flags):
+            if diag:
+                diag_seen = True  # A diagnosis has been seen, so keep the SEP flags
+            result.append(diag or (sep and diag_seen))
+
+            # Reset the diag_seen after a SEP, which is included in the result
+            if sep and diag_seen:
+                diag_seen = False
+
+        return result
+
+    def _get_sep_flags(self, concepts: List[int]) -> List[bool]:
+        """This function returns a list of booleans indicating if the concept is a separator."""
+        return [(concept == self.sep_code) for concept in concepts]
+
+    @staticmethod
+    def _combine_lists_with_and(list1: List[bool], list2: List[bool]) -> List[bool]:
+        return [flag1 and flag2 for flag1, flag2 in zip(list1, list2)]
+    
+    @staticmethod
+    def _combine_lists_with_or(list1: List[bool], list2: List[bool]) -> List[bool]:
+        return [flag1 or flag2 for flag1, flag2 in zip(list1, list2)]
+
+    def _get_diagnoses_flags(self, concept: List[Union[int, str]]) -> List[bool]:
         return [c in self.diagnoses_codes for c in concept]
 
     @staticmethod
-    def _get_last_segment(censor_flags: List[bool], segments: List[int])->int:
-        return [seg for seg, flag in zip(segments, censor_flags) if flag][-1]
+    def _get_last_segment_before_timestamp(segments: List[int], abspos: List[float], index_timestamp: float)->int:
+        """Return the last segment before the index_timestamp."""
+        abspos_flags = [abspos <= index_timestamp for abspos in abspos]
+        last_segment = [seg for seg, flag in zip(segments, abspos_flags) if flag][-1] 
+        return last_segment
     
     @staticmethod
-    def _return_last_index_of_element(lst: List[bool], element: bool)->int:
+    def _return_last_index_for_element(lst: List[bool], element: bool)->int:
+        """
+        Return the max index of the element in the list.
+        e.g. [1, 2, 3, 2, 1], 2 -> 3
+        """
         return len(lst)-1-lst[::-1].index(element)
 
     def _identify_background(self, concepts: List[Union[int, str]], tokenized_flag: bool) -> List[bool]:

@@ -1,7 +1,7 @@
 env: local
 paths:
   # data_path: 'pretrain_datasets/diagnosis_medication/070623/outputs/data' # inside mounted datastore
-  data_path: ../outputs/features
+  data_path: ../outputs/features500
   output_path: ../outputs/pretraining
   type: diag
   run_name: test
@@ -57,11 +57,11 @@ scheduler:
 
 metrics:
   top1:
-    _target_: evaluation.metrics.PrecisionAtK
+    _target_: ehr2vec.evaluation.metrics.PrecisionAtK
     topk: 1
   top10:
-    _target_: evaluation.metrics.PrecisionAtK
+    _target_: ehr2vec.evaluation.metrics.PrecisionAtK
     topk: 10
   loss:
-    _target_: evaluation.metrics.LossAccessor
+    _target_: ehr2vec.evaluation.metrics.LossAccessor
     loss_name: loss

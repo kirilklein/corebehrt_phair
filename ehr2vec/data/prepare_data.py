@@ -54,7 +54,7 @@ class DatasetPreparer:
 
         return train_dataset, val_dataset
 
-    def prepare_finetune_data(self) -> Data:
+    def prepare_finetune_data(self,) -> Data:
         data_cfg = self.cfg.data
 
         # 1. Loading tokenized data
@@ -79,7 +79,10 @@ class DatasetPreparer:
                 original_config = load_config(join(self.cfg.paths.model_path, 'finetune_config.yaml'))
             self.cfg.outcome = original_config.outcome
             data = self._select_predefined_pids(data)
-            self._load_outcomes_to_data(data)
+            if self.cfg.outcome.get('simulate_outcomes', False):
+                self._simulate_outcomes_for_data(data, self.cfg.outcome)
+            else:
+                self._load_outcomes_to_data(data)
 
         if not predefined_pids:        
             # 2. Optional: Select gender group
@@ -229,6 +232,23 @@ class DatasetPreparer:
         for outcome_type in ['outcomes', 'index_dates']:
             setattr(data, outcome_type, torch.load(join(self.cfg.paths.predefined_splits, f'{outcome_type}.pt')))
 
+    def _simulate_outcomes_for_data(self, data: Data):
+        """
+        Here goes the implementation of the outcome simulation.
+        What we will do is the following:
+        1. Load propensity scores
+        2. Pass exposure
+        3. Based on ps and exposure, simulate binary outcomes
+        4. Simulate time2event outcomes (based on index date)
+        5. Save simulated outcomes to data
+        
+        """
+        pass
+
+    def _load_popensity_scores_to_data(self)->dict:
+        """ Load propensity scores to data. """
+        return np.load(join(self.cfg.paths.predefined_splits, 'predictions.npz'))
+
     def _log_features(self, data:Data)->None:
         logger.info(f"Final features: {data.features.keys()}")
         logger.info("Example features: ")
@@ -237,6 +257,7 @@ class DatasetPreparer:
     
 
 class OneHotEncoder:
+
     @staticmethod
     def encode(data:Data, token2index: dict) -> Tuple[np.ndarray, np.ndarray]:
         # ! Potentially map gender onto one index?
@@ -290,10 +311,11 @@ class DataModifier:
     def censor_data(self, data: Data) -> Data:
         """Censors data n_hours after censor_outcome."""
         n_hours = self.cfg.outcome.n_hours_censoring 
-        censor_diagnoses_at_end_of_visit = self.cfg.outcome.get('censor_diagnoses_at_end_of_visit', False)
+        n_hours_diag_censoring = self.cfg.outcome.get('n_hours_diag_censoring', n_hours)
         logger.info(f"Censoring data {n_hours} hours after index date.")
         censorer = Censorer(n_hours=n_hours, vocabulary=data.vocabulary, 
-                            censor_diagnoses_at_end_of_visit=censor_diagnoses_at_end_of_visit)
+                            n_hours_diag_censoring=n_hours_diag_censoring, 
+                            censor_diag_end_of_visit=self.cfg.outcome.get('censor_diag_end_of_visit', False))
         data.features = censorer(data.features, data.index_dates)
         return data
 

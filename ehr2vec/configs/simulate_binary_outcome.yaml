@@ -1,0 +1,18 @@
+env: local
+paths:
+  model_path: "../outputs/pretraining/test/finetune_SIMVASTATIN_censored_1_hours_pre_SIMVASTATIN_followup_start_at_index_date_test"
+  run_name: simulate_binary_outcome
+  output: "../outputs/features500/outcomes/SIMVASTATIN_simulated_outcome"
+
+simulation:
+  _target_: ehr2vec.simulation.binary_outcome.tbehrt
+  params: 
+    a: 1
+    b: .5
+    c: .1
+max_years: 3
+days_offset: 1
+
+  
+  
+ 

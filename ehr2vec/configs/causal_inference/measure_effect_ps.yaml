@@ -1,0 +1,7 @@
+env: local
+paths:
+  ps_model_path: "../outputs/pretraining/test/finetune_TEST_OUTCOME_censored_24_hours_pre_TEST_CENSOR_followup_start_at_index_date_test"
+  output_path: "../outputs/experiments/test"
+calibration: False
+matching:
+  matching_ratio: 3

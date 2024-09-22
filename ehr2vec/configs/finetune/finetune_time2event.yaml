@@ -1,0 +1,89 @@
+env: local
+paths:
+  pretrain_model_path: "../outputs/pretraining/test"
+  # model_path: "outputs/pretraining/behrt_test/finetune_TEST_OUTCOME_censored_10_hours_pre_TEST_OUTCOME_test"
+  #checkpoint_epoch: 1
+  outcome: "../outputs/features/outcomes/TEST_OUTCOME/TEST_OUTCOME.csv"
+  exposure: "../outputs/features/outcomes/TEST_OUTCOME/TEST_CENSOR.csv"
+  #output_path: "outputs/finetuning"
+  run_name: "time2event_test"
+  #tokenized_dir:"tokenized"
+  tokenized_file: "tokenized_finetune.pt" # can also be a list
+  tokenized_pids: "pids_finetune.pt" # can also be a list
+  #redefined_splits: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test
+  #exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
+model:
+  pool_type: "gru"
+  bidirectional: true
+  #extend_head: 
+  # hidden_size: null
+
+data:
+  num_patients: 300 #300
+  val_split: 0.1
+  test_split: 0.1
+  truncation_len: 30
+  # gender: M
+  min_age: 0
+  max_age: 70
+  # min_len: null
+  #code_types:
+   # - D
+  min_len: 2
+  # remove_features: ['abspos']
+  number_of_train_patients: 10
+
+
+outcome: 
+  n_hours_censoring: -24 # censor time after index date (negative means before)
+  n_hours_start_follow_up: 100
+  first_time_outcomes_only: False # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
+  time2event: true
+  end_of_time:
+    year: 2020
+    month: 01
+    day: 01
+  death_is_event: true
+  # index_date: # if all patients should have the same censor date
+    # year: 2015
+    # month: 01
+    # day: 01
+
+
+trainer_args:
+  sampler: true
+  sample_weight_function:
+    _target_: ehr2vec.evaluation.utils.inverse_sqrt # function to calculate sample weights
+  sample_weight_multiplier: 1 # adjust the sampling weight of the positive class (1 is balanced)
+  pos_weight: null # weight for positive class in the loss
+  batch_size: 8
+  val_batch_size: 16
+  effective_batch_size: 16
+  epochs: 3
+  info: true
+  gradient_clip: 
+    clip_value: 1.0
+  mixed_precision: false
+  shuffle: true
+  checkpoint_frequency: 1
+  early_stopping: 20
+  stopping_criterion: roc_auc
+  
+optimizer:
+  lr: 5e-4
+  eps: 1e-6
+
+scheduler:
+  _target_: transformers.get_linear_schedule_with_warmup
+  num_warmup_steps: 10
+  num_training_steps: 100
+
+#metrics:
+ # loss:
+  #  _target_: evaluation.metrics.LossAccessor
+   # loss_name: loss
+
+
+  
+  
+ 

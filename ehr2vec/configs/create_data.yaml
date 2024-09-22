@@ -3,12 +3,13 @@ output_dir: ../outputs/features
 tokenized_dir_name: "tokenized"
 paths:
   run_name: "_test"
-  save_features_dir_name: "features" # saves in this directory on azure. If not provided use run_name.
+  save_features_dir_name: "features500" # saves in this directory on azure. If not provided use run_name.
 loader:
   # can provide formatted data or features
   data_dir:  ../data/formatted/synthea500 # ../outputs/features_test # ../data/formatted/synthea500_icd10 #../outputs/data_icd10
   concepts: [
-    diagnose
+    diagnose,
+    medication
   ]
   batch_size: 64
   chunksize: 300

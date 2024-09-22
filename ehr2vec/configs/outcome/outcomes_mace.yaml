@@ -1,0 +1,21 @@
+env: local
+paths:
+  run_name: first
+outcomes_name: "MACE"
+features_dir: ../outputs/features
+loader:
+  data_dir: C:\\Users\\fjn197\\PhD\\projects\\PHAIR\\pipelines\\ehr_preprocess\\ehr_preprocess\\formatted_data\\synthea5000
+  concepts: [
+    diagnose
+  ]
+  batch_size: 1000
+  chunksize: 5000
+outcomes:
+  SIMVASTATIN: 
+    type: [CONCEPT]
+    match: [['22298006', '230690007', '4557003', '84114007', '414545008',
+              '230690007', '401303003', '401314000', '22298006']]
+    match_how: contains
+    case_sensitive: true
+  
+    

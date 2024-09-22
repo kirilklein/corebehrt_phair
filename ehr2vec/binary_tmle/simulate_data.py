@@ -17,11 +17,11 @@ def simulate_binary_data(n:int, alpha:list, beta:list, seed=None)->pd.DataFrame:
     X1 = X[:, 0]
     X2 = X[:, 1]
     # Simulate treatment
-    logit_p = alpha[0] + alpha[1] * X1 + alpha[2] * X2
+    logit_p = alpha[0] + alpha[1] * X1 + alpha[2] * X2 + alpha[3] * X1 * X2
     p = logistic(logit_p)
     A = rng.binomial(1, p)
     # Simulate outcome
-    logit_q = beta[0] + beta[1] * A + beta[2] * X1 + beta[3] * X2
+    logit_q = beta[0] + beta[1] * A + beta[2] * X1 + beta[3] * X2 + beta[4] * X1 * X2
     q = logistic(logit_q)
     Y = rng.binomial(1, q)
     data = pd.DataFrame({'X1': X1, 'X2': X2, 'A': A, 'Y': Y})

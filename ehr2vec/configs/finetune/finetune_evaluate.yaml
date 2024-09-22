@@ -1,0 +1,28 @@
+env: local
+
+paths:
+  model_path: "../outputs/pretraining/test/finetune_TEST_OUTCOME_censored_24_hours_pre_TEST_OUTCOME_followup_start_at_index_date_test"
+  data_dir: "../outputs/pretraining/test/finetune_TEST_OUTCOME_censored_24_hours_pre_TEST_OUTCOME_followup_start_at_index_date_test" 
+  run_name: "evaluate"
+metrics:
+  accuracy:
+    _target_: ehr2vec.evaluation.metrics.Accuracy
+    threshold: 0.6
+  balanced_accuracy:
+    _target_: ehr2vec.evaluation.metrics.Balanced_Accuracy
+  precision:
+    _target_: ehr2vec.evaluation.metrics.Precision
+  recall:
+    _target_: ehr2vec.evaluation.metrics.Recall
+  roc_auc:
+    _target_: ehr2vec.evaluation.metrics.ROC_AUC
+  pr_auc:
+    _target_: ehr2vec.evaluation.metrics.PR_AUC
+
+tester_args:
+  batch_size: 16
+
+data:
+  min_len: 1
+  preprocess: True
+  
