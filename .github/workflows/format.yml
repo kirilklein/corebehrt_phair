@@ -3,9 +3,9 @@
 name: Formatting using black
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "core" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "core" ]
 permissions:
   contents: read
 jobs:
