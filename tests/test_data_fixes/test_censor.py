@@ -1,5 +1,4 @@
 import unittest
-from unittest.mock import patch
 from ehr2vec.data_fixes.censor import Censorer  # Replace with the correct import path
 
 

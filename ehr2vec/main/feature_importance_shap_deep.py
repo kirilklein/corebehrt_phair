@@ -6,7 +6,7 @@ Using the five folds from the cross-validation.
 import os
 from datetime import datetime
 from os.path import abspath, dirname, join, split
-from typing import Dict, List
+from typing import Dict
 
 import numpy as np
 import shap

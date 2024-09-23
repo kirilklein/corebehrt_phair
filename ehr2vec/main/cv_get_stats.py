@@ -110,19 +110,19 @@ def save_stats(
         (Utilities.calculate_trajectory_lengths, "trajectory_len"),
     ]
 
-    for split, data in data_dict.items():
-        save_outcomes(data, finetune_folder, split)
+    for data_split, data in data_dict.items():
+        save_outcomes(data, finetune_folder, data_split)
         for func, name in metric_functions:
             all_stats, pos_stats = process_and_save(
-                data, func, name, split, finetune_folder
+                data, func, name, data_split, finetune_folder
             )
             # Store all data statistics
             for i, measure in enumerate(
                 ["mean", "std", "median", "lower_quartile", "upper_quartile"]
             ):
                 stat_name = f"{name}_{measure}"
-                stats.setdefault(stat_name, {})[split] = all_stats[i]
-                positive_stats.setdefault(stat_name, {})[split] = pos_stats[i]
+                stats.setdefault(stat_name, {})[data_split] = all_stats[i]
+                positive_stats.setdefault(stat_name, {})[data_split] = pos_stats[i]
 
     # Convert dictionaries to DataFrames
     stats = pd.DataFrame(stats).transpose()

@@ -12,7 +12,6 @@ from ehr2vec.common.azure import AzurePathContext
 from ehr2vec.common.config import Config, instantiate, load_config
 from ehr2vec.common.loader import ModelLoader, load_model_cfg_from_checkpoint
 from ehr2vec.common.setup import DirectoryPreparer
-from ehr2vec.common.utils import hook_fn
 from ehr2vec.data.utils import Utilities
 from ehr2vec.evaluation.utils import get_pos_weight, get_sampler
 from ehr2vec.model.model import BertEHRModel, BertForFineTuning, BertForTime2Event

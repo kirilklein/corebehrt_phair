@@ -208,7 +208,6 @@ class Utilities:
         if not pd.isna(event_timestamp):
             # Extract absolute positions and concepts for non-masked items
             absolute_positions = patient["abspos"]
-            concepts = patient["concept"]
             # Determine which items to censor based on the event timestamp and background flags
             censor_flags = Utilities._generate_censor_flags(
                 absolute_positions, event_timestamp

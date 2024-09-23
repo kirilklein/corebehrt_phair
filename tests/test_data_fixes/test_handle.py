@@ -1,5 +1,4 @@
 import unittest
-from unittest.mock import Mock
 from ehr2vec.data_fixes.handle import Handler
 
 

@@ -1,6 +1,5 @@
 import shap
 import torch
-import numpy as np
 
 
 class MyModel(torch.nn.Module):

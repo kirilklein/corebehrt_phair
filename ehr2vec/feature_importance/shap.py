@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from typing import Dict, List
+from typing import Dict
 from ehr2vec.model.model import BertForFineTuning
 
 

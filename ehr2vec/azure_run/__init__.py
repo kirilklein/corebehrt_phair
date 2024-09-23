@@ -4,8 +4,7 @@ Core functionality includes e.g. loading and saving of datasets, manipulating ru
 making backups to a separate datastore, and more...
 """
 
-from azureml.core import Dataset, Datastore, Workspace, Model
-import os
+from azureml.core import Dataset, Datastore, Workspace
 from os.path import split
 import pandas as pd
 

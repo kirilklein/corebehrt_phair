@@ -1,6 +1,5 @@
 """Pretrain BERT model on EHR data. Use config_template pretrain.yaml. Run main_data_pretrain.py first to create the dataset and vocabulary."""
 
-import os
 from os.path import abspath, dirname, join
 
 from ehr2vec.common.azure import AzurePathContext, save_to_blobstore
