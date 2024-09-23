@@ -1,9 +1,11 @@
 import unittest
 from ehr2vec.data.split import get_n_splits_cv
 
+
 class TestDataObject:
     def __init__(self, pids):
         self.pids = pids
+
 
 class TestSplit(unittest.TestCase):
     def setUp(self):
@@ -14,7 +16,10 @@ class TestSplit(unittest.TestCase):
         splits = list(get_n_splits_cv(self.data, n_splits))
         self.assertEqual(len(splits), n_splits)
         for train_indices, val_indices in splits:
-            self.assertEqual(len(train_indices), len(self.data.pids) - len(self.data.pids) // n_splits)
+            self.assertEqual(
+                len(train_indices),
+                len(self.data.pids) - len(self.data.pids) // n_splits,
+            )
             self.assertEqual(len(val_indices), len(self.data.pids) // n_splits)
 
     def test_reproduceability(self):
@@ -23,5 +28,6 @@ class TestSplit(unittest.TestCase):
         splits2 = list(get_n_splits_cv(self.data, n_splits))
         self.assertEqual(splits1, splits2)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

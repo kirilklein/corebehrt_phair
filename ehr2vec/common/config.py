@@ -6,6 +6,7 @@ import yaml
 
 class Config(dict):
     """Config class that allows for dot notation."""
+
     def __init__(self, dictionary=None):
         super(Config, self).__init__()
         if dictionary:
@@ -38,19 +39,23 @@ class Config(dict):
 
     def __delattr__(self, name):
         if name in self:
-            dict.__delitem__(self, name)  # Use the parent class's method to avoid recursion
+            dict.__delitem__(
+                self, name
+            )  # Use the parent class's method to avoid recursion
         if hasattr(self, name):
             super(Config, self).__delattr__(name)
 
     def __delitem__(self, name):
         if name in self:
-            dict.__delitem__(self, name)  # Use the parent class's method to avoid recursion
+            dict.__delitem__(
+                self, name
+            )  # Use the parent class's method to avoid recursion
         if hasattr(self, name):
             super(Config, self).__delattr__(name)
-    
+
     def yaml_repr(self, dumper):
         return dumper.represent_dict(self.to_dict())
-    
+
     def to_dict(self):
         """Converts the object to a dictionary, including any attributes."""
         result = {}
@@ -60,28 +65,28 @@ class Config(dict):
             else:
                 result[key] = value
         return result
-    
+
     def save_to_yaml(config, file_name):
-        with open(file_name, 'w') as file:
+        with open(file_name, "w") as file:
             yaml.dump(config.to_dict(), file)
-    
-    def save_pretrained(self, folder:str):
+
+    def save_pretrained(self, folder: str):
         """
-        Saves the config to a json file. 
+        Saves the config to a json file.
         For compatibility with trainer.
         """
-        file_name = join(folder, 'model_config.json')
-        with open(file_name, 'w') as file:
+        file_name = join(folder, "model_config.json")
+        with open(file_name, "w") as file:
             json.dump(self.to_dict(), file)
-            
-        
-    def update(self, config: 'Config'):
+
+    def update(self, config: "Config"):
         """Updates the config with a different config. Update only if key is not present in self."""
         for key, value in config.items():
             if isinstance(value, dict):
                 value = Config(value)
             if key not in self:
                 setattr(self, key, value)
+
 
 def instantiate(instantiate_config, **extra_kwargs):
     """Instantiates a class from a config object."""
@@ -94,6 +99,7 @@ def instantiate(instantiate_config, **extra_kwargs):
     instance = class_(**kwargs)
     return instance
 
+
 def get_function(config):
     """Gets a function from a config object."""
     module_path, function_name = config._target_.rsplit(".", 1)
@@ -101,10 +107,10 @@ def get_function(config):
     function = getattr(module, function_name)
     return function
 
+
 def load_config(config_file):
     """Loads a yaml config file."""
-    with open(config_file, 'r') as ymlfile:
+    with open(config_file, "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
     cfg = Config(cfg)
     return cfg
-

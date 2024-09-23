@@ -1,11 +1,12 @@
 from ehr2vec.common.utils import iter_patients
 
+
 class Truncator:
     def __init__(self, max_len: int, vocabulary: dict) -> None:
         self.max_len = max_len
         self.vocabulary = vocabulary
         self.sep_token = self.vocabulary.get("[SEP]")
-    
+
     def __call__(self, features: dict) -> dict:
         return self.truncate(features)
 
@@ -34,12 +35,19 @@ class Truncator:
             for key, value in patient.items()
         }
 
-    def _get_background_length(self, features: dict)-> int:
+    def _get_background_length(self, features: dict) -> int:
         """Get the length of the background sentence, first SEP token included."""
-        background_tokens = set([v for k, v in self.vocabulary.items() if k.startswith('BG_')])
-        example_concepts = features['concept'][0] # Assume that all patients have the same background length
+        background_tokens = set(
+            [v for k, v in self.vocabulary.items() if k.startswith("BG_")]
+        )
+        example_concepts = features["concept"][
+            0
+        ]  # Assume that all patients have the same background length
         cls_token_int = int(example_concepts[0] == self.vocabulary.get("[CLS]"))
         background_length = len(set(example_concepts) & background_tokens)
 
-        return background_length + int((background_length > 0) and self.sep_token is not None) + cls_token_int
-
+        return (
+            background_length
+            + int((background_length > 0) and self.sep_token is not None)
+            + cls_token_int
+        )

@@ -4,11 +4,12 @@ from typing import Iterator, Tuple, List
 from ehr2vec.common.utils import Data
 from sklearn.model_selection import KFold
 
-logger = logging.getLogger(__name__)       
+logger = logging.getLogger(__name__)
 
 
-def get_n_splits_cv(data: Data, n_splits: int, indices:list=None
-                    )->Iterator[Tuple[List[int], List[int]]]:
+def get_n_splits_cv(
+    data: Data, n_splits: int, indices: list = None
+) -> Iterator[Tuple[List[int], List[int]]]:
     """
     Generate indices for n_splits cross-validation.
 
@@ -33,20 +34,20 @@ def get_n_splits_cv(data: Data, n_splits: int, indices:list=None
 
         yield train_indices, val_indices
 
-def split_indices_into_train_val(indices:List[int], val_split:float=0.2
-                                 )->Tuple[List[int], List[int]]:
+
+def split_indices_into_train_val(
+    indices: List[int], val_split: float = 0.2
+) -> Tuple[List[int], List[int]]:
     """Split indices into train and validation indices."""
-    train_indices = indices[:int(len(indices)*(1-val_split))]
-    val_indices = indices[int(len(indices)*(1-val_split)):]
+    train_indices = indices[: int(len(indices) * (1 - val_split))]
+    val_indices = indices[int(len(indices) * (1 - val_split)) :]
     return train_indices, val_indices
 
-def split_data_into_train_val(data: Data, val_split:float=0.2
-                              )->Tuple[Data, Data]:
+
+def split_data_into_train_val(data: Data, val_split: float = 0.2) -> Tuple[Data, Data]:
     """Split data into train and val"""
     indices = [i for i in range(len(data.pids))]
-    train_indices, val_indices = split_indices_into_train_val(indices, val_split) 
-    train_data = data.select_data_subset_by_indices(train_indices, mode='train')
-    val_data = data.select_data_subset_by_indices(val_indices, mode='val')
+    train_indices, val_indices = split_indices_into_train_val(indices, val_split)
+    train_data = data.select_data_subset_by_indices(train_indices, mode="train")
+    val_data = data.select_data_subset_by_indices(val_indices, mode="val")
     return train_data, val_data
-    
-

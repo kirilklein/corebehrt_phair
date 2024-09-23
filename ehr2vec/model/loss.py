@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
+
 def neg_partial_log_likelihood(log_hazard, event, time2event):
     """
     Compute the negative partial log-likelihood for the cox proportional hazards model.
@@ -22,5 +23,5 @@ def neg_partial_log_likelihood(log_hazard, event, time2event):
     # we will not deal with ties, because they are very rare in practice
     log_cum_sum = torch.logcumsumexp(log_hazard_sorted.flip(0), dim=0).flip(0)
     pll = (log_hazard_sorted - log_cum_sum)[event_sorted]
-    
+
     return -torch.nanmean(pll)

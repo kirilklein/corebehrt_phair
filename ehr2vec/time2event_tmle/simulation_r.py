@@ -1,7 +1,9 @@
 """Simulation from R code from appendix in the paper 
     'One-step targeted maximum likelihood estimation for time-to-event outcomes' 
     !The formulas provided in the paper differ from that using a log-normal for T"""
+
 import numpy as np
+
 # Load the data
 X_MIN = 0
 X_MAX = 1.5
@@ -15,39 +17,41 @@ C_OFFSET = 1
 C_MULT = 0.5
 C_SCALE = 75
 
+
 def simulate_covariates(n, min=X_MIN, max=X_MAX):
     return np.random.uniform(min, max, n)
 
-def simulate_treatment(n, X, 
-                       offset=A_OFFSET, 
-                       multiplier=A_MULT, 
-                       min_X=A_MIN_X):
+
+def simulate_treatment(n, X, offset=A_OFFSET, multiplier=A_MULT, min_X=A_MIN_X):
     prob = offset + multiplier * (X > min_X)
     return np.random.binomial(1, prob, n)
 
-def compute_exponential_rate(X, A, rate_offset=T_OFFSET, rate_X_mult=T_X_MULT, rate_A_mult=T_A_MULT):
+
+def compute_exponential_rate(
+    X, A, rate_offset=T_OFFSET, rate_X_mult=T_X_MULT, rate_A_mult=T_A_MULT
+):
     return rate_offset + rate_X_mult * X**2 - rate_A_mult * A
 
-def simulate_outcome_time(n, X, A, 
-                          rate_offset=T_OFFSET,
-                          rate_X_mult=T_X_MULT,
-                           rate_A_mult=T_A_MULT):
+
+def simulate_outcome_time(
+    n, X, A, rate_offset=T_OFFSET, rate_X_mult=T_X_MULT, rate_A_mult=T_A_MULT
+):
     rate = compute_exponential_rate(X, A, rate_offset, rate_X_mult, rate_A_mult)
-    Trexp = np.random.exponential(1/rate, n)
+    Trexp = np.random.exponential(1 / rate, n)
     return np.round(Trexp * 2)
 
-def simulate_censoring(n, X, 
-                       shape_offset=C_OFFSET,  
-                       shape_multiplier=C_MULT, 
-                       scale=C_SCALE):
+
+def simulate_censoring(
+    n, X, shape_offset=C_OFFSET, shape_multiplier=C_MULT, scale=C_SCALE
+):
     shape = shape_offset + shape_multiplier * X
     Cweib = np.random.weibull(shape, n) * scale
     return np.round(Cweib * 2)
 
-def theoretical_survival_function(t, X, A, 
-                                  rate_offset=T_OFFSET, 
-                                  rate_X_mult=T_X_MULT, 
-                                  rate_A_mult=T_A_MULT):
+
+def theoretical_survival_function(
+    t, X, A, rate_offset=T_OFFSET, rate_X_mult=T_X_MULT, rate_A_mult=T_A_MULT
+):
     # Compute the rate parameter lambda
     rate = compute_exponential_rate(X, A, rate_offset, rate_X_mult, rate_A_mult)
     rate = np.asarray(rate)
@@ -56,11 +60,15 @@ def theoretical_survival_function(t, X, A,
     # Average the survival probabilities over the population
     return np.mean(survival_prob, axis=0)
 
-def simulate_data(n, A=None, 
-                  covariate_kwargs={},
-                  treatment_kwargs={}, 
-                  censoring_kwargs={}, 
-                  outcome_kwargs={}):
+
+def simulate_data(
+    n,
+    A=None,
+    covariate_kwargs={},
+    treatment_kwargs={},
+    censoring_kwargs={},
+    outcome_kwargs={},
+):
     """
     Simulate Data using model from appendix (R code) in the paper
     One-step targeted maximum likelihood estimation for time-to-event outcomes
@@ -81,5 +89,5 @@ def simulate_data(n, A=None,
     # Observed time and event indicator
     T_observed = np.minimum(T, C)
     Y = (T <= C).astype(int)
-    data = {'X': X, 'A': A, 'T': T, 'C': C, 'T_observed': T_observed, 'Y': Y}
+    data = {"X": X, "A": A, "T": T, "C": C, "T_observed": T_observed, "Y": Y}
     return data

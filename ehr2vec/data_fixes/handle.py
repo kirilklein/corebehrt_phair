@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Generator
 
+
 class Handler:
     def __init__(self, min_age: int = -1, max_age: int = 120):
         self.min_age = min_age
@@ -13,11 +14,13 @@ class Handler:
         """Handle the features, including: incorrect ages, nans, and segments."""
         handled_patients = {k: [] for k in features}
         for patient in self._iter_patients(features):
-            patient = self.handle_incorrect_ages(patient, min_age=self.min_age, max_age=self.max_age)
+            patient = self.handle_incorrect_ages(
+                patient, min_age=self.min_age, max_age=self.max_age
+            )
 
             patient = self.handle_nans(patient)
-            if 'segment' in patient:
-                patient['segment'] = self.normalize_segments(patient['segment'])
+            if "segment" in patient:
+                patient["segment"] = self.normalize_segments(patient["segment"])
 
             for key, values in patient.items():
                 handled_patients[key].append(values)
@@ -25,9 +28,13 @@ class Handler:
         return handled_patients
 
     @staticmethod
-    def handle_incorrect_ages(patient: dict, min_age: int = -1, max_age: int = 120) -> dict:
-        correct_indices = set([i for i, age in enumerate(patient['age']) if min_age <= age <= max_age])
-        
+    def handle_incorrect_ages(
+        patient: dict, min_age: int = -1, max_age: int = 120
+    ) -> dict:
+        correct_indices = set(
+            [i for i, age in enumerate(patient["age"]) if min_age <= age <= max_age]
+        )
+
         for key, values in patient.items():
             patient[key] = [values[i] for i in correct_indices]
 
@@ -49,12 +56,11 @@ class Handler:
     def normalize_segments(segments: list) -> list:
         segment_set = sorted(set(segments))
         correct_segments = list(range(len(segment_set)))
-        converter = {k: v for (k,v) in zip(segment_set, correct_segments)}
+        converter = {k: v for (k, v) in zip(segment_set, correct_segments)}
 
         return [converter[segment] for segment in segments]
-    
+
     @staticmethod
     def _iter_patients(features: dict) -> Generator[dict, None, None]:
-        for i in range(len(features['concept'])):
+        for i in range(len(features["concept"])):
             yield {k: v[i] for k, v in features.items()}
-
