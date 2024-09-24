@@ -1,3 +1,7 @@
+[![Formatting using black](https://github.com/kirilklein/corebehrt_phair/actions/workflows/format.yml/badge.svg)](https://github.com/kirilklein/corebehrt_phair/actions/workflows/format.yml)
+[![Lint using flake8](https://github.com/kirilklein/corebehrt_phair/actions/workflows/lint.yml/badge.svg)](https://github.com/kirilklein/corebehrt_phair/actions/workflows/lint.yml)
+[![Pipeline test](https://github.com/kirilklein/corebehrt_phair/actions/workflows/pipeline.yml/badge.svg)](https://github.com/kirilklein/corebehrt_phair/actions/workflows/pipeline.yml)
+[![Unittests](https://github.com/kirilklein/corebehrt_phair/actions/workflows/unittest.yml/badge.svg)](https://github.com/kirilklein/corebehrt_phair/actions/workflows/unittest.yml)
 # CORE-BEHRT: A Carefully Optimized and Rigorously Evaluated BEHRT
 
 ## Overview
