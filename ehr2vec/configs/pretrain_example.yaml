@@ -1,10 +1,9 @@
 env: local
 paths:
-  # data_path: 'pretrain_datasets/diagnosis_medication/070623/outputs/data' # inside mounted datastore
-  data_path: ../outputs/features500
-  output_path: ../outputs/pretraining
+  data_path: outputs/example_features
+  output_path: outputs/example_pretraining
   type: diag
-  run_name: test
+  run_name: example
   tokenized_dir: tokenized
   # predefined_splits: outputs/pretraining/behrt_base
   
@@ -53,7 +52,6 @@ scheduler:
   _target_: transformers.get_linear_schedule_with_warmup
   num_warmup_epochs: 2
   num_training_epochs: 3
-
 
 metrics:
   top1:

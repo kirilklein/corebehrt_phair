@@ -25,12 +25,12 @@ from ehr2vec.evaluation.utils import (
 )
 from ehr2vec.trainer.trainer import EHRTrainer
 
-CONFIG_NAME = "finetune/finetune_simvastatin.yaml"
+DEAFAULT_CONFIG_NAME = "finetune_example.yaml"
 N_SPLITS = 2  # You can change this to desired value
 BLOBSTORE = "CINF"
 DEAFAULT_VAL_SPLIT = 0.2
 
-args = get_args(CONFIG_NAME)
+args = get_args(DEAFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 

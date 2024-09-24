@@ -1,12 +1,11 @@
 env: local
-output_dir: ../outputs/features
+output_dir: outputs/example_features
 tokenized_dir_name: "tokenized"
 paths:
   run_name: "_test"
-  save_features_dir_name: "features500" # saves in this directory on azure. If not provided use run_name.
 loader:
   # can provide formatted data or features
-  data_dir:  ../data/formatted/synthea500 # ../outputs/features_test # ../data/formatted/synthea500_icd10 #../outputs/data_icd10
+  data_dir:  example_data/synthea500 
   concepts: [
     diagnose,
     medication
@@ -29,7 +28,7 @@ tokenizer:
   cls_token: true
   padding: false
   truncation: null
-  #cutoffs:
+  # cutoffs:
    # D: 3 # diagnosis
    # M: 4 # medication
 
@@ -45,10 +44,10 @@ handler:
   max_age: 120
 
 # can be a list
-# exclude_pids: outputs/pretraining/behrt_test/finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test/test_pids.pt
+# exclude_pids: 
 # assigned_pids: 
   # can be a list
   # pretrain: 
-  #  - outputs/pretraining/behrt_test/finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test/fold_1/val_pids.pt
-#predefined_splits_dir: ../outputs/data_icd10/tokenized #../outputs/features_test/tokenized
+  #  - 
+# predefined_splits_dir: 
 

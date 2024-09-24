@@ -14,10 +14,10 @@ from ehr2vec.common.utils import compute_number_of_warmup_steps
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.trainer.trainer import EHRTrainer
 
-CONFIG_NAME = "pretrain.yaml"
+DEAFAULT_CONFIG_NAME = "pretrain_example.yaml"
 BLOBSTORE = "CINF"
 
-args = get_args(CONFIG_NAME)
+args = get_args(DEAFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 

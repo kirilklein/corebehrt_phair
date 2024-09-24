@@ -15,6 +15,18 @@ Before you begin, ensure you have the necessary dependencies installed. This pro
 - (pyarrow if parquet files are used)
 
 ## Getting Started
+1. Activate your virtual environment, e.g. conda activate myenv or source myenv/bin/activate for pip.
+2. From the root directory, run `pip install -e .` to install the package.
+3. Run the scripts in the following order to preprocess your data, train the model, and evaluate the results.
+   1. **Data Preparation**: `main_create_data`
+   2. **Model Pre-training**: `main_pretrain`
+   3. **Data Preparation for Fine-tuning**: `main_create_outcomes`
+   4. **Model Fine-tuning**: `main_finetune_cv`
+
+Scripts can be run from the root directory using the following command: `python -m ehr2vec.scripts.{script_name}` 
+By default example configs are used.  
+To use your own config, pass the path (relative to configs directory) to the config file as an argument,  
+e.g. `python -m ehr2vec.scripts.main_pretrain --config_path my_config.yaml` 
 
 ### Data Preparation
 To correctly prepare your data for processing, execute the scripts in the following order. Ensure your data adheres to the specified format before starting:
@@ -25,29 +37,9 @@ To correctly prepare your data for processing, execute the scripts in the follow
      - **Event Data**: The files `concept.{code_type}.csv` should include `TIMESTAMP`, `PID`, `ADMISSION_ID`, and `CONCEPT`.
    - Use the preprocessing tools available at [ehr_preprocess](https://github.com/kirilklein/ehr_preprocess.git) to convert your raw data into the required format.
 
-2. **Feature Creation and Tokenization**
-   - `main_create_data`: Stores features as dictionaries with list of lists as values and difference concept data streams as keys (concept, segment, age, abspos,...) holding the patient sequences. Tokenizes the features. Use data_pretrain.yaml config.
-
-3. **Model Pre-training**
-   - `main_pretrain`: Pre-trains a standard a BEHRT model on the tokenized features.
-
-3. **Data Preparation for Fine-tuning**
-   - `main_create_outcomes`: From the formatted data, creates a dictionary with the events of interest (abspos of first time occurrence). Example dictionary: {'PID':['p1', 'p2', ...], 'EVENT1':[5423, None, ...], ...}
-
-4. **Model Fine-tuning**
-   - `main_finetune_cv`: Performs 5-fold cross-validation + evaluation on a holdout-set.
-
-
-### Hierarchical Model Training
-To run the hierarchical version of the model, use the following scripts:
-
-- `setup_hierarchical`: Utilizes features from `main_create_data` to construct a feature tree and generate hierarchical features.
-- `main_h_pretrain`: Trains a BERT model with a hierarchical loss function.
 
 ### Evaluation and Visualization
 To evaluate the model performance:
-- `main_finetune_cv_get_stats`: Get basic statistics on patient sequences in train/val and test set.
-- `main_finetune_cv_test`: Test models trained in CV on a dataset of your choice.
-- `main_encode_censored_patients`: Encodes sequences using a trained model, specifically censored on a predetermined event.
-- `main_encode_concepts`: Save encodings of concepts.
+- `cv_get_stats`: Get basic statistics on patient sequences in train/val and test set.
+- `finetune_cv_evaluate`: Test models trained in CV on a dataset of your choice.
 

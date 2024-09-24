@@ -27,10 +27,10 @@ from ehr2vec.data.tokenizer import EHRTokenizer
 from ehr2vec.data_fixes.exclude import Excluder
 from ehr2vec.data_fixes.handle import Handler
 
-CONFIG_NAME = "create_data.yaml"
+DEFAULT_CONFIG_NAME = "create_data_example.yaml"
 BLOBSTORE = "CINF"
 
-args = get_args(CONFIG_NAME, "data_pretrain")
+args = get_args(DEFAULT_CONFIG_NAME, "data_pretrain")
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 

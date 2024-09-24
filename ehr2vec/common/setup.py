@@ -28,7 +28,10 @@ def get_args(default_config_name, default_run_name=None):
             default_run_name if default_run_name else default_config_name.split(".")[0]
         ),
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not args.config_path.startswith("configs"):
+        args.config_path = join("configs", args.config_path)
+    return args
 
 
 def setup_logger(dir: str, log_file: str = "info.log"):
