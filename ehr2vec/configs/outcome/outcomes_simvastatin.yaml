@@ -1,10 +1,10 @@
 env: local
 paths:
-  run_name: first
+  run_name: test
 outcomes_name: "SIMVASTATIN"
-features_dir: ../outputs/features500
+features_dir: outputs/example_features
 loader:
-  data_dir: ../data/formatted/synthea500
+  data_dir: example_data/synthea500
   concepts: [
     medication
   ]
@@ -13,7 +13,7 @@ loader:
 outcomes:
   SIMVASTATIN: 
     type: [CONCEPT]
-    match: [['312961']]
+    match: [['M312961']]
     match_how: contains
     case_sensitive: true
   

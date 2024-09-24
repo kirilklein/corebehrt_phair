@@ -1,10 +1,10 @@
 env: local
 paths:
-  pretrain_model_path: "../outputs/pretraining/test"
+  pretrain_model_path: "outputs/example_pretraining/example"
   # model_path: "outputs/pretraining/behrt_test/finetune_TEST_OUTCOME_censored_10_hours_pre_TEST_OUTCOME_test"
   #checkpoint_epoch: 1
-  outcome: "../outputs/features500/outcomes/SIMVASTATIN/SIMVASTATIN.csv"
-  exposure: "../outputs/features500/outcomes/SIMVASTATIN/SIMVASTATIN.csv"
+  outcome: "outputs/example_features/outcomes/SIMVASTATIN/SIMVASTATIN.csv"
+  exposure: "outputs/example_features/outcomes/SIMVASTATIN/SIMVASTATIN.csv"
   #output_path: "outputs/finetuning"
   run_name: "test"
   #tokenized_dir:"tokenized"
