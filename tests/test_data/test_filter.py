@@ -70,6 +70,7 @@ class TestPatientFilter(unittest.TestCase):
         self.data.vocabulary = {f"code{i}": i for i in range(2, 9)}
         self.data.vocabulary["BG_GENDER_Female"] = 0
         self.data.vocabulary["BG_GENDER_Male"] = 1
+        self.data.times2event = None
 
     @patch("torch.load")
     def test_exclude_pretrain_patients(self, mock_load):

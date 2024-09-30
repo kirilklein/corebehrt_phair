@@ -26,7 +26,9 @@ class Inferrer:
     def infer_admission_id(df: pd.DataFrame) -> pd.Series:
         """Infer admission IDs (NaNs between identical IDs are inferred)"""
         bf = df.sort_values("PID")
-        mask = bf["SEGMENT"].ffill() != bf["SEGMENT"].bfill()  # Find NaNs between similar admission IDs
+        mask = (
+            bf["SEGMENT"].ffill() != bf["SEGMENT"].bfill()
+        )  # Find NaNs between similar admission IDs
         bf.loc[mask, "SEGMENT"] = bf.loc[mask, "SEGMENT"].map(lambda _: "unq_") + list(
             map(str, range(mask.sum()))
         )  # Assign unique IDs to non-inferred NaNs
