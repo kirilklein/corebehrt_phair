@@ -1,7 +1,7 @@
 import random
 import unittest
 from unittest.mock import Mock, patch
-from ehr2vec.tests.helpers import ConfigMock
+from tests.helpers import ConfigMock
 from ehr2vec.data.filter import CodeTypeFilter, PatientFilter
 
 

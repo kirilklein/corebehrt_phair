@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, call, patch
 
 from ehr2vec.data.batch import Batches, BatchTokenize, Split
 from ehr2vec.data.tokenizer import EHRTokenizer
-from ehr2vec.tests.helpers import ConfigMock
+from tests.helpers import ConfigMock
 
 
 class TestBatches(unittest.TestCase):

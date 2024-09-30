@@ -68,7 +68,6 @@ class TestOutcomeHandler(unittest.TestCase):
 
         # Initialize the OutcomeHandler instance
         self.handler = OutcomeHandler(
-            survival=True,
             end_of_time={
                 "year": 2021,
                 "month": 12,
@@ -79,7 +78,6 @@ class TestOutcomeHandler(unittest.TestCase):
             },
         )
         self.handler_wdeath = OutcomeHandler(
-            survival=False,
             end_of_time={
                 "year": 2021,
                 "month": 12,

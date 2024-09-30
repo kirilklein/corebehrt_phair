@@ -165,7 +165,7 @@ class OutcomeHandler:
         select_patient_group (optional): select only exposed or unexposed patients
         drop_pids_w_outcome_pre_followup (optional): remove patients with outcome before follow-up start
         n_hours_start_followup (optional): number of hours to start follow-up after exposure (looking for positive label)
-        survival: whether survival analysis data (T and E) should be returned.
+        time2event: whether survival analysis data (T and E) should be returned.
         end_of_time: dictionary with year, month, day, hour, minute, second for the end of data collection period.
         death_is_event: count death as event in survival analysis
         """
