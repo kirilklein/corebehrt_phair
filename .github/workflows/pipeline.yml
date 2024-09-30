@@ -21,32 +21,35 @@ jobs:
                 source .venv/bin/activate
                 pip install -r requirements.txt
 
-            - name: Activate venv
-              run: |
-                source .venv/bin/activate
-
             - name: main.create_data
               run: |
+                source .venv/bin/activate  
                 python -m ehr2vec.main.create_data
+                
             
             - name: main.pretrain
               run: |
+                source .venv/bin/activate  
                 python -m ehr2vec.main.pretrain
             
             - name: main.create_outcomes
               run: |
+                source .venv/bin/activate  
                 python -m ehr2vec.main.create_outcomes
             
             - name: main.simulate_binary_outcome
               run: |
+                source .venv/bin/activate  
                 python -m ehr2vec.main.simulate_binary_outcome
 
             - name: main.finetune_cv
               run: |
+                source .venv/bin/activate  
                 python -m ehr2vec.main.finetune_cv
 
             - name: main.finetune_cv
               run: |
+                source .venv/bin/activate  
                 python -m ehr2vec.main.finetune_cv --config_path finetune_simulated_example
             
             
