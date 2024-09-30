@@ -19,7 +19,10 @@ def get_args(default_config_name, default_run_name=None):
     """Get command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config_path", type=str, default=join("configs", default_config_name)
+        "--config_path",
+        type=str,
+        default=join("configs", default_config_name),
+        help="Configuration file, path relative to configs/",
     )
     parser.add_argument(
         "--run_name",
@@ -31,6 +34,9 @@ def get_args(default_config_name, default_run_name=None):
     args = parser.parse_args()
     if not args.config_path.startswith("configs"):
         args.config_path = join("configs", args.config_path)
+    if not args.config_path.endswith(".yaml"):
+        args.config_path += ".yaml"
+
     return args
 
 

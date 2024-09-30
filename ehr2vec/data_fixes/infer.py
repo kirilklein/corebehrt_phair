@@ -26,16 +26,14 @@ class Inferrer:
     def infer_admission_id(df: pd.DataFrame) -> pd.Series:
         """Infer admission IDs (NaNs between identical IDs are inferred)"""
         bf = df.sort_values("PID")
-        mask = bf["SEGMENT"].fillna(method="ffill") != bf["SEGMENT"].fillna(
-            method="bfill"
+        mask = (
+            bf["SEGMENT"].ffill() != bf["SEGMENT"].bfill()
         )  # Find NaNs between similar admission IDs
         bf.loc[mask, "SEGMENT"] = bf.loc[mask, "SEGMENT"].map(lambda _: "unq_") + list(
             map(str, range(mask.sum()))
         )  # Assign unique IDs to non-inferred NaNs
 
-        return bf["SEGMENT"].fillna(
-            method="ffill"
-        )  # Assign neighbour IDs to inferred NaNs
+        return bf["SEGMENT"].ffill()  # Assign neighbour IDs to inferred NaNs
 
     # Infer timestamps (NaNs within identical admission IDs a related timestamp)
     @staticmethod
@@ -43,7 +41,7 @@ class Inferrer:
         df: pd.DataFrame, strategy="last"
     ) -> pd.Series:
         if strategy == "last":
-            return df.groupby("SEGMENT")["TIMESTAMP"].fillna(method="ffill")
+            return df.groupby("SEGMENT")["TIMESTAMP"].ffill()
 
         elif strategy == "first":
             return df.groupby("SEGMENT")["TIMESTAMP"].transform(

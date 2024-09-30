@@ -11,7 +11,7 @@ from ehr2vec.data.creators import (
     SegmentCreator,
 )
 from ehr2vec.data.utils import Utilities
-from ehr2vec.tests.helpers import ConfigMock
+from tests.helpers import ConfigMock
 
 
 class TestBaseCreator(unittest.TestCase):

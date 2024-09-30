@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-from ehr2vec.tests.helpers import ConfigMock
+from tests.helpers import ConfigMock
 from ehr2vec.data.tokenizer import EHRTokenizer
 
 
