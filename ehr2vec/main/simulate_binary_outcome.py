@@ -15,7 +15,7 @@ from ehr2vec.common.setup import (
 )
 from ehr2vec.simulation.longitudinal_outcome import simulate_abspos_from_binary_outcome
 
-DEFAULT_CONFIG_NAME = "simulate_binary_outcome.yaml"
+DEFAULT_CONFIG_NAME = "simulate_binary_outcome_example.yaml"
 BLOBSTORE = "CINF"
 
 args = get_args(DEFAULT_CONFIG_NAME)
