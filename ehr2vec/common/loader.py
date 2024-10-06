@@ -11,6 +11,7 @@ from transformers import BertConfig
 from ehr2vec.common.config import Config, load_config
 from ehr2vec.common.utils import Data
 from ehr2vec.data.utils import Utilities
+from ehr2vec.common.checks import check_columns, check_path
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -250,14 +251,36 @@ def load_and_select_splits(split_dir: str, data: Data) -> Tuple[Data, Data]:
     return train_data, val_data
 
 
+def load_propensities(ps_folder: str) -> pd.DataFrame:
+    """Loads the propensity scores from the given folder."""
+    propensities = load_predictions_from_finetune_dir(ps_folder)
+    check_columns(propensities, ["pid", "target", "proba"])
+    return propensities.rename(
+        columns={"pid": "PID", "target": "treatment", "proba": "ps"}
+    ).set_index("PID")
+
+
+def load_outcomes(outcome_path: str) -> pd.DataFrame:
+    """Loads the outcomes from the given path and converts them to binary."""
+    # Add error handling for missing files or columns
+    outcomes = pd.read_csv(outcome_path)
+    check_columns(outcomes, ["PID", "TIMESTAMP"])
+    outcomes = outcomes.set_index("PID")
+    outcomes["outcome"] = 1  # Everyone with a timestamp has the outcome
+    outcomes = outcomes.drop(columns=["TIMESTAMP"])
+    return outcomes
+
+
 def load_predictions_from_finetune_dir(finetune_dir: str) -> pd.DataFrame:
     """Load predictions from finetune directory."""
+    check_path(finetune_dir, "predictions_and_targets.npz")
     pred_and_targets = np.load(join(finetune_dir, "predictions_and_targets.npz"))
     return pd.DataFrame({k: v.flatten() for k, v in pred_and_targets.items()})
 
 
 def load_index_dates(finetune_dir: str) -> pd.DataFrame:
     """Load index dates from finetune directory."""
+    check_path(finetune_dir, "index_dates.pt")
     index_dates = torch.load(join(finetune_dir, "index_dates.pt"))
     all_pids = torch.load(join(finetune_dir, "pids.pt"))
     return pd.DataFrame({"index_date": index_dates, "pid": all_pids})
