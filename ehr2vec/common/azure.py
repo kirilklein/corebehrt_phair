@@ -172,6 +172,19 @@ class AzurePathContext:
             self.cfg.paths.output_path = OUTPUTS_DIR
         return self.cfg, self.run, self.mount_context
 
+    def azure_estimate_setup(self) -> Tuple:
+        """Azure setup for estimating causal effects. Prepend mount folder."""
+        if self.azure_env:
+            for entry in self.cfg.paths:
+                if entry == "run_name":
+                    continue
+                else:
+                    self.cfg.paths[entry] = self._prepend_mount_point(
+                        self.cfg.paths[entry]
+                    )
+            self.cfg.paths.output = OUTPUTS_DIR
+        return self.cfg, self.run, self.mount_context
+
     def azure_data_pretrain_setup(self) -> Tuple:
         """Azure setup for pretraining. Prepend mount folder."""
         if self.azure_env:
