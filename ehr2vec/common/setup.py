@@ -169,6 +169,22 @@ def initialize_configuration_finetune(config_path: str, dataset_name: str):
     return cfg, run, mount_context, azure_context
 
 
+def initialize_configuration_effect_estimation(config_path: str, dataset_name: str):
+    """
+    Load and adjust the configuration. Used if finetune models are loaded.
+    E.g. in test or feature importance scripts.
+    """
+    cfg = load_config(config_path)
+    azure_context = AzurePathContext(cfg, dataset_name=dataset_name)
+    cfg, run, mount_context = azure_context.azure_estimate_setup()
+    if cfg.env == "azure":
+        cfg.paths.output_path = "outputs"
+    else:
+        if cfg.paths.output_path is None:
+            raise ValueError("output_path must be provided in the configuration.")
+    return cfg, run, mount_context, azure_context
+
+
 class DirectoryPreparer:
     """Prepares directories for training and evaluation."""
 

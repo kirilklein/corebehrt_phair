@@ -51,5 +51,17 @@ jobs:
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.finetune_cv --config_path finetune_simulated_example
+
+            - name: main.estimate_causal_effect
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.estimate_causal_effect
+
+            - name: main.estimate_causal_effect
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.estimate_causal_effect --config_path estimate_effect_binary_example_counterfactual
+
+             
             
             
