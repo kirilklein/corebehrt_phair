@@ -42,6 +42,11 @@ jobs:
                 source .venv/bin/activate  
                 python -m ehr2vec.main.finetune_cv
             
+            - name: main.finetune_cv_evaluate
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.finetune_cv_evaluate 
+            
             - name: main.simulate_binary_outcome
               run: |
                 source .venv/bin/activate  

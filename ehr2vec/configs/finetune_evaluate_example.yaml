@@ -1,0 +1,41 @@
+env: local
+paths:
+  model_path: outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test
+  run_name: "test"
+  data_dir: outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test
+
+model:
+  pool_type: "gru"
+  bidirectional: true
+
+data:
+  num_patients: 300 #300
+  truncation_len: 30
+  min_age: 0
+  max_age: 70
+  min_len: 2
+
+tester_args:
+  batch_size: 16
+  val_batch_size: 16
+  info: true
+  shuffle: true
+
+metrics:
+  accuracy:
+    _target_: ehr2vec.evaluation.metrics.Accuracy
+    threshold: 0.6
+  balanced_accuracy:
+    _target_: ehr2vec.evaluation.metrics.Balanced_Accuracy
+  precision:
+    _target_: ehr2vec.evaluation.metrics.Precision
+  recall:
+    _target_: ehr2vec.evaluation.metrics.Recall
+  roc_auc:
+    _target_: ehr2vec.evaluation.metrics.ROC_AUC
+  pr_auc:
+    _target_: ehr2vec.evaluation.metrics.PR_AUC
+
+  
+  
+ 
