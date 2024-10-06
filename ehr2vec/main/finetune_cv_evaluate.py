@@ -21,7 +21,7 @@ from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.evaluation.encodings import EHRTester
 from ehr2vec.evaluation.utils import save_data
 
-CONFIG_NAME = "finetune/finetune_evaluate.yaml"
+CONFIG_NAME = "finetune_evaluate_example.yaml"
 BLOBSTORE = "CINF"
 
 args = get_args(CONFIG_NAME)
