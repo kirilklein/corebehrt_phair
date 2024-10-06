@@ -1,0 +1,13 @@
+env: local
+paths:
+  ps_model_path: "outputs/example_pretraining/example/finetune_SIMULATED_censored_24_hours_pre_SIMULATED_followup_start_at_index_date_test"
+  outcome: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/SIMULATED.csv"
+  counterfactual_outcome: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/COUNTERFACTUAL.csv"
+  output_path: "outputs/experiments/test"
+  run_name: "test"
+
+estimator:
+  methods: ["IPW"]
+  effect_type: "ATE"
+  n_bootstrap: 1000
+

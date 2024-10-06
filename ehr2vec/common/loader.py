@@ -271,6 +271,13 @@ def load_outcomes(outcome_path: str) -> pd.DataFrame:
     return outcomes
 
 
+def load_counterfactual_outcomes(counterfactual_outcome_path: str) -> pd.DataFrame:
+    """Loads the counterfactual outcomes from the given path."""
+    counterfactual_outcomes = pd.read_csv(counterfactual_outcome_path)
+    check_columns(counterfactual_outcomes, ["PID", "Y0", "Y1"])
+    return counterfactual_outcomes
+
+
 def load_predictions_from_finetune_dir(finetune_dir: str) -> pd.DataFrame:
     """Load predictions from finetune directory."""
     check_path(finetune_dir, "predictions_and_targets.npz")
