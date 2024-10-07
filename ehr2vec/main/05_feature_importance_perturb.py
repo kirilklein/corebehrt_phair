@@ -31,7 +31,9 @@ if matplotlib_spec is not None:
     from ehr2vec.evaluation.visualization import plot_most_important_features
 else:
     plot_most_important_features = None
-    print("Warning: matplotlib is not installed. Plotting functionality will be disabled.")
+    print(
+        "Warning: matplotlib is not installed. Plotting functionality will be disabled."
+    )
 
 from ehr2vec.feature_importance.perturb import PerturbationModel
 from ehr2vec.feature_importance.perturb_utils import (
@@ -88,7 +90,9 @@ def finetune_fold(
     # initialize datasets
     logger.info("Initializing datasets")
     train_dataset = BinaryOutcomeDataset(train_data.features, train_data.outcomes)
-    val_dataset = BinaryOutcomeDataset(perturb_val_data.features, perturb_val_data.outcomes)
+    val_dataset = BinaryOutcomeDataset(
+        perturb_val_data.features, perturb_val_data.outcomes
+    )
     test_dataset = (
         BinaryOutcomeDataset(test_data.features, test_data.outcomes)
         if len(test_data) > 0
