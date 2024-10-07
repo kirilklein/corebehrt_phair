@@ -28,6 +28,8 @@ tokenizer:
   cls_token: true
   padding: false
   truncation: null
+  additional_codes:
+    - DT148XXX
   # cutoffs:
    # D: 3 # diagnosis
    # M: 4 # medication

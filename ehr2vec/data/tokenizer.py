@@ -23,6 +23,7 @@ class EHRTokenizer:
         self.truncation = config.get("truncation", None)
         self.padding = config.get("padding", False)
         self.cutoffs = config.get("cutoffs", None)
+        self.additional_codes = config.get("additional_codes", None)
 
     def __call__(self, features: dict, padding=None, truncation=None) -> BatchEncoding:
         padding = self.padding if padding is None else padding
@@ -71,6 +72,10 @@ class EHRTokenizer:
             for concept in concepts:
                 if concept not in self.vocabulary:
                     self.vocabulary[concept] = len(self.vocabulary)
+            if self.additional_codes:
+                for code in self.additional_codes:
+                    if code not in self.vocabulary:
+                        self.vocabulary[code] = len(self.vocabulary)
 
             encoded_sequence = [
                 self.vocabulary.get(concept, self.vocabulary["[UNK]"])
