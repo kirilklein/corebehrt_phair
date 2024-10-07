@@ -1,9 +1,8 @@
 env: local
 
 paths:
-  model_path: "../outputs/pretraining/test/finetune_TEST_OUTCOME_censored_24_hours_pre_TEST_CENSOR_followup_start_at_index_date_test"
-  # data_dir: "../outputs/pretraining/test/finetune_TEST_OUTCOME_censored_24_hours_pre_year2015_month1_day1_followup_start_at_index_date_test" 
-  run_name: "perturb_fi"
+  model_path: outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test
+  run_name: "perturb_feature_importance"
 
 metrics:
   roc_auc:
