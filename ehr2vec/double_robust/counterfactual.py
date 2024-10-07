@@ -26,7 +26,10 @@ def create_counterfactual_data(data: Data, exposure_regex_list: List[str]) -> Da
         for key, value in patient.items():
             counterfactual_features[key].append(value)
     return Data(
-        counterfactual_features, data.outcomes, data.pids, data.mode, data.vocabulary
+        features=counterfactual_features,
+        pids=data.pids,
+        outcomes=data.outcomes,
+        vocabulary=data.vocabulary,
     )
 
 
