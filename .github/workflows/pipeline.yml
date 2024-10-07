@@ -9,148 +9,70 @@ permissions:
   pull-requests: read
 
 jobs:
-    setup:
+    tests:
         runs-on: "ubuntu-latest"
         steps:
             - name: Checkout
               uses: actions/checkout@v4
 
-            - name: Setup Python
-              uses: actions/setup-python@v4
-              with:
-                python-version: '3.9'
-
-            - name: Setup dependencies
+            - name: Setup dependencies.
               run: |
                 python -m venv .venv
                 source .venv/bin/activate
                 pip install -r requirements.txt
 
-            - name: Create data
+            - name: create_data
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.01_create_data
                 
-            - name: Pretrain
+            
+            - name: pretrain
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.02_pretrain
             
-            - name: Create outcomes and exposures
+            - name: create_outcomes_and_exposures
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.03_create_outcomes
             
-            - name: Finetune CV
+            - name: finetune_cv
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.04_finetune_cv
 
-            - name: Cache virtual environment
-              uses: actions/cache@v3
-              with:
-                path: .venv
-                key: venv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
-
-    evaluation:
-        needs: setup
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Setup Python
-              uses: actions/setup-python@v4
-              with:
-                python-version: '3.9'
-
-            - name: Restore virtual environment
-              uses: actions/cache@v3
-              with:
-                path: .venv
-                key: venv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
-
-            - name: Evaluate CV
-              run: |
-                source .venv/bin/activate  
-                python -m ehr2vec.main.05_cv_evaluate 
-
-    feature_importance:
-        needs: setup
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Setup Python
-              uses: actions/setup-python@v4
-              with:
-                python-version: '3.9'
-
-            - name: Restore virtual environment
-              uses: actions/cache@v3
-              with:
-                path: .venv
-                key: venv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
-
-            - name: Feature importance perturb
+            - name: feature_importance_perturb
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.05_feature_importance_perturb
 
-    causal_effect:
-        needs: setup
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Setup Python
-              uses: actions/setup-python@v4
-              with:
-                python-version: '3.9'
-
-            - name: Restore virtual environment
-              uses: actions/cache@v3
-              with:
-                path: .venv
-                key: venv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
-
-            - name: Estimate causal effect
+            - name: evaluate_cv
               run: |
                 source .venv/bin/activate  
-                python -m ehr2vec.main.06_estimate_causal_effect
-
-    simulation:
-        needs: setup
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Setup Python
-              uses: actions/setup-python@v4
-              with:
-                python-version: '3.9'
-
-            - name: Restore virtual environment
-              uses: actions/cache@v3
-              with:
-                path: .venv
-                key: venv-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
-
-            - name: Simulate binary outcome
+                python -m ehr2vec.main.05_cv_evaluate 
+            
+            - name: simulate_binary_outcome
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.05_simulate_binary_outcome
 
-            - name: Finetune on simulated outcomes
+            - name: finetune_on_simulated_outcomes
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.04_finetune_cv --config_path finetune_simulated_example
 
-            - name: Estimate causal effect counterfactual simulation
+            - name: estimate_causal_effect
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.06_estimate_causal_effect
+
+            - name: estimate_causal_effect_counterfactual_simulation
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.06_estimate_causal_effect --config_path estimate_effect_binary_example_counterfactual
+            
 
+             
+            
+            
