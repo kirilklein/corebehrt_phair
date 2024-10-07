@@ -141,6 +141,24 @@ class TestUtilities(unittest.TestCase):
 
         self.assertEqual(result, [True, True, True, False, False])
 
+    def test_regex_function(self):
+        mock_vocabulary = {"A01": 0, "B02": 1, "C03": 2, "A11": 3, "D04": 4, "001": 5}
+
+        regex = r"^A"
+        result = Utilities.get_codes_from_regex(mock_vocabulary, regex)
+        expected_result = {0, 3}  # Values for "A01" and "A11"
+        self.assertEqual(result, expected_result)
+
+        regex = r"\d"
+        result = Utilities.get_codes_from_regex(mock_vocabulary, regex)
+        expected_result = {5}  # No values expected
+        self.assertEqual(result, expected_result)
+
+        regex = r"^X"
+        result = Utilities.get_codes_from_regex(mock_vocabulary, regex)
+        expected_result = set()  # No matches expected
+        self.assertEqual(result, expected_result)
+
 
 if __name__ == "__main__":
     unittest.main()
