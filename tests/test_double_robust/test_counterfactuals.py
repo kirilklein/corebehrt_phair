@@ -22,6 +22,7 @@ class TestCounterfactuals(unittest.TestCase):
         }
         self.exposure_regex_list = ["A1", "B1"]
         self.exposure_codes = {4, 5}
+
     def test_remove_codes(self):
         patient = {
             "concept": [0, 2, 3, 1, 4, 5, 6],

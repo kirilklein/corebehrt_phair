@@ -16,14 +16,13 @@ def save_combined_predictions_evaluation(
 
         fold_pids = torch.load(join(fold_folder, f"{mode}_pids.pt"))
         fold_predictions = np.load(
-            join(fold_folder, f"probas_{mode}.npz"), 
-            allow_pickle=True
+            join(fold_folder, f"probas_{mode}.npz"), allow_pickle=True
         )["probas"]
 
         predictions.append(fold_predictions)
         pids.extend(fold_pids)
 
     predictions = np.concatenate(predictions).flatten()
-    
+
     df = pd.DataFrame({"PID": pids, "prediction": predictions})
     df.to_csv(join(evaluation_folder, "counterfactual_predictions.csv"), index=False)
