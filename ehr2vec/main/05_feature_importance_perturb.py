@@ -24,7 +24,15 @@ from ehr2vec.common.setup import (
 from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.split import split_data_into_train_val
-from ehr2vec.evaluation.visualization import plot_most_important_features
+import importlib
+
+matplotlib_spec = importlib.util.find_spec("matplotlib")
+if matplotlib_spec is not None:
+    from ehr2vec.evaluation.visualization import plot_most_important_features
+else:
+    plot_most_important_features = None
+    print("Warning: matplotlib is not installed. Plotting functionality will be disabled.")
+
 from ehr2vec.feature_importance.perturb import PerturbationModel
 from ehr2vec.feature_importance.perturb_utils import (
     average_sigmas,
@@ -34,7 +42,7 @@ from ehr2vec.feature_importance.perturb_utils import (
 from ehr2vec.trainer.trainer import EHRTrainer
 
 
-CONFIG_NAME = "feature_importance/finetune_feature_importance.yaml"
+CONFIG_NAME = "feature_importance_perturb_example.yaml"
 BLOBSTORE = "CINF"
 DEAFAULT_VAL_SPLIT = 0.2
 
@@ -47,7 +55,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def finetune_fold(
     cfg,
-    data: Data,
+    val_data: Data,
     fold: int,
     finetune_folder: str,
     fi_folder: str,
@@ -56,8 +64,9 @@ def finetune_fold(
 ) -> None:
     """Finetune model on one fold"""
 
-    train_data, val_data = split_data_into_train_val(
-        data, cfg.data.get("val_split", DEAFAULT_VAL_SPLIT)
+    # Split val_data into train and validation for the perturbation model
+    train_data, perturb_val_data = split_data_into_train_val(
+        val_data, cfg.data.get("perturb_val_split", 0.2)
     )
 
     fold_folder = join(finetune_folder, f"fold_{fold}")
@@ -71,15 +80,15 @@ def finetune_fold(
     logger.info("Saving patient numbers")
     logger.info("Saving pids")
     torch.save(train_data.pids, join(save_fold_folder, "train_pids.pt"))
-    torch.save(val_data.pids, join(save_fold_folder, "val_pids.pt"))
+    torch.save(perturb_val_data.pids, join(save_fold_folder, "perturb_val_pids.pt"))
     if len(test_data) > 0:
         torch.save(test_data.pids, join(fold_folder, "test_pids.pt"))
-    Saver(fi_folder).save_patient_nums(train_data, val_data)
+    Saver(fi_folder).save_patient_nums(train_data, perturb_val_data)
 
     # initialize datasets
     logger.info("Initializing datasets")
     train_dataset = BinaryOutcomeDataset(train_data.features, train_data.outcomes)
-    val_dataset = BinaryOutcomeDataset(val_data.features, val_data.outcomes)
+    val_dataset = BinaryOutcomeDataset(perturb_val_data.features, perturb_val_data.outcomes)
     test_dataset = (
         BinaryOutcomeDataset(test_data.features, test_data.outcomes)
         if len(test_data) > 0
@@ -188,7 +197,7 @@ def cv_loop_predefined_splits(
         val_pids = _limit_patients(val_data.pids, "val")
         if len(val_pids) < len(val_data.pids):
             val_data = data.select_data_subset_by_pids(val_pids, mode="val")
-        # use only validation data to train the perturbatino model
+        # use only validation data to train the perturbation model
         finetune_fold(
             cfg=cfg,
             val_data=val_data,
@@ -252,7 +261,8 @@ if __name__ == "__main__":
     )
     sigmas = average_sigmas(fi_folder, n_splits)
     torch.save(sigmas, join(fi_folder, "sigmas_average.pt"))  # save averaged sigmas
-    plot_most_important_features(data.vocabulary, sigmas, fi_folder)
+    if plot_most_important_features is not None:
+        plot_most_important_features(data.vocabulary, sigmas, fi_folder)
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
