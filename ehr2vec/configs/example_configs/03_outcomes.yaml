@@ -19,7 +19,7 @@ outcomes:
     case_sensitive: true
   EXAMPLE_CENSOR:
     type: [CONCEPT]
-    match: [['DT148X']]
+    match: [['M308136']]
     match_how: startswith
     case_sensitive: false
     

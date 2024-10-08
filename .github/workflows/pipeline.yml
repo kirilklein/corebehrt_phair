@@ -60,7 +60,7 @@ jobs:
             - name: finetune_on_simulated_outcomes
               run: |
                 source .venv/bin/activate  
-                python -m ehr2vec.main.04_finetune_cv --config_path finetune_simulated_example
+                python -m ehr2vec.main.04_finetune_cv --config_path example_configs/05_02_finetune_simulated.yaml
 
             - name: estimate_causal_effect
               run: |
@@ -70,7 +70,7 @@ jobs:
             - name: estimate_causal_effect_counterfactual_simulation
               run: |
                 source .venv/bin/activate  
-                python -m ehr2vec.main.06_estimate_causal_effect --config_path estimate_effect_binary_example_counterfactual
+                python -m ehr2vec.main.06_estimate_causal_effect --config_path example_configs/06_estimate_effect_binary_counterfactual.yaml
 
             - name: predict_counterfactual
               run: |
