@@ -71,6 +71,11 @@ jobs:
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.06_estimate_causal_effect --config_path estimate_effect_binary_example_counterfactual
+
+            - name: predict_counterfactual
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.05_predict_counterfactual
             
 
              

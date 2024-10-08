@@ -1,0 +1,26 @@
+env: local
+paths:
+  model_path: outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test
+  run_name: "test"
+
+model:
+  pool_type: "gru"
+  bidirectional: true
+
+data:
+  truncation_len: 30
+  counterfactual: # can be a list of regexes
+    exposure_regex:
+      - "DT148X"
+      
+
+tester_args:
+  batch_size: 16
+  val_batch_size: 16
+  info: true
+  shuffle: true
+
+
+  
+  
+ 

@@ -1,10 +1,11 @@
+import logging
 import os
 import re
-import numpy as np
-import logging
-import pandas as pd
 from datetime import datetime
-from typing import Dict, List, Tuple, Union, Generator
+from typing import Dict, Generator, List, Set, Tuple, Union
+
+import numpy as np
+import pandas as pd
 
 from ehr2vec.common.config import Config
 from ehr2vec.common.utils import Data
@@ -347,3 +348,8 @@ class Utilities:
             ]
             sequence_lengths.append(len(non_special_tokens))
         return sequence_lengths
+
+    @staticmethod
+    def get_codes_from_regex(vocabulary: dict, regex: str) -> Set[int]:
+        """Retrieve indices from a given vocabulary that match the given regex pattern."""
+        return {token for code, token in vocabulary.items() if re.match(regex, code)}
