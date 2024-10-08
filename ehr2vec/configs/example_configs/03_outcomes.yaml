@@ -6,7 +6,8 @@ features_dir: outputs/example_features
 loader:
   data_dir: example_data/synthea500
   concepts: [
-    diagnose
+    diagnose,
+    medication
   ]
   batch_size: 50
   chunksize: 300
@@ -19,7 +20,7 @@ outcomes:
     case_sensitive: true
   EXAMPLE_CENSOR:
     type: [CONCEPT]
-    match: [['M308136']]
+    match: [['M314076']]
     match_how: startswith
     case_sensitive: false
     
