@@ -25,7 +25,7 @@ from ehr2vec.evaluation.utils import (
 )
 from ehr2vec.trainer.trainer import EHRTrainer
 
-DEAFAULT_CONFIG_NAME = "finetune_example.yaml"
+DEAFAULT_CONFIG_NAME = "example_configs/04_finetune.yaml"
 N_SPLITS = 2  # You can change this to desired value
 BLOBSTORE = "CINF"
 DEAFAULT_VAL_SPLIT = 0.2

@@ -44,7 +44,7 @@ from ehr2vec.feature_importance.perturb_utils import (
 from ehr2vec.trainer.trainer import EHRTrainer
 
 
-CONFIG_NAME = "feature_importance_perturb_example.yaml"
+CONFIG_NAME = "example_configs/05_feature_importance_perturb.yaml"
 BLOBSTORE = "CINF"
 DEAFAULT_VAL_SPLIT = 0.2
 

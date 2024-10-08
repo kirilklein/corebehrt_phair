@@ -14,7 +14,7 @@ from ehr2vec.common.utils import compute_number_of_warmup_steps
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.trainer.trainer import EHRTrainer
 
-DEAFAULT_CONFIG_NAME = "pretrain_example.yaml"
+DEAFAULT_CONFIG_NAME = "example_configs/02_pretrain.yaml"
 BLOBSTORE = "CINF"
 
 args = get_args(DEAFAULT_CONFIG_NAME)

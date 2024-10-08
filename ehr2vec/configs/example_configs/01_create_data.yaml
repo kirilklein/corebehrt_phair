@@ -29,7 +29,7 @@ tokenizer:
   padding: false
   truncation: null
   additional_codes:
-    - DT148XXX
+    - M308136
   # cutoffs:
    # D: 3 # diagnosis
    # M: 4 # medication

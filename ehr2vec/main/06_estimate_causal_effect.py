@@ -38,7 +38,7 @@ from ehr2vec.effect_estimation.data import (
 )
 from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
 
-CONFIG_NAME = "estimate_effect_binary_example.yaml"
+CONFIG_NAME = "example_configs/06_estimate_effect_binary.yaml"
 BLOBSTORE = "CINF"
 
 args = get_args(CONFIG_NAME)
