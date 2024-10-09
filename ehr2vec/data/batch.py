@@ -204,7 +204,9 @@ class Batches:
             if split in splits:
                 splits[split].extend(pids)
             else:
-                raise ValueError(f"Split name {split} not recognized. Must be one of {splits.keys()}")
+                raise ValueError(
+                    f"Split name {split} not recognized. Must be one of {splits.keys()}"
+                )
 
         return splits
 
@@ -254,7 +256,7 @@ class Batches:
     def get_features_files_from_dir(self, features_dir: str) -> List[str]:
         """Check which files match the pattern features_*.pt in features_dir and return their full paths."""
         return glob(join(features_dir, "features_*.pt"))
-        
+
     def get_features_directory(self) -> str:
         """Returns the directory where features are stored."""
         if check_directory_for_features(self.cfg.loader.data_dir):
