@@ -18,7 +18,11 @@ class TestBatches(unittest.TestCase):
     def setUp(self, *args):
         self.cfg = ConfigMock()
         self.cfg.split_ratios = {"pretrain": 0.7, "finetune": 0.2, "test": 0.1}
-        self.cfg.n_splits = 2
+        self.cfg.predefined_splits_dir = None
+        self.cfg.loader = MagicMock()
+        self.cfg.loader.data_dir = "mock_data_dir"
+        self.cfg.output_dir = "mock_output_dir"
+        self.cfg.exposure_patterns = []
 
         self.pids = [[str(i) for i in range(50)], [str(i) for i in range(50, 101)]]
         self.assigned_pids = {
@@ -39,10 +43,11 @@ class TestBatches(unittest.TestCase):
         return_value=["pids_pretrain.pt", "pids_finetune.pt", "pids_test.pt"],
     )
     @patch("torch.load", side_effect=[["1", "2", "3"], ["4", "5"], ["6"]])
-    def test_predefined_split_batches(self, *args):
+    def test_predefined_split_batches(self, mock_torch_load, mock_listdir):
         self.cfg.predefined_splits_dir = "test_dir"
         batches = Batches(self.cfg, self.pids)
         splits = batches.split_batches()
+
         self.assertEqual(len(splits["pretrain"].pids), 3)
         self.assertEqual(len(splits["finetune"].pids), 2)
         self.assertEqual(len(splits["test"].pids), 1)
@@ -55,6 +60,26 @@ class TestBatches(unittest.TestCase):
         splits2 = batches2.split_batches()
 
         self.assertEqual(splits1, splits2)
+
+    @patch("ehr2vec.data.batch.iter_patients", side_effect=lambda x: x)
+    def test_process_features_for_exposure(self, mock_iter_patients):
+        # Mock features and pids
+        features = [
+            {"concept": ["concept_A", "concept_B"]},
+            {"concept": ["concept_C", "concept_A"]},
+        ]
+        pids = ["1", "2"]
+
+        # Update configuration to have exposure patterns
+        self.cfg.exposure_patterns = ["concept_A"]
+
+        # Create new instance with updated config
+        batches = Batches(self.cfg, self.pids)
+        batches.process_features_for_exposure(features, pids)
+
+        # Check exposed pids
+        expected_exposed_pids = {"1", "2"}
+        self.assertEqual(batches.exposed_pids, expected_exposed_pids)
 
 
 class TestBatchTokenize(unittest.TestCase):

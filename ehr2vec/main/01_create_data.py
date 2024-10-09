@@ -72,6 +72,9 @@ def main_data(config_path):
     batches = Batches(cfg, pids)
     batches_split = batches.split_batches()
 
+    logger.info("Exposed patients identified and moved to finetuning set:")
+    logger.info(f"Number of exposed patients: {len(batches.exposed_pids)}")
+
     tokenized_dir_name = cfg.get("tokenized_dir_name", "tokenized")
     check_and_clear_directory(cfg, logger, tokenized_dir_name=tokenized_dir_name)
 

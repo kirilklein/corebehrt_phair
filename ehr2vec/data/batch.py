@@ -1,9 +1,11 @@
 import logging
 import os
 import random
+import re
 from dataclasses import dataclass
+from glob import glob
 from os.path import join
-from typing import Dict, List, Tuple
+from typing import Dict, Iterator, List, Tuple
 
 import torch
 from tqdm import tqdm
@@ -11,7 +13,7 @@ from tqdm import tqdm
 from ehr2vec.common.config import Config
 from ehr2vec.common.loader import load_assigned_pids, load_exclude_pids
 from ehr2vec.common.logger import TqdmToLogger
-from ehr2vec.common.utils import check_directory_for_features
+from ehr2vec.common.utils import check_directory_for_features, iter_patients
 from ehr2vec.data.utils import Utilities
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -34,7 +36,7 @@ class Batches:
         pids should contain all the pids in the dataset, including assigned pids.
         Assigned pids should be a dictionary with the key being the split name and the value being a list of pids
         """
-
+        self.cfg = cfg
         self.predefined_splits_dir = cfg.get("predefined_splits_dir", None)
         self.flattened_pids = self.flatten(pids)
         logger.info(f"Total number of pids: {len(self.flattened_pids)}")
@@ -63,6 +65,9 @@ class Batches:
                 round(sum(self.split_ratios.values()), 5) == 1
             ), f"Sum of split ratios must be 1. Current sum: {sum(self.split_ratios.values())}"
 
+        self.exposure_patterns = cfg.get("exposure_patterns", [])
+        self.exposed_pids = set()
+
     def split_batches(self) -> Dict[str, Split]:
         """Splits the batches into pretrain, finetune and test sets."""
         if self.predefined_splits_dir is not None:
@@ -71,6 +76,7 @@ class Batches:
             )
             return self.get_predefined_splits()
 
+        self.identify_exposed_pids()
         # Calculate the remaining number of pids for each split
         total_pids = len(
             self.flattened_pids
@@ -174,16 +180,26 @@ class Batches:
 
     def allocate_splits(self, pretrain_end: int, finetune_end: int) -> Dict[str, list]:
         """Allocates pids to each split."""
-        # split the batches into pretrain, finetune and test
         splits = {
-            PRETRAIN: self.flattened_pids[finetune_end:pretrain_end],
-            FINETUNE: self.flattened_pids[:finetune_end],
+            PRETRAIN: [],
+            FINETUNE: [],
         }
         if TEST in self.split_ratios:
-            splits[TEST] = self.flattened_pids[pretrain_end:]
-        logger.info("Pids in each split before assigning pids:")
-        for split, pids in splits.items():
-            logger.info(f"Number of pids in split {split}: {len(pids)}")
+            splits[TEST] = []
+
+        for pid in self.flattened_pids:
+            if pid in self.exposed_pids:
+                splits[FINETUNE].append(pid)
+            elif len(splits[FINETUNE]) < finetune_end:
+                splits[FINETUNE].append(pid)
+            elif len(splits[PRETRAIN]) < (pretrain_end - finetune_end):
+                splits[PRETRAIN].append(pid)
+            elif TEST in splits:
+                splits[TEST].append(pid)
+            else:
+                splits[PRETRAIN].append(pid)
+
+        # Add assigned pids
         for split, pids in self.assigned_pids.items():
             if split in splits:
                 splits[split].extend(pids)
@@ -191,6 +207,7 @@ class Batches:
                 raise ValueError(
                     f"Split name {split} not recognized. Must be one of {splits.keys()}"
                 )
+
         return splits
 
     def calculate_split_indices(self, total_length: int) -> Tuple[int, int]:
@@ -217,6 +234,44 @@ class Batches:
             split: [pid for pid in pids if pid in pids_set]
             for split, pids in assigned_pids.items()
         }
+
+    def identify_exposed_pids(self):
+        features_dir = self.get_features_directory()
+        for features, pids in self.iter_features_and_pids(features_dir):
+            self.process_features_for_exposure(features, pids)
+
+    def iter_features_and_pids(
+        self, features_dir: str
+    ) -> Iterator[Tuple[Dict, List[str]]]:
+        for file_id in self.get_feature_file_ids_from_dir(features_dir):
+            features = torch.load(join(features_dir, f"features_{file_id}.pt"))
+            pids = torch.load(join(features_dir, f"pids_features_{file_id}.pt"))
+            yield features, pids
+
+    def process_features_for_exposure(self, features: Dict, pids: List[str]):
+        for pid, patient_features in zip(pids, iter_patients(features)):
+            concepts = patient_features["concept"]
+            if any(self.matches_exposure_pattern(concept) for concept in concepts):
+                self.exposed_pids.add(pid)
+
+    def matches_exposure_pattern(self, concept):
+        return any(re.match(pattern, concept) for pattern in self.exposure_patterns)
+
+    def get_feature_file_ids_from_dir(self, features_dir: str) -> List[int]:
+        """Check which files match the pattern features_*.pt in features_dir and return their file ids."""
+        features_files = self.get_features_files_from_dir(features_dir)
+        return [int(file.split("_")[-1].split(".")[0]) for file in features_files]
+
+    def get_features_files_from_dir(self, features_dir: str) -> List[str]:
+        """Check which files match the pattern features_*.pt in features_dir and return their full paths."""
+        return glob(join(features_dir, "features_*.pt"))
+
+    def get_features_directory(self) -> str:
+        """Returns the directory where features are stored."""
+        if check_directory_for_features(self.cfg.loader.data_dir):
+            return join(self.cfg.loader.data_dir, "features")
+        else:
+            return join(self.cfg.output_dir, "features")
 
 
 class BatchTokenize:

@@ -45,6 +45,9 @@ handler:
   min_age: -1
   max_age: 120
 
+exposure_patterns:
+  - "M308136"  # Add more patterns as needed
+
 # can be a list
 # exclude_pids: 
 # assigned_pids: 
