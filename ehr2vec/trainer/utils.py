@@ -76,16 +76,16 @@ def compute_avg_metrics(metric_values):
             values_array = torch.stack(values).cpu().numpy()
         else:
             values_array = np.array(values)
-        
+
         # Check for NaN values
         if np.isnan(values_array).any():
             logger.info(f"Warning: NaN values detected in {name}")
             values_array = values_array[~np.isnan(values_array)]
-        
+
         # Check for zero values
         if (values_array == 0).any():
             logger.info(f"Warning: Zero values detected in {name}")
-        
+
         # Compute mean, avoiding division by zero
         if len(values_array) > 0:
             avg_metrics[name] = np.mean(values_array)
