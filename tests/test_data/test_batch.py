@@ -82,7 +82,6 @@ class TestBatches(unittest.TestCase):
         self.assertEqual(batches.exposed_pids, expected_exposed_pids)
 
 
-
 class TestBatchTokenize(unittest.TestCase):
     @patch("os.makedirs", return_value=None)
     def setUp(self, mock_makedirs):

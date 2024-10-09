@@ -240,7 +240,9 @@ class Batches:
         for features, pids in self.iter_features_and_pids(features_dir):
             self.process_features_for_exposure(features, pids)
 
-    def iter_features_and_pids(self, features_dir: str) -> Iterator[Tuple[Dict, List[str]]]:
+    def iter_features_and_pids(
+        self, features_dir: str
+    ) -> Iterator[Tuple[Dict, List[str]]]:
         for file_id in self.get_feature_file_ids_from_dir(features_dir):
             features = torch.load(join(features_dir, f"features_{file_id}.pt"))
             pids = torch.load(join(features_dir, f"pids_features_{file_id}.pt"))
