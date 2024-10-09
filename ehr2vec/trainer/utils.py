@@ -67,20 +67,14 @@ def save_metrics_to_csv(run_folder: str, metrics: dict, epoch: int, mode="val") 
             file.write(f"{key},{value}\n")
 
 
-def compute_avg_metrics(metric_values: dict):
-    """Computes the average of the metric values when metric is not zero and not NaN"""
-    averages = {}
+def compute_avg_metrics(metric_values):
+    """Compute average metrics."""
+    avg_metrics = {}
     for name, values in metric_values.items():
-        values_array = np.array(values)
-        select_mask = (values_array == 0) | (np.isnan(values_array))
-        if select_mask.sum() > 0:
-            logger.info(
-                f"Warning: {select_mask.sum()} NaN or zero values for metric {name}"
-            )
-        non_zero_values = values_array[~select_mask]
-
-        if non_zero_values.size:
-            averages[name] = np.mean(non_zero_values)
+        if isinstance(values[0], torch.Tensor):
+            # Move tensors to CPU before converting to numpy
+            values_array = torch.stack(values).cpu().numpy()
         else:
-            averages[name] = 0
-    return averages
+            values_array = np.array(values)
+        avg_metrics[name] = np.mean(values_array)
+    return avg_metrics
