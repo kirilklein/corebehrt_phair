@@ -118,7 +118,9 @@ class DatasetPreparer:
                 )
 
             # 3. Loading and processing outcomes
-            outcome_dates, exposure_dates = self.loader.load_outcomes_and_exposures()
+            outcome_dates, exposure_dates, control_exposure_dates = (
+                self.loader.load_outcomes_and_exposures()
+            )
             outcomehandler = OutcomeHandler(
                 index_date=self.cfg.outcome.get("index_date", None),
                 select_patient_group=data_cfg.get(
@@ -132,9 +134,10 @@ class DatasetPreparer:
                 death_is_event=self.cfg.outcome.get("death_is_event", False),
             )
             data = outcomehandler.handle(
-                data,
-                outcome_dates,
-                exposure_dates,
+                data=data,
+                outcomes=outcome_dates,
+                exposures=exposure_dates,
+                control_exposures=control_exposure_dates,
             )
             # 4. Optional: Filter code types
             if data_cfg.get("code_types"):

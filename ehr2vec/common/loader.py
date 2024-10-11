@@ -112,7 +112,9 @@ class FeaturesLoader:
 
         return torch.load(vocabulary_file_path)
 
-    def load_outcomes_and_exposures(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def load_outcomes_and_exposures(
+        self,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, Union[pd.DataFrame, None]]:
         """
         Load outcomes and censoring timestamps from file.
         If no censoring timestamps provided, use outcomes as censoring timestamps.
@@ -126,7 +128,11 @@ class FeaturesLoader:
             return outcomes, outcomes.copy(deep=True)
         logger.info(f"Load exposure timestamps from {self.path_cfg.exposure}")
         exposures = pd.read_csv(self.path_cfg.exposure)
-        return outcomes, exposures
+        if self.path_cfg.get("control", None):
+            logger.info(f"Load control timestamps from {self.path_cfg.control}")
+            control_exposures = pd.read_csv(self.path_cfg.control)
+            return outcomes, exposures, control_exposures
+        return outcomes, exposures, None
 
     def load_finetune_data(self, path: str = None, mode: str = None) -> Data:
         """Load features for finetuning"""
