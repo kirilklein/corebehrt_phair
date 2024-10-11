@@ -6,7 +6,6 @@ features_dir: outputs/example_features
 loader:
   data_dir: example_data/synthea500
   concepts: [
-    diagnose,
     medication
   ]
   batch_size: 50
@@ -17,6 +16,11 @@ outcomes:
     match: [['DT148XX']]
     exclude: ['DT148XX2']
     match_how: contains
+    case_sensitive: true
+  EXAMPLE_CONTROL:
+    type: [CONCEPT]
+    match: [['M']]  
+    match_how: startswith
     case_sensitive: true
   EXAMPLE_CENSOR:
     type: [CONCEPT]
