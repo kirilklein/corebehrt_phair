@@ -180,6 +180,9 @@ def cv_loop_predefined_splits(
         finetune_fold(cfg, train_data, val_data, fold, test_data)
     return N_SPLITS
 
+def compute_calibration(finetune_folder):
+    pass
+
 
 if __name__ == "__main__":
     cfg, run, mount_context, pretrain_model_path = (
@@ -227,6 +230,9 @@ if __name__ == "__main__":
     if len(test_data) > 0:
         compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="test")
         save_combined_predictions(N_SPLITS, finetune_folder, mode="test")
+
+    if "calibration" in cfg:
+        compute_calibration(finetune_folder)
 
     if cfg.env == "azure":
         save_path = (

@@ -201,8 +201,8 @@ def save_combined_predictions(n_splits: int, finetune_folder: str, mode="val") -
             continue
 
         fold_pids = torch.load(join(finetune_folder, f"fold_{fold}", f"{mode}_pids.pt"))
-        fold_predictions = np.load(predictions_path, allow_pickle=True)["probas"]
-        fold_targets = np.load(targets_path, allow_pickle=True)["targets"]
+        fold_predictions = np.load(predictions_path, allow_pickle=True)["probas"].flatten()
+        fold_targets = np.load(targets_path, allow_pickle=True)["targets"].flatten()
 
         predictions.append(fold_predictions)
         targets.append(fold_targets)
@@ -211,13 +211,11 @@ def save_combined_predictions(n_splits: int, finetune_folder: str, mode="val") -
     predictions = np.concatenate(predictions)
     targets = np.concatenate(targets)
     if mode == "test":
-        save_name = f"{mode}_predictions_and_targets.npz"
+        save_name = f"{mode}_predictions_and_targets.csv"
     else:
-        save_name = f"predictions_and_targets.npz"
-    np.savez(
-        join(finetune_folder, save_name), proba=predictions, target=targets, pid=pids
-    )
-
+        save_name = f"predictions_and_targets.csv"
+    
+    pd.DataFrame({"pid": pids, "target": targets, "proba": predictions}).to_csv(join(finetune_folder, save_name), index=False)
 
 def check_data_for_overlap(
     train_data: Data, val_data: Data, test_data: Data = None
