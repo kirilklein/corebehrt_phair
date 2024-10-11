@@ -29,7 +29,7 @@ def main(config_path: str) -> None:
     logger, simulation_folder = DirectoryPreparer.setup_run_folder(cfg)
     cfg.save_to_yaml(join(simulation_folder, "simulation_config.yaml"))
 
-    df_predictions = load_predictions_from_finetune_dir(cfg.paths.model_path)
+    df_predictions = load_predictions_from_finetune_dir(cfg.paths.model_path, calibrated=True)
     df_index_dates = load_index_dates(cfg.paths.model_path)
     df_merged = pd.merge(df_predictions, df_index_dates, on="pid")
 

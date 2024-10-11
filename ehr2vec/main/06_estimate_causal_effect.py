@@ -62,7 +62,7 @@ def main():
         # Here we will also load the counterfactual predictions necessary for double robustness
         # Should be automated, i.e. if method is double robust, e.g. TMLE, then load the necessary files
         raise NotImplementedError("Double robustness not implemented yet")
-    propensity_scores = load_propensities(cfg.paths.get("ps_model_path"))
+    propensity_scores = load_propensities(cfg.paths.get("ps_model_path"), calibrated=True)
     outcomes = load_outcomes(cfg.paths.get("outcome"))
     df = construct_data_for_effect_estimation(propensity_scores, outcomes)
 

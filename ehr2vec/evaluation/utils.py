@@ -214,9 +214,9 @@ def save_combined_predictions(n_splits: int, finetune_folder: str, mode="val", c
     predictions = np.concatenate(predictions)
     targets = np.concatenate(targets)
     if mode == "test":
-        save_name = f"{mode}_predictions_and_targets.npz"
+        save_name = f"{mode}_predictions_and_targets.npz" if not calibrated else "predictions_and_targets_calibrated.npz"
     else:
-        save_name = f"predictions_and_targets.npz"
+        save_name = "predictions_and_targets.npz" if not calibrated else "predictions_and_targets_calibrated.npz"
     np.savez(
         join(finetune_folder, save_name), proba=predictions, target=targets, pid=pids
     )

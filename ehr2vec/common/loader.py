@@ -257,9 +257,9 @@ def load_and_select_splits(split_dir: str, data: Data) -> Tuple[Data, Data]:
     return train_data, val_data
 
 
-def load_propensities(ps_folder: str) -> pd.DataFrame:
+def load_propensities(ps_folder: str, calibrated: bool = False) -> pd.DataFrame:
     """Loads the propensity scores from the given folder."""
-    propensities = load_predictions_from_finetune_dir(ps_folder)
+    propensities = load_predictions_from_finetune_dir(ps_folder, calibrated)
     check_columns(propensities, ["pid", "target", "proba"])
     return propensities.rename(
         columns={"pid": "PID", "target": "treatment", "proba": "ps"}
@@ -284,10 +284,14 @@ def load_counterfactual_outcomes(counterfactual_outcome_path: str) -> pd.DataFra
     return counterfactual_outcomes
 
 
-def load_predictions_from_finetune_dir(finetune_dir: str) -> pd.DataFrame:
+def load_predictions_from_finetune_dir(finetune_dir: str, calibrated: bool = False) -> pd.DataFrame:
     """Load predictions from finetune directory."""
-    check_path(finetune_dir, "predictions_and_targets.npz")
-    pred_and_targets = np.load(join(finetune_dir, "predictions_and_targets.npz"))
+    if calibrated:
+        check_path(finetune_dir, "predictions_and_targets_calibrated.npz")
+    else:
+        check_path(finetune_dir, "predictions_and_targets.npz")
+    file = "predictions_and_targets_calibrated.npz" if calibrated else "predictions_and_targets.npz"
+    pred_and_targets = np.load(join(finetune_dir, file))
     return pd.DataFrame({k: v.flatten() for k, v in pred_and_targets.items()})
 
 
