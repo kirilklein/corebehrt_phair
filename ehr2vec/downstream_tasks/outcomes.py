@@ -188,6 +188,7 @@ class OutcomeHandler:
         data: Data,
         outcomes: pd.DataFrame,
         exposures: pd.DataFrame,
+        control_exposures: pd.DataFrame = None,
     ) -> Tuple[Dict[str, List], Dict[str, List]]:
         """
         data: Patient Data
@@ -211,32 +212,45 @@ class OutcomeHandler:
         )
 
         # Step 2: Pick earliest exposure ts as index date
-        index_dates = self.get_first_event_by_pid(exposures)
-
+        case_index_dates = self.get_first_event_by_pid(exposures)
         # Step 3 (Optional): Use a specific index date for all
         if self.index_date:
             index_dates = self.compute_abspos_for_index_date(data.pids)
 
         # Step 4: Assign censoring to patients without it (random assignment)
-        exposed_patients = set(index_dates.index)
+        exposed_patients = set(case_index_dates.index)
         logger.info(f"Number of exposed patients: {len(exposed_patients)}")
-        index_dates = self.draw_index_dates_for_unexposed(index_dates, data.pids)
+        control_patients = self.get_control_pids(data.pids, exposed_patients)
+        logger.info(f"Number of control patients: {len(control_patients)}")
 
-        # Step 5 (Optional): Select only exposed/unexposed patients
+        if control_exposures is None:
+            control_index_dates = self.draw_index_dates_for_unexposed(
+                control_patients, case_index_dates
+            )
+        else:
+            control_index_dates = self.assign_control_exposures(
+                control_patients, control_exposures
+            )
+
+        index_dates = pd.concat([case_index_dates, control_index_dates])
+        # Step 5: Now we can only keep patients with index dates
+        data = data.select_data_subset_by_pids(index_dates.index, mode="finetune")
+
+        # Step 6 (Optional): Select only exposed/unexposed patients
         if self.select_patient_group:
             data = self.select_exposed_or_unexposed_patients(data, exposed_patients)
 
-        # Step 6: Select first outcome after censoring for each patient
+        # Step 7: Select first outcome after censoring for each patient
         outcomes, outcome_pre_followup_pids = self.get_first_outcome_in_follow_up(
             outcomes, index_dates
         )
-        # Step 7 (Optional): Remove patients with outcome(s) before censoring
+        # Step 8 (Optional): Remove patients with outcome(s) before censoring
         if self.drop_pids_w_outcome_pre_followup:
             logger.info(
                 f"Remove {len(outcome_pre_followup_pids)} patients with outcome before start of follow-up."
             )
             data = data.exclude_pids(outcome_pre_followup_pids)
-        # Step 8: Assign outcomes and censor outcomes to data
+        # Step 9: Assign outcomes and censor outcomes to data
         data = self.assign_exposures_and_outcomes_to_data(data, index_dates, outcomes)
         if self.time2event:
             data = self.assign_time2event(data)
@@ -360,18 +374,41 @@ class OutcomeHandler:
         return data
 
     @staticmethod
+    def get_control_pids(data_pids: List[str], exposed_pids: set) -> set:
+        """
+        Get the set of control PIDs by subtracting exposed PIDs from all data PIDs.
+        Args:
+            data_pids (List[str]): List of all patient IDs in the data.
+            exposed_pids (set): Set of exposed patient IDs.
+        Returns:
+            set: Set of control patient IDs.
+        """
+        return set(data_pids) - exposed_pids
+
+    def assign_control_exposures(
+        self, control_pids: set, control_exposures: pd.Series
+    ) -> pd.Series:
+        """Assign control exposures to patients not in exposed_patients."""
+        control_exposures = control_exposures[
+            control_exposures["PID"].isin(control_pids)
+        ]
+        control_index_dates = self.get_first_event_by_pid(control_exposures)
+        return control_index_dates
+
+    @staticmethod
     def draw_index_dates_for_unexposed(
-        censoring_timestamps: pd.Series, data_pids: List[str]
+        control_pids: set, censoring_timestamps: pd.Series
     ) -> pd.Series:
         """Draw censor dates for patients that are not in the censor_timestamps."""
         np.random.seed(42)
-        missing_pids = set(data_pids) - set(censoring_timestamps.index)
         random_abspos = np.random.choice(
-            censoring_timestamps.values, size=len(missing_pids)
+            censoring_timestamps.values, size=len(control_pids)
         )
-        new_entries = pd.Series(random_abspos, index=missing_pids)
-        censoring_timestamps = pd.concat([censoring_timestamps, new_entries])
-        return censoring_timestamps
+        control_index_dates = pd.Series(
+            random_abspos, index=list(control_pids), name="TIMESTAMP"
+        )
+        control_index_dates.index.name = "PID"
+        return control_index_dates
 
     def compute_abspos_for_index_date(self, pids: List) -> pd.Series:
         """
@@ -403,10 +440,8 @@ class OutcomeHandler:
         initial_pids = set(outcomes["PID"].unique())
         # Merge outcomes with censor timestamps
         index_date_df = index_dates.rename("index_date").reset_index()
-        # Merge outcomes with censor timestamps
-        joint_df = outcomes.merge(index_date_df, left_on="PID", right_on="index").drop(
-            columns=["index"]
-        )
+        outcomes = outcomes[outcomes["PID"].isin(index_date_df["PID"])]
+        joint_df = outcomes.merge(index_date_df, on="PID")
         # Filter outcomes to get only those at or after the censor timestamp
         filtered_df = joint_df[
             joint_df["TIMESTAMP"]

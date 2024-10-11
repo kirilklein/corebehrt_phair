@@ -20,7 +20,7 @@ outcomes:
     case_sensitive: true
   EXAMPLE_CONTROL:
     type: [CONCEPT]
-    match: [['M']]  
+    match: [['M3']]  
     match_how: startswith
     case_sensitive: true
   EXAMPLE_CENSOR:
