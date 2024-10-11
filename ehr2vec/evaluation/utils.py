@@ -147,9 +147,11 @@ def evaluate_predictions(
 
 
 def compute_and_save_scores_mean_std(
-    n_splits: int, finetune_folder: str, mode="val"
+    n_splits: int, finetune_folder: str, mode="val", calibrated:bool=False
 ) -> None:
     """Compute mean and std of test/val scores. And save to finetune folder."""
+    if calibrated:
+        mode = f"{mode}_calibrated"
     logger.info(f"Compute mean and std of {mode} scores")
     scores = []
     for fold in range(1, n_splits + 1):
@@ -175,9 +177,10 @@ def compute_and_save_scores_mean_std(
     scores_mean_std.to_csv(join(finetune_folder, f"{mode}_scores_mean_std_{date}.csv"))
 
 
-def save_combined_predictions(n_splits: int, finetune_folder: str, mode="val") -> None:
+def save_combined_predictions(n_splits: int, finetune_folder: str, mode="val", calibrated:bool=False) -> None:
     """Combine predictions from all folds and save to finetune folder."""
     logger.info(f"Combine {mode} predictions")
+    mode = f"{mode}_calibrated" if calibrated else mode
     predictions = []
     targets = []
     pids = []

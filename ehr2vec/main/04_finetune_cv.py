@@ -52,8 +52,10 @@ def finetune_fold(
     logger.info("Saving pids")
     torch.save(train_data.pids, join(fold_folder, "train_pids.pt"))
     torch.save(val_data.pids, join(fold_folder, "val_pids.pt"))
+    torch.save(val_data.pids, join(fold_folder, "val_calibrated_pids.pt")) # for loading calibrated predictions
     if len(test_data) > 0:
         torch.save(test_data.pids, join(fold_folder, "test_pids.pt"))
+        torch.save(test_data.pids, join(fold_folder, "test_calibrated_pids.pt")) # for loading calibrated predictions
     dataset_preparer.saver.save_patient_nums(train_data, val_data, folder=fold_folder)
 
     logger.info("Initializing datasets")
@@ -262,9 +264,16 @@ if __name__ == "__main__":
 
     compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="val")
     save_combined_predictions(N_SPLITS, finetune_folder, mode="val")
+
+    compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="val", calibrated=True)
+    save_combined_predictions(N_SPLITS, finetune_folder, mode="val", calibrated=True)
+    
     if len(test_data) > 0:
         compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="test")
         save_combined_predictions(N_SPLITS, finetune_folder, mode="test")
+
+        compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="test", calibrated=True)
+        save_combined_predictions(N_SPLITS, finetune_folder, mode="test", calibrated=True)
 
     if cfg.env == "azure":
         save_path = (
