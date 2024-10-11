@@ -303,6 +303,8 @@ class AzurePathContext:
     @staticmethod
     def _remove_mount_folder(path_str: str) -> str:
         """Remove mount folder from path."""
+        if not path_str.startswith("/tmp"):
+            return path_str
         path_parts = split_path(path_str)
         return os.path.join(
             *[part for part in path_parts if not part.startswith("tmp")]
