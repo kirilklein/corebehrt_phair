@@ -6,23 +6,17 @@ import torch
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.initialize import Initializer, ModelManager
 from ehr2vec.common.loader import load_and_select_splits
-from ehr2vec.common.setup import (
-    DirectoryPreparer,
-    copy_data_config,
-    copy_pretrain_config,
-    get_args,
-)
+from ehr2vec.common.setup import (DirectoryPreparer, copy_data_config,
+                                  copy_pretrain_config, get_args)
 from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.data.split import get_n_splits_cv, split_indices_into_train_val
+from ehr2vec.evaluation.calibration import compute_calibration
 from ehr2vec.evaluation.utils import (
-    check_data_for_overlap,
-    compute_and_save_scores_mean_std,
-    save_combined_predictions,
-    save_data,
-    split_into_test_data_and_train_val_indices,
-)
+    check_data_for_overlap, compute_and_save_scores_mean_std,
+    save_combined_predictions, save_data,
+    split_into_test_data_and_train_val_indices)
 from ehr2vec.trainer.trainer import EHRTrainer
 
 DEAFAULT_CONFIG_NAME = "example_configs/04_finetune.yaml"
@@ -180,9 +174,6 @@ def cv_loop_predefined_splits(
         finetune_fold(cfg, train_data, val_data, fold, test_data)
     return N_SPLITS
 
-def compute_calibration(finetune_folder):
-    pass
-
 
 if __name__ == "__main__":
     cfg, run, mount_context, pretrain_model_path = (
@@ -232,7 +223,7 @@ if __name__ == "__main__":
         save_combined_predictions(N_SPLITS, finetune_folder, mode="test")
 
     if "calibration" in cfg:
-        compute_calibration(finetune_folder)
+        compute_calibration(finetune_folder, cfg.calibration)
 
     if cfg.env == "azure":
         save_path = (

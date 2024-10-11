@@ -72,6 +72,9 @@ scheduler:
   num_warmup_steps: 10
   num_training_steps: 100
 
+calibration: "isotonic"
+
+
 metrics:
   accuracy:
     _target_: ehr2vec.evaluation.metrics.Accuracy
