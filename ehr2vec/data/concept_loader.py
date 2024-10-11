@@ -46,15 +46,22 @@ class ConceptLoader:
         assert os.path.exists(data_dir), f"Data directory {data_dir} does not exist"
 
     def _verify_paths(self, concepts) -> None:
-        assert len(self.concepts_paths) == len(
-            concepts
-        ), f"Found {len(self.concepts_paths)} concept files, expected {len(concepts)}"
-        assert all(
-            [
-                os.path.splitext(path)[1] in [".csv", ".parquet"]
-                for path in self.concepts_paths
-            ]
-        ), "Concept files must be either .csv or .parquet"
+        """Verify that the concepts paths exist and are valid"""
+        found_concepts = set(
+            os.path.basename(path).split(".")[1] for path in self.concepts_paths
+        )
+
+        if found_concepts != set(concepts):
+            missing_concepts = set(concepts) - found_concepts
+            raise FileNotFoundError(
+                f"Could not find files for the following concepts: {missing_concepts}"
+            )
+
+        for path in self.concepts_paths:
+            _, file_ext = os.path.splitext(path)
+            if file_ext not in [".csv", ".parquet"]:
+                raise ValueError(f"File {path} is not a csv or parquet file")
+
         assert (
             len(self.patients_info_path) == 1
         ), f"Found {len(self.patients_info_path)} patients info files, expected 1"
