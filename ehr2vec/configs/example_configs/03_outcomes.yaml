@@ -6,7 +6,8 @@ features_dir: outputs/example_features
 loader:
   data_dir: example_data/synthea500
   concepts: [
-    medication
+    medication,
+    diagnose
   ]
   batch_size: 50
   chunksize: 300
