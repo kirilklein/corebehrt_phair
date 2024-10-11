@@ -1,3 +1,4 @@
+import json
 import os
 from os.path import abspath, dirname, join, split
 
@@ -24,6 +25,7 @@ from ehr2vec.evaluation.utils import (
     split_into_test_data_and_train_val_indices,
 )
 from ehr2vec.trainer.trainer import EHRTrainer
+from ehr2vec.data.utils import Utilities
 
 DEAFAULT_CONFIG_NAME = "example_configs/04_finetune.yaml"
 N_SPLITS = 2  # You can change this to desired value
@@ -91,14 +93,50 @@ def finetune_fold(
     )
     trainer.train()
 
-    logger.info("Load best finetuned model to compute test scores")
+    logger.info("Load best finetuned model to compute scores")
     modelmanager_trained = ModelManager(cfg, model_path=fold_folder)
     checkpoint = modelmanager_trained.load_checkpoint()
     modelmanager.load_model_config()
     model = modelmanager_trained.initialize_finetune_model(checkpoint, train_dataset)
     trainer.model = model
-    trainer.test_dataset = test_dataset
-    trainer._evaluate(checkpoint["epoch"], mode="test")
+
+    # Fit calibration on training set
+    logger.info("Fitting calibration on training set")
+    trainer.fit_calibration()
+
+    # Evaluate and calibrate on validation set
+    logger.info("Evaluating and calibrating on validation set")
+    trainer.val_dataset = val_dataset
+    epoch = Utilities.get_last_checkpoint_epoch(join(fold_folder, "checkpoints"))
+    uncalibrated_val_metrics, calibrated_val_metrics = trainer.evaluate_and_calibrate(
+        epoch, mode="val"
+    )
+
+    # Evaluate and calibrate on test set if available
+    if test_dataset:
+        logger.info("Evaluating and calibrating on test set")
+        trainer.test_dataset = test_dataset
+        uncalibrated_test_metrics, calibrated_test_metrics = (
+            trainer.evaluate_and_calibrate(epoch, mode="test")
+        )
+
+    # Save all metrics
+    all_metrics = {
+        "val_uncalibrated": uncalibrated_val_metrics,
+        "val_calibrated": calibrated_val_metrics,
+    }
+    if test_dataset:
+        all_metrics.update(
+            {
+                "test_uncalibrated": uncalibrated_test_metrics,
+                "test_calibrated": calibrated_test_metrics,
+            }
+        )
+
+    with open(join(fold_folder, f"fold_{fold}_metrics.json"), "w") as f:
+        json.dump(all_metrics, f)
+
+    return all_metrics
 
 
 def split_and_finetune(

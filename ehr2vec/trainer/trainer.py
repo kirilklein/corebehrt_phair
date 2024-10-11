@@ -1,6 +1,6 @@
 import os
 from collections import namedtuple
-
+from typing import List, Tuple
 import torch
 import yaml
 from torch.cuda.amp import GradScaler, autocast
@@ -16,6 +16,7 @@ from ehr2vec.trainer.utils import (
     save_metrics_to_csv,
     save_predictions,
 )
+from sklearn.isotonic import IsotonicRegression
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -513,3 +514,96 @@ class EHRTrainer:
                 self.args = {**self.args, **value}
             else:
                 setattr(self, key, value)
+
+    def get_predictions(
+        self, mode="train"
+    ) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
+        if mode == "train":
+            dataloader = DataLoader(
+                self.train_dataset,
+                batch_size=self.args["batch_size"],
+                shuffle=False,
+                collate_fn=self.args["collate_fn"],
+            )
+        elif mode == "val":
+            dataloader = self.get_val_dataloader()
+        elif mode == "test":
+            dataloader = self.get_test_dataloader()
+        else:
+            raise ValueError(
+                f"Mode {mode} not supported. Use 'train', 'val', or 'test'"
+            )
+
+        self.model.eval()
+        logits_list = []
+        targets_list = []
+
+        with torch.no_grad():
+            for batch in dataloader:
+                self.batch_to_device(batch)
+                outputs = self.model(batch)
+                logits_list.append(outputs.logits.cpu())
+                targets_list.append(batch["target"].cpu())
+
+        # Return as tuple of tensors for backward compatibility
+        return logits_list, targets_list
+
+    def fit_calibration(self):
+        train_logits, train_targets = self.get_predictions(mode="train")
+        # Concatenate logits and targets to use with torch.sigmoid
+        train_logits_tensor = torch.cat(train_logits)
+        train_targets_tensor = torch.cat(train_targets)
+
+        train_probs = torch.sigmoid(train_logits_tensor).numpy()
+
+        self.calibrator = IsotonicRegression(out_of_bounds="clip")
+        self.calibrator.fit(train_probs, train_targets_tensor.numpy())
+
+    def calibrate_predictions(self, logits):
+        probs = torch.sigmoid(logits).numpy()
+        return self.calibrator.predict(probs)
+
+    def evaluate_and_calibrate(self, epoch: int, mode="val"):
+        logits, targets = self.get_predictions(mode)
+
+        # Uncalibrated metrics
+        uncalibrated_metrics = self.process_binary_classification_results(
+            logits, targets, epoch, mode
+        )
+
+        # Concatenate logits for calibration
+        logits_tensor = torch.cat(logits)
+        calibrated_probs = self.calibrate_predictions(logits_tensor)
+        calibrated_outputs = namedtuple("Outputs", ["logits"])(
+            torch.from_numpy(calibrated_probs)
+        )
+        batch = {"target": torch.cat(targets)}
+
+        calibrated_metrics = {}
+        for name, func in self.metrics.items():
+            v = func(calibrated_outputs, batch)
+            self.log(f"Calibrated {name}: {v}")
+            calibrated_metrics[name] = v
+
+        # Save calibrated curves and metrics
+        save_curves(
+            self.run_folder,
+            torch.from_numpy(calibrated_probs),
+            torch.cat(targets),
+            epoch,
+            f"{mode}_calibrated",
+        )
+        save_metrics_to_csv(
+            self.run_folder, calibrated_metrics, epoch, f"{mode}_calibrated"
+        )
+
+        # Save calibrated predictions
+        save_predictions(
+            self.run_folder,
+            torch.from_numpy(calibrated_probs),
+            torch.cat(targets),
+            epoch,
+            f"{mode}_calibrated",
+        )
+
+        return uncalibrated_metrics, calibrated_metrics
