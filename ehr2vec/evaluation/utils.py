@@ -116,12 +116,14 @@ def get_sampler(cfg, train_dataset, outcomes):
         return None
 
 
-def inverse(x):
-    return 1 / x
-
 
 def inverse_sqrt(x):
+    """Util function for sampler, should be kept"""
     return 1 / np.sqrt(x)
+
+def inverse(x):
+    """Util function for sampler, should be kept"""
+    return 1 / x
 
 
 def get_pos_weight(cfg, outcomes):
@@ -149,30 +151,44 @@ def evaluate_predictions(
 def compute_and_save_scores_mean_std(
     n_splits: int, finetune_folder: str, mode="val", calibrated:bool=False
 ) -> None:
-    """Compute mean and std of test/val scores. And save to finetune folder."""
-    if calibrated:
-        mode = f"{mode}_calibrated"
-    logger.info(f"Compute mean and std of {mode} scores")
+    """Compute mean and std of test/val scores and save to finetune folder."""
+    mode = f"{mode}_calibrated" if calibrated else mode
+    logger.info(f"Computing mean and std of {mode} scores")
+    
+    scores = collect_fold_scores(n_splits, finetune_folder, mode)
+    if scores is None:
+        logger.warning("No scores collected. Aborting.")
+        return
+    
+    scores_mean_std = calculate_mean_std(scores)
+    save_scores(scores_mean_std, finetune_folder, mode)
+
+def collect_fold_scores(n_splits: int, finetune_folder: str, mode: str) -> pd.DataFrame:
+    """Collect scores from all folds."""
     scores = []
     for fold in range(1, n_splits + 1):
-        fold_checkpoints_folder = join(finetune_folder, f"fold_{fold}", "checkpoints")
-        last_epoch = max(
-            [
-                int(f.split("_")[-2].split("epoch")[-1])
-                for f in os.listdir(fold_checkpoints_folder)
-                if f.startswith("checkpoint_epoch")
-            ]
-        )
-        table_path = join(fold_checkpoints_folder, f"{mode}_scores_{last_epoch}.csv")
-        if not os.path.exists(table_path):
-            logger.warning(f"File {table_path} not found. Skipping fold {fold}.")
-            continue
-        fold_scores = pd.read_csv(
-            join(fold_checkpoints_folder, f"{mode}_scores_{last_epoch}.csv")
-        )
-        scores.append(fold_scores)
-    scores = pd.concat(scores)
-    scores_mean_std = scores.groupby("metric")["value"].agg(["mean", "std"])
+        fold_scores = load_fold_scores(finetune_folder, fold, mode)
+        if fold_scores is not None:
+            scores.append(fold_scores)
+    return pd.concat(scores) if scores else None
+
+def load_fold_scores(finetune_folder: str, fold: int, mode: str) -> pd.DataFrame:
+    """Load scores from a fold."""
+    fold_checkpoints_folder = join(finetune_folder, f"fold_{fold}", "checkpoints")
+    last_epoch = get_last_epoch(fold_checkpoints_folder)
+    table_path = join(fold_checkpoints_folder, f"{mode}_scores_{last_epoch}.csv")
+    
+    if not os.path.exists(table_path):
+        logger.warning(f"File {table_path} not found. Skipping fold {fold}.")
+        return None
+    
+    return pd.read_csv(table_path)
+
+def calculate_mean_std(scores: pd.DataFrame) -> pd.DataFrame:
+    return scores.groupby("metric")["value"].agg(["mean", "std"])
+
+def save_scores(scores_mean_std: pd.DataFrame, finetune_folder: str, mode: str) -> None:
+    """Save mean and std of scores to finetune folder."""
     date = datetime.now().strftime("%Y%m%d-%H%M")
     scores_mean_std.to_csv(join(finetune_folder, f"{mode}_scores_mean_std_{date}.csv"))
 
