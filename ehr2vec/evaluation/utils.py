@@ -181,45 +181,63 @@ def save_combined_predictions(n_splits: int, finetune_folder: str, mode="val", c
     """Combine predictions from all folds and save to finetune folder."""
     logger.info(f"Combine {mode} predictions")
     mode = f"{mode}_calibrated" if calibrated else mode
-    predictions = []
-    targets = []
-    pids = []
+    
+    combined_data = collect_fold_data(n_splits, finetune_folder, mode)
+    save_combined_data(combined_data, finetune_folder, mode, calibrated)
+
+def collect_fold_data(n_splits: int, finetune_folder: str, mode: str) -> dict:
+    """Collect predictions, targets and pids from all folds."""
+    predictions, targets, pids = [], [], []
     for fold in range(1, n_splits + 1):
-        fold_checkpoints_folder = join(finetune_folder, f"fold_{fold}", "checkpoints")
-        last_epoch = max(
-            [
-                int(f.split("_")[-2].split("epoch")[-1])
-                for f in os.listdir(fold_checkpoints_folder)
-                if f.startswith("checkpoint_epoch")
-            ]
-        )
+        fold_data = load_fold_data(finetune_folder, fold, mode)
+        if fold_data:
+            predictions.append(fold_data['predictions'])
+            targets.append(fold_data['targets'])
+            pids.extend(fold_data['pids'])
+    return {
+        'predictions': np.concatenate(predictions),
+        'targets': np.concatenate(targets),
+        'pids': pids
+    }
 
-        predictions_path = join(
-            fold_checkpoints_folder, f"probas_{mode}_{last_epoch}.npz"
-        )
-        targets_path = join(fold_checkpoints_folder, f"targets_{mode}_{last_epoch}.npz")
+def load_fold_data(finetune_folder: str, fold: int, mode: str) -> dict:
+    """Load predictions, targets and pids from a fold."""
+    fold_checkpoints_folder = join(finetune_folder, f"fold_{fold}", "checkpoints")
+    last_epoch = get_last_epoch(fold_checkpoints_folder)
+    predictions_path = join(fold_checkpoints_folder, f"probas_{mode}_{last_epoch}.npz")
+    
+    if not os.path.exists(predictions_path):
+        logger.warning(f"File {predictions_path} not found. Skipping fold {fold}.")
+        return None
+    
+    return {
+        'predictions': np.load(predictions_path, allow_pickle=True)["probas"],
+        'targets': np.load(join(fold_checkpoints_folder, f"targets_{mode}_{last_epoch}.npz"), allow_pickle=True)["targets"],
+        'pids': torch.load(join(finetune_folder, f"fold_{fold}", f"{mode}_pids.pt"))
+    }
 
-        if not os.path.exists(predictions_path):
-            logger.warning(f"File {predictions_path} not found. Skipping fold {fold}.")
-            continue
-
-        fold_pids = torch.load(join(finetune_folder, f"fold_{fold}", f"{mode}_pids.pt"))
-        fold_predictions = np.load(predictions_path, allow_pickle=True)["probas"]
-        fold_targets = np.load(targets_path, allow_pickle=True)["targets"]
-
-        predictions.append(fold_predictions)
-        targets.append(fold_targets)
-        pids.extend(fold_pids)
-
-    predictions = np.concatenate(predictions)
-    targets = np.concatenate(targets)
-    if mode == "test":
-        save_name = f"{mode}_predictions_and_targets.npz" if not calibrated else "predictions_and_targets_calibrated.npz"
-    else:
-        save_name = "predictions_and_targets.npz" if not calibrated else "predictions_and_targets_calibrated.npz"
-    np.savez(
-        join(finetune_folder, save_name), proba=predictions, target=targets, pid=pids
+def get_last_epoch(fold_checkpoints_folder: str) -> int:
+    """Get the last epoch from the checkpoint folder."""
+    return max(
+        int(f.split("_")[-2].split("epoch")[-1])
+        for f in os.listdir(fold_checkpoints_folder)
+        if f.startswith("checkpoint_epoch")
     )
+
+def save_combined_data(data: dict, finetune_folder: str, mode: str, calibrated: bool) -> None:
+    save_name = get_save_name(mode, calibrated)
+    np.savez(
+        join(finetune_folder, save_name),
+        proba=data['predictions'],
+        target=data['targets'],
+        pid=data['pids']
+    )
+
+def get_save_name(mode: str, calibrated: bool) -> str:
+    if mode == "test":
+        return f"{mode}_predictions_and_targets.npz" if not calibrated else "predictions_and_targets_calibrated.npz"
+    else:
+        return "predictions_and_targets.npz" if not calibrated else "predictions_and_targets_calibrated.npz"
 
 
 def check_data_for_overlap(
