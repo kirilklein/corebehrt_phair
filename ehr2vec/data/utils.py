@@ -354,5 +354,6 @@ class Utilities:
         """Retrieve indices from a given vocabulary that match the given regex pattern."""
         return {token for code, token in vocabulary.items() if re.match(regex, code)}
 
-def shuffle_df(df: pd.DataFrame)->pd.DataFrame:
+
+def shuffle_df(df: pd.DataFrame) -> pd.DataFrame:
     return df.sample(frac=1)

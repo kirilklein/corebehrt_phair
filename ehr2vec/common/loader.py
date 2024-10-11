@@ -284,11 +284,17 @@ def load_counterfactual_outcomes(counterfactual_outcome_path: str) -> pd.DataFra
     return counterfactual_outcomes
 
 
-def load_predictions_from_finetune_dir(finetune_dir: str, calibrated: bool = False) -> pd.DataFrame:
+def load_predictions_from_finetune_dir(
+    finetune_dir: str, calibrated: bool = False
+) -> pd.DataFrame:
     """Load predictions from finetune directory."""
-    file = "predictions_and_targets_calibrated.csv" if calibrated else "predictions_and_targets.csv"
+    file = (
+        "predictions_and_targets_calibrated.csv"
+        if calibrated
+        else "predictions_and_targets.csv"
+    )
     return pd.read_csv(join(finetune_dir, file))
-    
+
 
 def load_index_dates(finetune_dir: str) -> pd.DataFrame:
     """Load index dates from finetune directory."""
