@@ -353,3 +353,7 @@ class Utilities:
     def get_codes_from_regex(vocabulary: dict, regex: str) -> Set[int]:
         """Retrieve indices from a given vocabulary that match the given regex pattern."""
         return {token for code, token in vocabulary.items() if re.match(regex, code)}
+
+
+def shuffle_df(df: pd.DataFrame) -> pd.DataFrame:
+    return df.sample(frac=1)
