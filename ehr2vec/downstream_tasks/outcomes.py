@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ehr2vec.common.utils import Data
-from ehr2vec.data.utils import Utilities
+from ehr2vec.data.utils import Utilities, shuffle_df
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +233,8 @@ class OutcomeHandler:
             )
 
         index_dates = pd.concat([case_index_dates, control_index_dates])
+        index_dates = shuffle_df(index_dates)
+
         # Step 5: Now we can only keep patients with index dates
         data = data.select_data_subset_by_pids(index_dates.index, mode="finetune")
 

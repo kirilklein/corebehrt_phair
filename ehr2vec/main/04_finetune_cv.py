@@ -16,6 +16,7 @@ from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.data.split import get_n_splits_cv, split_indices_into_train_val
+from ehr2vec.evaluation.calibration import compute_calibration
 from ehr2vec.evaluation.utils import (
     check_data_for_overlap,
     compute_and_save_scores_mean_std,
@@ -227,6 +228,9 @@ if __name__ == "__main__":
     if len(test_data) > 0:
         compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="test")
         save_combined_predictions(N_SPLITS, finetune_folder, mode="test")
+
+    if "calibration" in cfg:
+        compute_calibration(finetune_folder, cfg.calibration)
 
     if cfg.env == "azure":
         save_path = (

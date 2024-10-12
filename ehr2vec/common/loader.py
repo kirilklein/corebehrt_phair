@@ -3,15 +3,14 @@ import os
 from os.path import join
 from typing import Dict, List, Tuple, Union
 
-import numpy as np
 import pandas as pd
 import torch
 from transformers import BertConfig
 
+from ehr2vec.common.checks import check_columns, check_path
 from ehr2vec.common.config import Config, load_config
 from ehr2vec.common.utils import Data
 from ehr2vec.data.utils import Utilities
-from ehr2vec.common.checks import check_columns, check_path
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -284,11 +283,16 @@ def load_counterfactual_outcomes(counterfactual_outcome_path: str) -> pd.DataFra
     return counterfactual_outcomes
 
 
-def load_predictions_from_finetune_dir(finetune_dir: str) -> pd.DataFrame:
+def load_predictions_from_finetune_dir(
+    finetune_dir: str, calibrated: bool = False
+) -> pd.DataFrame:
     """Load predictions from finetune directory."""
-    check_path(finetune_dir, "predictions_and_targets.npz")
-    pred_and_targets = np.load(join(finetune_dir, "predictions_and_targets.npz"))
-    return pd.DataFrame({k: v.flatten() for k, v in pred_and_targets.items()})
+    file = (
+        "predictions_and_targets_calibrated.csv"
+        if calibrated
+        else "predictions_and_targets.csv"
+    )
+    return pd.read_csv(join(finetune_dir, file))
 
 
 def load_index_dates(finetune_dir: str) -> pd.DataFrame:
