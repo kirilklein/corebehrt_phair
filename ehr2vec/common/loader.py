@@ -3,15 +3,14 @@ import os
 from os.path import join
 from typing import Dict, List, Tuple, Union
 
-import numpy as np
 import pandas as pd
 import torch
 from transformers import BertConfig
 
+from ehr2vec.common.checks import check_columns, check_path
 from ehr2vec.common.config import Config, load_config
 from ehr2vec.common.utils import Data
 from ehr2vec.data.utils import Utilities
-from ehr2vec.common.checks import check_columns, check_path
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
