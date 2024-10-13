@@ -16,12 +16,16 @@ def initialize_wandb(run, cfg):
         return run
     else:
         wandb_config = {}
-        if hasattr(cfg, "trainer_args"):
-            wandb_config.update(cfg.trainer_args)
-        if hasattr(cfg, "test_args"):
-            wandb_config.update(cfg.test_args)
-        if hasattr(cfg, "model"):
-            wandb_config.update(cfg.model)
+        for key in [
+            "trainer_args",
+            "model",
+            "optimizer",
+            "data",
+            "test_args",
+            "scheduler",
+        ]:
+            if hasattr(cfg, key):
+                wandb_config.update(cfg[key])
         wandb.init(project=PROJECT_NAME, config=wandb_config)
         run = wandb.run
         return run
