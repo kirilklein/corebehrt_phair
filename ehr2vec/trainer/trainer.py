@@ -474,9 +474,24 @@ class EHRTrainer:
         self.run_log(name="GPU Memory Cached in GB", value=memory_cached)
 
     def run_log(self, name, value):
+        """Logs a value to the run"""
         if self.run is not None:
-            self.run.log_metric(name=name, value=value)
+            if hasattr(
+                self.run, "log"
+            ):  # Check if the run object has 'log' attribute (for WandB)
+                try:
+                    self.run.log({name: value})
+                except:
+                    pass
+            if hasattr(
+                self.run, "log_metric"
+            ):  # Check if it's an Azure run with log_metric method
+                try:
+                    self.run.log_metric(name=name, value=value)
+                except:
+                    pass
         else:
+            # Fallback to default logger if no run object is provided
             self.log(f"{name}: {value}")
 
     def save_setup(self) -> None:
