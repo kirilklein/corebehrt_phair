@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=64.0", "setuptools-scm>=8.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ehr2vec"
+dynamic = ["version"]
+description = "A software for estimating causal effects from EHR data."
+readme = { file = "README.md", content-type = "text/markdown" }  # Combine file and content-type
+authors = [
+    { name = "Kiril Klein", email = "kikl@di.ku.dk" },
+]
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "pyarrow",
+    "torch",
+    "transformers",
+    "CausalEstimate==0.3.2",
+    "tqdm",
+    "PyYAML",
+    "dask",
+    "dask-expr",
+
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    # Add other development dependencies here
+]
+plotting = [
+    "matplotlib",
+]
+wandb = [
+    "wandb",
+]
+azureml = [
+    "azureml",
+    "azureml-core",
+]
+[tool.setuptools_scm]
+write_to = "ehr2vec/_version.py"
+[tool.setuptools.packages.find]
+include = ["ehr2vec"]
+exclude = ["notebooks", "tests"]
+# Add your project URLs here
+[project.urls]
+"Source" = "https://github.com/kirilklein/corebehrt_phair.git"

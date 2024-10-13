@@ -11,6 +11,7 @@ from ehr2vec.common.loader import (
 )
 from ehr2vec.common.setup import DirectoryPreparer, copy_data_config, get_args
 from ehr2vec.common.utils import compute_number_of_warmup_steps
+from ehr2vec.common.wandb import initialize_wandb, finish_wandb
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.trainer.trainer import EHRTrainer
 
@@ -31,6 +32,8 @@ def main_train(config_path):
 
     logger, run_folder = DirectoryPreparer.setup_run_folder(cfg)
     copy_data_config(cfg, run_folder)
+
+    run = initialize_wandb(run, cfg)
 
     loaded_from_checkpoint = load_model_cfg_from_checkpoint(
         cfg, "pretrain_config.yaml"
@@ -64,6 +67,9 @@ def main_train(config_path):
     )
     logger.info("Start training")
     trainer.train()
+
+    finish_wandb()
+
     if cfg.env == "azure":
         save_to_blobstore(
             cfg.paths.run_name,

@@ -16,6 +16,7 @@ from ehr2vec.common.setup import (
     update_test_cfg_with_pt_ft_cfgs,
 )
 from ehr2vec.common.utils import Data
+from ehr2vec.common.wandb import initialize_wandb, finish_wandb
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.evaluation.encodings import EHRTester
@@ -48,7 +49,7 @@ def test_fold(
     modelmanager.load_model_config()
     logger.info("Load best finetuned model to compute test scores")
     model = modelmanager.initialize_finetune_model(checkpoint, test_dataset)
-
+    run = initialize_wandb(run, cfg)
     tester = EHRTester(
         model=model,
         test_dataset=None,  # test only after training
@@ -65,6 +66,7 @@ def test_fold(
     tester.model = model
     tester.test_dataset = test_dataset
     tester.evaluate(modelmanager.get_epoch(), mode="test")
+    finish_wandb()
 
 
 def cv_test_loop(

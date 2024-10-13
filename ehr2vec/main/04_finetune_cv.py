@@ -13,6 +13,7 @@ from ehr2vec.common.setup import (
     get_args,
 )
 from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
+from ehr2vec.common.wandb import initialize_wandb, finish_wandb
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.data.split import get_n_splits_cv, split_indices_into_train_val
@@ -37,7 +38,7 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 
 def finetune_fold(
-    cfg, train_data: Data, val_data: Data, fold: int, test_data: Data = None
+    cfg, train_data: Data, val_data: Data, fold: int, test_data: Data = None, run=None
 ) -> None:
     """Finetune model on one fold"""
     if "scheduler" in cfg:
@@ -73,6 +74,8 @@ def finetune_fold(
     )
     epoch = modelmanager.get_epoch()
 
+    run = initialize_wandb(run, cfg)
+
     trainer = EHRTrainer(
         model=model,
         optimizer=optimizer,
@@ -100,6 +103,7 @@ def finetune_fold(
     trainer.model = model
     trainer.test_dataset = test_dataset
     trainer._evaluate(checkpoint["epoch"], mode="test")
+    finish_wandb()
 
 
 def split_and_finetune(
@@ -108,11 +112,12 @@ def split_and_finetune(
     val_indices: list,
     fold: int,
     test_data: Data = None,
+    run=None,
 ):
     train_data = data.select_data_subset_by_indices(train_indices, mode="train")
     val_data = data.select_data_subset_by_indices(val_indices, mode="val")
     check_data_for_overlap(train_data, val_data, test_data)
-    finetune_fold(cfg, train_data, val_data, fold, test_data)
+    finetune_fold(cfg, train_data, val_data, fold, test_data, run=run)
 
 
 def _limit_patients(indices_or_pids: list, split: str) -> list:
@@ -130,7 +135,7 @@ def _limit_patients(indices_or_pids: list, split: str) -> list:
     return indices_or_pids
 
 
-def cv_loop(data: Data, train_val_indices: list, test_data: Data) -> None:
+def cv_loop(data: Data, train_val_indices: list, test_data: Data, run=None) -> None:
     """Loop over cross validation folds."""
     for fold, (train_indices, val_indices) in enumerate(
         get_n_splits_cv(data, N_SPLITS, train_val_indices)
@@ -140,11 +145,11 @@ def cv_loop(data: Data, train_val_indices: list, test_data: Data) -> None:
         logger.info("Splitting data")
         train_indices = _limit_patients(train_indices, "train")
         val_indices = _limit_patients(val_indices, "val")
-        split_and_finetune(data, train_indices, val_indices, fold, test_data)
+        split_and_finetune(data, train_indices, val_indices, fold, test_data, run=run)
 
 
 def finetune_without_cv(
-    data: Data, train_val_indices: list, test_data: Data = None
+    data: Data, train_val_indices: list, test_data: Data = None, run=None
 ) -> None:
     val_split = cfg.data.get("val_split", DEAFAULT_VAL_SPLIT)
     logger.info(
@@ -153,7 +158,7 @@ def finetune_without_cv(
     train_indices, val_indices = split_indices_into_train_val(
         train_val_indices, val_split
     )
-    split_and_finetune(data, train_indices, val_indices, 1, test_data)
+    split_and_finetune(data, train_indices, val_indices, 1, test_data, run=run)
 
 
 def cv_loop_predefined_splits(
@@ -219,9 +224,9 @@ if __name__ == "__main__":
         )
         save_data(test_data, finetune_folder)
         if N_SPLITS > 1:
-            cv_loop(data, train_val_indices, test_data)
+            cv_loop(data, train_val_indices, test_data, run=run)
         else:
-            finetune_without_cv(data, train_val_indices, test_data)
+            finetune_without_cv(data, train_val_indices, test_data, run=run)
 
     compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="val")
     save_combined_predictions(N_SPLITS, finetune_folder, mode="val")
