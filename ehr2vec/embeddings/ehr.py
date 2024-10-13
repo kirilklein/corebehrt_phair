@@ -96,7 +96,7 @@ class EhrEmbeddings(BaseEmbeddings):
         token_type_ids: torch.LongTensor = None,  # segments
         position_ids: Dict[str, torch.Tensor] = None,  # age and abspos
         inputs_embeds: torch.Tensor = None,
-        **kwargs
+        **kwargs,
     ) -> torch.Tensor:
 
         if inputs_embeds is None:
