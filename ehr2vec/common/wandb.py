@@ -16,7 +16,14 @@ def initialize_wandb(run, cfg):
         return run
     else:
         wandb_config = {}
-        for key in ["trainer_args", "model", "optimizer", "data", "test_args", "scheduler"]:
+        for key in [
+            "trainer_args",
+            "model",
+            "optimizer",
+            "data",
+            "test_args",
+            "scheduler",
+        ]:
             if hasattr(cfg, key):
                 wandb_config.update(cfg[key])
         wandb.init(project=PROJECT_NAME, config=wandb_config)
