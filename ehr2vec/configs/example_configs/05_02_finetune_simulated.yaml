@@ -1,5 +1,6 @@
 env: local
 run_name: &default_run_name test
+project: &default_project "PHAIR"
 
 paths:
   pretrain_model_path: "outputs/example_pretraining/example"
@@ -74,7 +75,8 @@ metrics:
 
   
 wandb_kwargs:
-  project: PHAIR
+  project: *default_project
+  name: *default_run_name
   group: finetuning_simulated
   job_type: test
   tags:

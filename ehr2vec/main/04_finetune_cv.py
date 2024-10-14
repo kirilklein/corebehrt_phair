@@ -4,33 +4,26 @@ from os.path import abspath, dirname, join, split
 import torch
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.default_args import (DEFAULT_BLOBSTORE, DEFAULT_N_SPLITS,
+                                         DEFAULT_VAL_SPLIT)
 from ehr2vec.common.initialize import Initializer, ModelManager
-from ehr2vec.common.loader import load_and_select_splits
-from ehr2vec.common.setup import (
-    DirectoryPreparer,
-    copy_data_config,
-    copy_pretrain_config,
-    get_args,
-)
+from ehr2vec.common.loader import load_and_select_splits, load_config
+from ehr2vec.common.setup import (DirectoryPreparer, copy_data_config,
+                                  copy_pretrain_config, get_args)
 from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
-from ehr2vec.common.wandb import initialize_wandb, finish_wandb
+from ehr2vec.common.wandb import finish_wandb, initialize_wandb
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.data.split import get_n_splits_cv, split_indices_into_train_val
 from ehr2vec.evaluation.calibration import compute_calibration
 from ehr2vec.evaluation.utils import (
-    check_data_for_overlap,
-    compute_and_save_scores_mean_std,
-    save_combined_predictions,
-    save_data,
-    split_into_test_data_and_train_val_indices,
-)
+    check_data_for_overlap, compute_and_save_scores_mean_std,
+    save_combined_predictions, save_data,
+    split_into_test_data_and_train_val_indices)
 from ehr2vec.trainer.trainer import EHRTrainer
 
 DEFAULT_CONFIG_NAME = "example_configs/04_finetune.yaml"
-DEFAULT_N_SPLITS = 5  # You can change this to desired value
-DEFAULT_VAL_SPLIT = 0.2
-BLOBSTORE = "CINF"
+
 
 
 args = get_args(DEFAULT_CONFIG_NAME)
@@ -192,9 +185,10 @@ def cv_loop_predefined_splits(
 
 
 if __name__ == "__main__":
+    cfg = load_config(config_path)
     cfg, run, mount_context, pretrain_model_path = (
         Initializer.initialize_configuration_finetune(
-            config_path, dataset_name=BLOBSTORE
+            config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
         )
     )
     n_splits = cfg.data.get("cv_folds", DEFAULT_N_SPLITS)
@@ -249,7 +243,7 @@ if __name__ == "__main__":
         )
         save_to_blobstore(
             local_path=cfg.paths.run_name,
-            remote_path=join(BLOBSTORE, save_path, cfg.paths.run_name),
+            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), save_path, cfg.paths.run_name),
         )
         mount_context.stop()
     logger.info("Done")

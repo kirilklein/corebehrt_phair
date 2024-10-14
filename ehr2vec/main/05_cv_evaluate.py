@@ -6,24 +6,22 @@ import pandas as pd
 import torch
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import ModelManager
+from ehr2vec.common.loader import load_config
 from ehr2vec.common.logger import log_config
-from ehr2vec.common.setup import (
-    fix_tmp_prefixes_for_azure_paths,
-    get_args,
-    initialize_configuration_finetune,
-    setup_logger,
-    update_test_cfg_with_pt_ft_cfgs,
-)
+from ehr2vec.common.setup import (fix_tmp_prefixes_for_azure_paths, get_args,
+                                  initialize_configuration_finetune,
+                                  setup_logger,
+                                  update_test_cfg_with_pt_ft_cfgs)
 from ehr2vec.common.utils import Data
-from ehr2vec.common.wandb import initialize_wandb, finish_wandb
+from ehr2vec.common.wandb import finish_wandb, initialize_wandb
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.evaluation.encodings import EHRTester
 from ehr2vec.evaluation.utils import save_data
 
 DEFAULT_CONFIG_NAME = "example_configs/05_finetune_evaluate.yaml"
-BLOBSTORE = "CINF"
 
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
@@ -100,9 +98,10 @@ def compute_and_save_scores_mean_std(
     scores_mean_std.to_csv(join(test_folder, f"{mode}_scores_mean_std.csv"))
 
 
-def main():
+def main(config_path: str):
+    cfg = load_config(config_path)
     cfg, run, mount_context, azure_context = initialize_configuration_finetune(
-        config_path, dataset_name=BLOBSTORE
+        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
 
     # create test folder
@@ -156,7 +155,7 @@ def main():
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
             remote_path=join(
-                BLOBSTORE, fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path)
+                cfg.get("project", DEFAULT_BLOBSTORE), fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path)
             ),
         )
         mount_context.stop()
@@ -164,4 +163,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(config_path)

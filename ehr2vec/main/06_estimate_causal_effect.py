@@ -37,18 +37,19 @@ from ehr2vec.effect_estimation.data import (
     construct_data_to_estimate_effect_from_counterfactuals,
 )
 from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
-
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
+from ehr2vec.common.loader import load_config
 DEFAULT_CONFIG_NAME = "example_configs/06_estimate_effect_binary.yaml"
-BLOBSTORE = "CINF"
 
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 
-def main():
+def main(config_path: str):
+    cfg = load_config(config_path)
     cfg, run, mount_context, azure_context = initialize_configuration_effect_estimation(
-        config_path, dataset_name=BLOBSTORE
+        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
 
     # create test folder
@@ -104,7 +105,7 @@ def main():
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
             remote_path=join(
-                BLOBSTORE, fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path)
+                cfg.get("project", DEFAULT_BLOBSTORE), fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path)
             ),
         )
         mount_context.stop()
@@ -112,4 +113,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(config_path)

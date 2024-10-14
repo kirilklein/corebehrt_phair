@@ -1,4 +1,5 @@
 env: local
+project: "PHAIR"
 paths:
   pretrain_model_path: "outputs/example_pretraining/example"
   outcome: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_OUTCOME.csv"

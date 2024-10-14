@@ -26,9 +26,8 @@ from ehr2vec.data.featuremaker import FeatureMaker
 from ehr2vec.data.tokenizer import EHRTokenizer
 from ehr2vec.data_fixes.exclude import Excluder
 from ehr2vec.data_fixes.handle import Handler
-
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 DEFAULT_CONFIG_NAME = "example_configs/01_create_data.yaml"
-BLOBSTORE = "CINF"
 
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
@@ -47,7 +46,7 @@ def main_data(config_path):
     """
     cfg = load_config(config_path)
     cfg, _, mount_context = AzurePathContext(
-        cfg, dataset_name=BLOBSTORE
+        cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     ).azure_data_pretrain_setup()
 
     logger = DirectoryPreparer(config_path).prepare_directory(cfg)
@@ -97,7 +96,7 @@ def main_data(config_path):
         features_dir_name = cfg.paths.get("save_features_dir_name", cfg.paths.run_name)
         save_to_blobstore(
             local_path="data/",
-            remote_path=join(BLOBSTORE, "features", features_dir_name),
+            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), "features", features_dir_name),
         )
         mount_context.stop()
     logger.info("Finished")

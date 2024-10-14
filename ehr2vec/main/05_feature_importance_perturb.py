@@ -3,6 +3,7 @@ Compute feature importance for 'concept' features using perturbation method.
 Using the five folds from the cross-validation.
 """
 
+import importlib
 import os
 from datetime import datetime
 from os.path import abspath, dirname, join, split
@@ -14,18 +15,14 @@ from ehr2vec.common.initialize import ModelManager
 from ehr2vec.common.loader import load_and_select_splits
 from ehr2vec.common.logger import log_config
 from ehr2vec.common.saver import Saver
-from ehr2vec.common.setup import (
-    fix_tmp_prefixes_for_azure_paths,
-    get_args,
-    initialize_configuration_finetune,
-    setup_logger,
-    update_test_cfg_with_pt_ft_cfgs,
-)
+from ehr2vec.common.setup import (fix_tmp_prefixes_for_azure_paths, get_args,
+                                  initialize_configuration_finetune,
+                                  setup_logger,
+                                  update_test_cfg_with_pt_ft_cfgs)
 from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
+from ehr2vec.common.wandb import finish_wandb, initialize_wandb
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.split import split_data_into_train_val
-import importlib
-from ehr2vec.common.wandb import initialize_wandb, finish_wandb
 
 matplotlib_spec = importlib.util.find_spec("matplotlib")
 if matplotlib_spec is not None:
@@ -36,17 +33,15 @@ else:
         "Warning: matplotlib is not installed. Plotting functionality will be disabled."
     )
 
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
+from ehr2vec.common.loader import load_config
 from ehr2vec.feature_importance.perturb import PerturbationModel
 from ehr2vec.feature_importance.perturb_utils import (
-    average_sigmas,
-    log_most_important_features_for_perturbation_model,
-    compute_concept_frequency,
-)
+    average_sigmas, compute_concept_frequency,
+    log_most_important_features_for_perturbation_model)
 from ehr2vec.trainer.trainer import EHRTrainer
 
-
 DEFAULT_CONFIG_NAME = "example_configs/05_feature_importance_perturb.yaml"
-BLOBSTORE = "CINF"
 
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
@@ -217,8 +212,9 @@ def cv_loop_predefined_splits(
 
 
 def prepare_and_load_data():
+    cfg = load_config(config_path)
     cfg, run, mount_context, azure_context = initialize_configuration_finetune(
-        config_path, dataset_name=BLOBSTORE
+        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
     date = datetime.now().strftime("%Y%m%d-%H%M")
 
@@ -271,7 +267,7 @@ if __name__ == "__main__":
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
-            remote_path=join(BLOBSTORE, cfg.paths.model_path),
+            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), cfg.paths.model_path),
         )
         mount_context.stop()
 

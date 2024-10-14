@@ -22,9 +22,11 @@ from ehr2vec.double_robust.counterfactual import create_counterfactual_data
 from ehr2vec.double_robust.save import save_combined_predictions_evaluation
 from ehr2vec.evaluation.encodings import EHRTester
 from ehr2vec.evaluation.utils import save_data
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
+from ehr2vec.common.loader import load_config
 
 DEFAULT_CONFIG_NAME = "example_configs/05_predict_counterfactual.yaml"
-BLOBSTORE = "CINF"
+
 
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
@@ -102,9 +104,10 @@ def cv_predict_loop(
         )
 
 
-def main():
+def main(config_path: str):
+    cfg = load_config(config_path)
     cfg, run, mount_context, azure_context = initialize_configuration_finetune(
-        config_path, dataset_name=BLOBSTORE
+        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
 
     date = datetime.now().strftime("%Y%m%d-%H%M")
@@ -149,7 +152,7 @@ def main():
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
             remote_path=join(
-                BLOBSTORE, fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path)
+                cfg.get("project", DEFAULT_BLOBSTORE), fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path)
             ),
         )
         mount_context.stop()
@@ -157,4 +160,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(config_path)

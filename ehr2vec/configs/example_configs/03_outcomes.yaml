@@ -1,4 +1,5 @@
 env: local
+project: "PHAIR"
 paths:
   run_name: _example
 outcomes_name: "EXAMPLE_OUTCOME"

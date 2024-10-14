@@ -14,9 +14,10 @@ from ehr2vec.common.setup import (
     initialize_configuration_finetune,
 )
 from ehr2vec.simulation.longitudinal_outcome import simulate_abspos_from_binary_outcome
-
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
+from ehr2vec.common.loader import load_config
 DEFAULT_CONFIG_NAME = "example_configs/05_simulate_binary_outcome.yaml"
-BLOBSTORE = "CINF"
+
 
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
@@ -24,7 +25,7 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 def main(config_path: str) -> None:
     cfg, run, mount_context, pretrain_model_path = initialize_configuration_finetune(
-        config_path, dataset_name=BLOBSTORE
+        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
     logger, simulation_folder = DirectoryPreparer.setup_run_folder(cfg)
     cfg.save_to_yaml(join(simulation_folder, "simulation_config.yaml"))
@@ -65,7 +66,7 @@ def main(config_path: str) -> None:
         )
         save_to_blobstore(
             local_path=cfg.paths.run_name,
-            remote_path=join(BLOBSTORE, save_path, cfg.paths.run_name),
+            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), save_path, cfg.paths.run_name),
         )
         mount_context.stop()
     logger.info("Done")
