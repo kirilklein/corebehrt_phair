@@ -4,10 +4,9 @@ try:
     use_wandb = True
 except ImportError:
     use_wandb = False
-PROJECT_NAME = "PHAIR"
 
 
-def initialize_wandb(run, cfg):
+def initialize_wandb(run, cfg, wandb_kwargs):
     """
     Initialize Wand if available, else return run.
     Return a tuple of (use_wandb, run)
@@ -26,7 +25,7 @@ def initialize_wandb(run, cfg):
         ]:
             if hasattr(cfg, key):
                 wandb_config.update(cfg[key])
-        wandb.init(project=PROJECT_NAME, config=wandb_config)
+        wandb.init(config=wandb_config, **wandb_kwargs)
         run = wandb.run
         return run
 

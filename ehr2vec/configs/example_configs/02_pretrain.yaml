@@ -1,9 +1,10 @@
 env: local
+run_name: &default_run_name example
 paths:
   data_path: outputs/example_features
   output_path: outputs/example_pretraining
   type: diag
-  run_name: example
+  run_name: *default_run_name
   tokenized_dir: tokenized
   # predefined_splits: outputs/pretraining/behrt_base
   
@@ -63,3 +64,11 @@ metrics:
   loss:
     _target_: ehr2vec.evaluation.metrics.LossAccessor
     loss_name: loss
+
+wandb_kwargs:
+  project: PHAIR
+  group: pretraining
+  name: *default_run_name
+  job_type: pretraining
+  tags:
+    - baseline

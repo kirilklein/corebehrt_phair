@@ -33,7 +33,7 @@ def main_train(config_path):
     logger, run_folder = DirectoryPreparer.setup_run_folder(cfg)
     copy_data_config(cfg, run_folder)
 
-    run = initialize_wandb(run, cfg)
+    run = initialize_wandb(run, cfg, cfg.get("wandb_kwargs", {}))
 
     loaded_from_checkpoint = load_model_cfg_from_checkpoint(
         cfg, "pretrain_config.yaml"

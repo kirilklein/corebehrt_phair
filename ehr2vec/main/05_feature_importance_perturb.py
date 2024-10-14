@@ -25,6 +25,7 @@ from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.split import split_data_into_train_val
 import importlib
+from ehr2vec.common.wandb import initialize_wandb, finish_wandb
 
 matplotlib_spec = importlib.util.find_spec("matplotlib")
 if matplotlib_spec is not None:
@@ -65,7 +66,7 @@ def finetune_fold(
     test_data: Data = None,
 ) -> None:
     """Finetune model on one fold"""
-
+    initialize_wandb(run, cfg, cfg.get("wandb_kwargs", {}))
     # Split val_data into train and validation for the perturbation model
     train_data, perturb_val_data = split_data_into_train_val(
         val_data, cfg.data.get("perturb_val_split", 0.2)
@@ -161,6 +162,7 @@ def finetune_fold(
     log_most_important_features_for_perturbation_model(
         perturbation_model, train_data.vocabulary
     )
+    finish_wandb()
 
 
 def _limit_patients(indices_or_pids: list, split: str) -> list:

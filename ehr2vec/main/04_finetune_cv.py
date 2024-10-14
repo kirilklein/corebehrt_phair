@@ -74,7 +74,7 @@ def finetune_fold(
     )
     epoch = modelmanager.get_epoch()
 
-    run = initialize_wandb(run, cfg)
+    run = initialize_wandb(run, cfg, cfg.get("wandb_kwargs", {}))
 
     trainer = EHRTrainer(
         model=model,

@@ -12,6 +12,7 @@ from ehr2vec.common.setup import (
     copy_pretrain_config,
     get_args,
 )
+from ehr2vec.common.wandb import initialize_wandb, finish_wandb
 from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
 from ehr2vec.data.dataset import Time2EventDataset
 from ehr2vec.data.prepare_data import DatasetPreparer
@@ -75,7 +76,7 @@ def finetune_fold(
         model, train_dataset
     )
     epoch = modelmanager.get_epoch()
-
+    run = initialize_wandb(run, cfg, cfg.get("wandb_kwargs", {}))
     trainer = EHRTrainer(
         model=model,
         optimizer=optimizer,
@@ -103,6 +104,7 @@ def finetune_fold(
     trainer.model = model
     trainer.test_dataset = test_dataset
     trainer._evaluate(checkpoint["epoch"], mode="test")
+    finish_wandb()
 
 
 def split_and_finetune(
