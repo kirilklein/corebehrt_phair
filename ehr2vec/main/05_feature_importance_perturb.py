@@ -195,7 +195,7 @@ def cv_loop_predefined_splits(
         for d in os.listdir(predefined_splits_dir)
         if os.path.isdir(os.path.join(predefined_splits_dir, d)) and "fold_" in d
     ]
-    N_SPLITS = len(fold_dirs)
+    
     for fold_dir in fold_dirs:
         fold = int(split(fold_dir)[1].split("_")[1])
         logger.info(f"Training fold {fold}/{len(fold_dirs)}")
@@ -213,8 +213,8 @@ def cv_loop_predefined_splits(
             run=run,
             test_data=test_data,
         )
-
-    return N_SPLITS
+    n_splits = len(fold_dirs)
+    return n_splits
 
 
 def prepare_and_load_data():

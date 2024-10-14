@@ -41,7 +41,7 @@ if len(sys.argv) > 1:
     CONFIG_NAME = sys.argv[1]
 
 BLOBSTORE = "CINF"
-N_SPLITS = 2
+DEFAULT_N_SPLITS = 5
 args = get_args(CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
@@ -162,14 +162,14 @@ def split_and_save(
 
 
 def cv_loop_split_and_save(
-    data: Data, train_val_indices: list, test_data: Data
+    data: Data, train_val_indices: list, test_data: Data, n_splits: int
 ) -> None:
     """Loop over cross validation folds."""
     for fold, (train_indices, val_indices) in enumerate(
-        get_n_splits_cv(data, N_SPLITS, train_val_indices)
+        get_n_splits_cv(data, n_splits, train_val_indices)
     ):
         fold += 1
-        logger.info(f"Training fold {fold}/{N_SPLITS}")
+        logger.info(f"Training fold {fold}/{n_splits}")
         logger.info("Splitting data")
         train_indices = _limit_train_patients(train_indices)
         split_and_save(data, train_indices, val_indices, fold, test_data)
@@ -185,7 +185,7 @@ def cv_get_predefined_splits(
         for d in os.listdir(predefined_splits_dir)
         if os.path.isdir(os.path.join(predefined_splits_dir, d)) and "fold_" in d
     ]
-    N_SPLITS = len(fold_dirs)
+    
     for fold_dir in fold_dirs:
         fold = int(split(fold_dir)[1].split("_")[1])
         logger.info(f"Loading fold {fold}/{len(fold_dirs)}")
@@ -194,7 +194,8 @@ def cv_get_predefined_splits(
         train_data = data.select_data_subset_by_pids(train_pids, mode="train")
         check_data_for_overlap(train_data, val_data, test_data)
         save_split_fold(train_data, val_data, fold, test_data)
-    return N_SPLITS, train_data, val_data
+    n_splits = len(fold_dirs)
+    return n_splits, train_data, val_data
 
 
 if __name__ == "__main__":
@@ -226,7 +227,7 @@ if __name__ == "__main__":
         )
         test_pids = list(set(test_pids))
         test_data = data.select_data_subset_by_pids(test_pids, mode="test")
-        N_SPLITS, train_data, val_data = cv_get_predefined_splits(
+        _, train_data, val_data = cv_get_predefined_splits(
             data, cfg.paths.predefined_splits, test_data
         )
         train_val_pids = train_data.pids + val_data.pids
@@ -241,7 +242,8 @@ if __name__ == "__main__":
             train_val_indices, mode="train_val"
         )
         check_data_for_overlap(train_val_data, test_data)
-        cv_loop_split_and_save(data, train_val_indices, test_data)
+        n_splits = cfg.data.get("cv_folds", DEFAULT_N_SPLITS)
+        cv_loop_split_and_save(data, train_val_indices, test_data, n_splits)
 
     save_data(test_data, finetune_folder)
     save_stats(finetune_folder, train_val_data, test_data)
