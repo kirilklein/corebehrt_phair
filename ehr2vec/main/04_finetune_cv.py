@@ -135,7 +135,9 @@ def _limit_patients(indices_or_pids: list, split: str) -> list:
     return indices_or_pids
 
 
-def cv_loop(data: Data, train_val_indices: list, test_data: Data, run=None, n_splits=5) -> None:
+def cv_loop(
+    data: Data, train_val_indices: list, test_data: Data, run=None, n_splits=5
+) -> None:
     """Loop over cross validation folds."""
     for fold, (train_indices, val_indices) in enumerate(
         get_n_splits_cv(data, n_splits, train_val_indices)
@@ -171,7 +173,7 @@ def cv_loop_predefined_splits(
         for d in os.listdir(predefined_splits_dir)
         if os.path.isdir(os.path.join(predefined_splits_dir, d)) and "fold_" in d
     ]
-    
+
     for fold_dir in fold_dirs:
         fold = int(split(fold_dir)[1].split("_")[1])
         logger.info(f"Training fold {fold}/{len(fold_dirs)}")

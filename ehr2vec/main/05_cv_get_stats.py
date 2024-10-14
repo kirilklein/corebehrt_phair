@@ -185,7 +185,7 @@ def cv_get_predefined_splits(
         for d in os.listdir(predefined_splits_dir)
         if os.path.isdir(os.path.join(predefined_splits_dir, d)) and "fold_" in d
     ]
-    
+
     for fold_dir in fold_dirs:
         fold = int(split(fold_dir)[1].split("_")[1])
         logger.info(f"Loading fold {fold}/{len(fold_dirs)}")
