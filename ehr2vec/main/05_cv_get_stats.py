@@ -5,7 +5,6 @@ sequence lengths, age at censoring, trajectory length (arrays, mean+-std)
 """
 
 import os
-import sys
 from os.path import abspath, dirname, join, split
 
 import pandas as pd
@@ -26,9 +25,14 @@ from ehr2vec.data.split import get_n_splits_cv
 from ehr2vec.data.utils import Utilities
 from ehr2vec.evaluation.stats import (
     calculate_statistics,
-    plot_and_save_hist,
     save_gender_distribution,
 )
+from importlib.util import find_spec
+
+plot_and_save_hist = None
+if find_spec("matplotlib") is not None:
+    from ehr2vec.evaluation.vis import plot_and_save_hist
+
 from ehr2vec.evaluation.utils import (
     check_data_for_overlap,
     save_data,
@@ -73,8 +77,9 @@ def process_and_save(
     positive_indices = [
         i for i, outcome in enumerate(data.outcomes) if pd.notna(outcome)
     ]
-
-    plot_and_save_hist(tensor_data, name, split, folder, positive_indices)
+    if plot_and_save_hist is not None:
+        plot_and_save_hist(tensor_data, name, split, folder, positive_indices)
+        
     torch.save(tensor_data, join(folder, f"{split}_{name}.pt"))
 
     stats_all = calculate_statistics(tensor_data)
