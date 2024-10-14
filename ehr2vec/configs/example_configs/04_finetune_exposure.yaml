@@ -1,4 +1,6 @@
 env: local
+run_name: &default_run_name run_01
+
 paths:
   pretrain_model_path: "outputs/example_pretraining/example"
   # model_path: # can provide ft model path
@@ -6,7 +8,7 @@ paths:
   outcome: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_CENSOR.csv"
   exposure: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_CENSOR.csv"
   # output_path: "outputs/finetuning"
-  run_name: "test"
+  run_name: *default_run_name
   # tokenized_dir:"tokenized"
   tokenized_file: "tokenized_finetune.pt" # can also be a list
   tokenized_pids: "pids_finetune.pt" # can also be a list
@@ -88,6 +90,13 @@ metrics:
   pr_auc:
     _target_: ehr2vec.evaluation.metrics.PR_AUC
 
-  
+  wandb_kwargs:
+  project: PHAIR
+  group: finetuning_exposure
+  name: *default_run_name
+  job_type: test
+  tags:
+    - baseline
+
   
  

@@ -49,7 +49,7 @@ def test_fold(
     modelmanager.load_model_config()
     logger.info("Load best finetuned model to compute test scores")
     model = modelmanager.initialize_finetune_model(checkpoint, test_dataset)
-    run = initialize_wandb(run, cfg)
+    run = initialize_wandb(run, cfg, cfg.get("wandb_kwargs", {}))
     tester = EHRTester(
         model=model,
         test_dataset=None,  # test only after training
