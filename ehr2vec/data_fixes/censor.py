@@ -84,7 +84,9 @@ class Censorer:
         if not pd.isna(index_timestamp):
             censor_flags = self._generate_censor_flags(patient, index_timestamp)
             if self.background_length > 0:
-                censor_flags[: self.background_length] = [True] * self.background_length  # keep background
+                censor_flags[: self.background_length] = [
+                    True
+                ] * self.background_length  # keep background
             for key, value in patient.items():
                 patient[key] = [
                     item for index, item in enumerate(value) if censor_flags[index]
@@ -234,7 +236,7 @@ class Censorer:
         # Dont censor [CLS] and [SEP] tokens of background
         if True in flags:
             first_background = flags.index(True)
-        else: 
+        else:
             first_background = 0
 
         if concepts[0] == "[CLS]" or concepts[0] == self.vocabulary.get("[CLS]"):
