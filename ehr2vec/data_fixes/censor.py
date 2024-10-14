@@ -83,9 +83,10 @@ class Censorer:
         """Censor the patient's features n_hours after index_timestamp (given in abspos)."""
         if not pd.isna(index_timestamp):
             censor_flags = self._generate_censor_flags(patient, index_timestamp)
-            censor_flags[: self.background_length] = [
-                True
-            ] * self.background_length  # keep background
+            if self.background_length > 0:
+                censor_flags[: self.background_length] = [
+                    True
+                ] * self.background_length  # keep background
             for key, value in patient.items():
                 patient[key] = [
                     item for index, item in enumerate(value) if censor_flags[index]
@@ -233,7 +234,11 @@ class Censorer:
             flags = [concept.startswith("BG_") for concept in concepts]
 
         # Dont censor [CLS] and [SEP] tokens of background
-        first_background = flags.index(True)
+        if True in flags:
+            first_background = flags.index(True)
+        else:
+            first_background = 0
+
         if concepts[0] == "[CLS]" or concepts[0] == self.vocabulary.get("[CLS]"):
             flags[0] = True
         if concepts[first_background + 1] == "[SEP]" or concepts[

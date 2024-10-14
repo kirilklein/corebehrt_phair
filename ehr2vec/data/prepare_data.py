@@ -71,6 +71,10 @@ class DatasetPreparer:
 
         # 1. Loading tokenized data
         data = self.loader.load_tokenized_data(mode="finetune")
+        self._log_features(data)
+        logger.info("vocabulary")
+        logger.info(data.vocabulary)
+
         initial_pids = data.pids
         if self.cfg.paths.get("exclude_pids", None) is not None:
             logger.info(f"Pids to exclude: {self.cfg.paths.exclude_pids}")
@@ -329,7 +333,7 @@ class DatasetPreparer:
         return np.load(join(self.cfg.paths.predefined_splits, "predictions.npz"))
 
     def _log_features(self, data: Data) -> None:
-        logger.info(f"Final features: {data.features.keys()}")
+        logger.info(f"Features: {data.features.keys()}")
         logger.info("Example features: ")
         for k, v in data.features.items():
             logger.info(f"{k}: {v[0]}")
