@@ -5,14 +5,16 @@ sequence lengths, age at censoring, trajectory length (arrays, mean+-std)
 """
 
 import os
+from importlib.util import find_spec
 from os.path import abspath, dirname, join, split
 
 import pandas as pd
 import torch
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE, DEFAULT_N_SPLITS
 from ehr2vec.common.initialize import Initializer
-from ehr2vec.common.loader import load_and_select_splits
+from ehr2vec.common.loader import load_and_select_splits, load_config
 from ehr2vec.common.setup import (
     DirectoryPreparer,
     copy_data_config,
@@ -23,11 +25,7 @@ from ehr2vec.common.utils import Data
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.data.split import get_n_splits_cv
 from ehr2vec.data.utils import Utilities
-from ehr2vec.evaluation.stats import (
-    calculate_statistics,
-    save_gender_distribution,
-)
-from importlib.util import find_spec
+from ehr2vec.evaluation.stats import calculate_statistics, save_gender_distribution
 
 plot_and_save_hist = None
 if find_spec("matplotlib") is not None:
@@ -41,8 +39,6 @@ from ehr2vec.evaluation.utils import (
 
 DEFAULT_CONFIG_NAME = "example_configs/04_finetune_stats.yaml"
 
-BLOBSTORE = "CINF"
-DEFAULT_N_SPLITS = 5
 
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
@@ -202,9 +198,10 @@ def cv_get_predefined_splits(
 
 
 if __name__ == "__main__":
+    cfg = load_config(config_path)
     cfg, run, mount_context, pretrain_model_path = (
         Initializer.initialize_configuration_finetune(
-            config_path, dataset_name=BLOBSTORE
+            config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
         )
     )
 
@@ -259,7 +256,9 @@ if __name__ == "__main__":
         )
         save_to_blobstore(
             local_path=cfg.paths.run_name,
-            remote_path=join(BLOBSTORE, save_path, cfg.paths.run_name),
+            remote_path=join(
+                cfg.get("project", DEFAULT_BLOBSTORE), save_path, cfg.paths.run_name
+            ),
         )
         mount_context.stop()
     logger.info("Done")

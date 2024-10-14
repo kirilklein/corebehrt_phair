@@ -1,5 +1,7 @@
 env: local
 run_name: &default_run_name test
+project: &default_project "PHAIR"
+
 paths:
   model_path: outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test
   run_name: *default_run_name
@@ -38,7 +40,8 @@ metrics:
     _target_: ehr2vec.evaluation.metrics.PR_AUC
 
 wandb_kwargs:
-  project: PHAIR
+  project: *default_project
+  name: *default_run_name
   group: finetune_evaluate
   job_type: test
   tags:

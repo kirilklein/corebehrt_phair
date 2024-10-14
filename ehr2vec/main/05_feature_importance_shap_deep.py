@@ -14,8 +14,9 @@ import torch
 from torch.utils.data import DataLoader
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import ModelManager
-from ehr2vec.common.loader import load_and_select_splits
+from ehr2vec.common.loader import load_and_select_splits, load_config
 from ehr2vec.common.logger import log_config
 from ehr2vec.common.setup import (
     fix_tmp_prefixes_for_azure_paths,
@@ -36,7 +37,7 @@ from ehr2vec.feature_importance.utils import log_most_important_features_deep
 from ehr2vec.trainer.utils import get_tqdm
 
 DEFAULT_CONFIG_NAME = "feature_importance/shap_deep_feature_importance.yaml"
-BLOBSTORE = "CINF"
+
 
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
@@ -143,8 +144,9 @@ def cv_loop_predefined_splits(
 
 
 def prepare_and_load_data():
+    cfg = load_config(config_path)
     cfg, run, mount_context, azure_context = initialize_configuration_finetune(
-        config_path, dataset_name=BLOBSTORE
+        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
     date = datetime.now().strftime("%Y%m%d-%H%M")
 
@@ -195,7 +197,9 @@ if __name__ == "__main__":
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
-            remote_path=join(BLOBSTORE, cfg.paths.model_path),
+            remote_path=join(
+                cfg.get("project", DEFAULT_BLOBSTORE), cfg.paths.model_path
+            ),
         )
         mount_context.stop()
 

@@ -4,6 +4,7 @@ from os.path import abspath, dirname, join
 
 from ehr2vec.common.azure import AzurePathContext, save_to_blobstore
 from ehr2vec.common.config import load_config
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import Initializer
 from ehr2vec.common.loader import (
     load_checkpoint_and_epoch,
@@ -11,12 +12,11 @@ from ehr2vec.common.loader import (
 )
 from ehr2vec.common.setup import DirectoryPreparer, copy_data_config, get_args
 from ehr2vec.common.utils import compute_number_of_warmup_steps
-from ehr2vec.common.wandb import initialize_wandb, finish_wandb
+from ehr2vec.common.wandb import finish_wandb, initialize_wandb
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.trainer.trainer import EHRTrainer
 
 DEAFAULT_CONFIG_NAME = "example_configs/02_pretrain.yaml"
-BLOBSTORE = "CINF"
 
 args = get_args(DEAFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
@@ -27,9 +27,8 @@ def main_train(config_path):
     cfg = load_config(config_path)
 
     cfg, run, mount_context = AzurePathContext(
-        cfg, dataset_name=BLOBSTORE
+        cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     ).adjust_paths_for_azure_pretrain()
-
     logger, run_folder = DirectoryPreparer.setup_run_folder(cfg)
     copy_data_config(cfg, run_folder)
 
@@ -73,7 +72,12 @@ def main_train(config_path):
     if cfg.env == "azure":
         save_to_blobstore(
             cfg.paths.run_name,
-            join(BLOBSTORE, "models", cfg.paths.type, cfg.paths.run_name),
+            join(
+                cfg.get("project", DEFAULT_BLOBSTORE),
+                "models",
+                cfg.paths.type,
+                cfg.paths.run_name,
+            ),
             overwrite=loaded_from_checkpoint,
         )
         mount_context.stop()

@@ -1,5 +1,6 @@
 env: local
 run_name: &default_run_name example
+project: &default_project "PHAIR"
 paths:
   data_path: outputs/example_features
   output_path: outputs/example_pretraining
@@ -66,7 +67,7 @@ metrics:
     loss_name: loss
 
 wandb_kwargs:
-  project: PHAIR
+  project: *default_project
   group: pretraining
   name: *default_run_name
   job_type: pretraining

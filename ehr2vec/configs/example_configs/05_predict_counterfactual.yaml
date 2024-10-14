@@ -1,4 +1,5 @@
 env: local
+project: "PHAIR"
 paths:
   model_path: outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test
   run_name: "test"

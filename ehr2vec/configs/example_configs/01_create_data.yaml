@@ -1,4 +1,5 @@
 env: local
+project: "PHAIR"
 output_dir: outputs/example_features
 tokenized_dir_name: "tokenized"
 paths:
