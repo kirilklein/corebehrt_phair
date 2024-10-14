@@ -79,7 +79,7 @@ def process_and_save(
     ]
     if plot_and_save_hist is not None:
         plot_and_save_hist(tensor_data, name, split, folder, positive_indices)
-        
+
     torch.save(tensor_data, join(folder, f"{split}_{name}.pt"))
 
     stats_all = calculate_statistics(tensor_data)
