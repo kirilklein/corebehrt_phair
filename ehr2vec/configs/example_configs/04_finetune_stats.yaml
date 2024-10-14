@@ -2,6 +2,7 @@ env: local
 paths:
   pretrain_model_path: "outputs/example_pretraining/example"
   outcome: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_OUTCOME.csv"
+  exposure: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_CENSOR.csv"
   run_name: "test_stats"
   # tokenized_dir: "tokenized"
   tokenized_file: "tokenized_finetune.pt" # can also be a list
