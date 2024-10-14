@@ -4,20 +4,31 @@ from os.path import abspath, dirname, join, split
 import torch
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.default_args import (
+    DEFAULT_BLOBSTORE,
+    DEFAULT_N_SPLITS,
+    DEFAULT_VAL_SPLIT,
+)
 from ehr2vec.common.initialize import Initializer, ModelManager
 from ehr2vec.common.loader import load_and_select_splits, load_config
-from ehr2vec.common.setup import (DirectoryPreparer, copy_data_config,
-                                  copy_pretrain_config, get_args)
+from ehr2vec.common.setup import (
+    DirectoryPreparer,
+    copy_data_config,
+    copy_pretrain_config,
+    get_args,
+)
 from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
 from ehr2vec.common.wandb import finish_wandb, initialize_wandb
 from ehr2vec.data.dataset import Time2EventDataset
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.data.split import get_n_splits_cv
 from ehr2vec.evaluation.utils import (
-    check_data_for_overlap, compute_and_save_scores_mean_std, save_data,
-    split_into_test_data_and_train_val_indices)
+    check_data_for_overlap,
+    compute_and_save_scores_mean_std,
+    save_data,
+    split_into_test_data_and_train_val_indices,
+)
 from ehr2vec.trainer.trainer import EHRTrainer
-from ehr2vec.common.default_args import DEFAULT_BLOBSTORE, DEFAULT_N_SPLITS, DEFAULT_VAL_SPLIT
 
 DEFAULT_CONFIG_NAME = "finetune/finetune_time2event.yaml"
 
@@ -237,7 +248,9 @@ if __name__ == "__main__":
         )
         save_to_blobstore(
             local_path=cfg.paths.run_name,
-            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), save_path, cfg.paths.run_name),
+            remote_path=join(
+                cfg.get("project", DEFAULT_BLOBSTORE), save_path, cfg.paths.run_name
+            ),
         )
         mount_context.stop()
     logger.info("Done")

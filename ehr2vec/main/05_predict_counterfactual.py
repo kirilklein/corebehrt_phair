@@ -5,8 +5,9 @@ from os.path import abspath, dirname, join, split
 import torch
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import ModelManager
-from ehr2vec.common.loader import load_and_select_splits
+from ehr2vec.common.loader import load_and_select_splits, load_config
 from ehr2vec.common.logger import log_config
 from ehr2vec.common.setup import (
     fix_tmp_prefixes_for_azure_paths,
@@ -22,8 +23,6 @@ from ehr2vec.double_robust.counterfactual import create_counterfactual_data
 from ehr2vec.double_robust.save import save_combined_predictions_evaluation
 from ehr2vec.evaluation.encodings import EHRTester
 from ehr2vec.evaluation.utils import save_data
-from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
-from ehr2vec.common.loader import load_config
 
 DEFAULT_CONFIG_NAME = "example_configs/05_predict_counterfactual.yaml"
 
@@ -152,7 +151,8 @@ def main(config_path: str):
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
             remote_path=join(
-                cfg.get("project", DEFAULT_BLOBSTORE), fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path)
+                cfg.get("project", DEFAULT_BLOBSTORE),
+                fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path),
             ),
         )
         mount_context.stop()

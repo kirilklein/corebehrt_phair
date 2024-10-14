@@ -8,12 +8,12 @@ from tqdm import tqdm
 
 from ehr2vec.common.azure import AzurePathContext, save_to_blobstore
 from ehr2vec.common.config import load_config
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.logger import TqdmToLogger
 from ehr2vec.common.setup import DirectoryPreparer, get_args
 from ehr2vec.common.utils import check_patient_counts
 from ehr2vec.data.concept_loader import ConceptLoaderLarge
 from ehr2vec.downstream_tasks.outcomes import OutcomeMaker
-from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 
 DEFAULT_CONFIG_NAME = "example_configs/03_outcomes.yaml"
 
@@ -66,7 +66,9 @@ def main_data(config_path):
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="outcomes",
-            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), "outcomes", cfg.paths.run_name),
+            remote_path=join(
+                cfg.get("project", DEFAULT_BLOBSTORE), "outcomes", cfg.paths.run_name
+            ),
         )
         mount_context.stop()
     logger.info("Done")

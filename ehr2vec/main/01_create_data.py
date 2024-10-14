@@ -27,6 +27,7 @@ from ehr2vec.data.tokenizer import EHRTokenizer
 from ehr2vec.data_fixes.exclude import Excluder
 from ehr2vec.data_fixes.handle import Handler
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
+
 DEFAULT_CONFIG_NAME = "example_configs/01_create_data.yaml"
 
 args = get_args(DEFAULT_CONFIG_NAME)
@@ -96,7 +97,9 @@ def main_data(config_path):
         features_dir_name = cfg.paths.get("save_features_dir_name", cfg.paths.run_name)
         save_to_blobstore(
             local_path="data/",
-            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), "features", features_dir_name),
+            remote_path=join(
+                cfg.get("project", DEFAULT_BLOBSTORE), "features", features_dir_name
+            ),
         )
         mount_context.stop()
     logger.info("Finished")

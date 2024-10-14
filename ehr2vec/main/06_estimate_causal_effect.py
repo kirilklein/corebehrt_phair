@@ -17,9 +17,11 @@ from os.path import abspath, dirname, join, split
 from CausalEstimate.interface.estimator import Estimator
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 
 # from ehr2vec.common.calibration import calibrate_cv
 from ehr2vec.common.loader import (
+    load_config,
     load_counterfactual_outcomes,
     load_outcomes,
     load_propensities,
@@ -37,8 +39,7 @@ from ehr2vec.effect_estimation.data import (
     construct_data_to_estimate_effect_from_counterfactuals,
 )
 from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
-from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
-from ehr2vec.common.loader import load_config
+
 DEFAULT_CONFIG_NAME = "example_configs/06_estimate_effect_binary.yaml"
 
 args = get_args(DEFAULT_CONFIG_NAME)
@@ -105,7 +106,8 @@ def main(config_path: str):
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
             remote_path=join(
-                cfg.get("project", DEFAULT_BLOBSTORE), fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path)
+                cfg.get("project", DEFAULT_BLOBSTORE),
+                fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path),
             ),
         )
         mount_context.stop()

@@ -11,18 +11,29 @@ from os.path import abspath, dirname, join, split
 import torch
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import ModelManager
-from ehr2vec.common.loader import load_and_select_splits
+from ehr2vec.common.loader import load_and_select_splits, load_config
 from ehr2vec.common.logger import log_config
 from ehr2vec.common.saver import Saver
-from ehr2vec.common.setup import (fix_tmp_prefixes_for_azure_paths, get_args,
-                                  initialize_configuration_finetune,
-                                  setup_logger,
-                                  update_test_cfg_with_pt_ft_cfgs)
+from ehr2vec.common.setup import (
+    fix_tmp_prefixes_for_azure_paths,
+    get_args,
+    initialize_configuration_finetune,
+    setup_logger,
+    update_test_cfg_with_pt_ft_cfgs,
+)
 from ehr2vec.common.utils import Data, compute_number_of_warmup_steps
 from ehr2vec.common.wandb import finish_wandb, initialize_wandb
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data.split import split_data_into_train_val
+from ehr2vec.feature_importance.perturb import PerturbationModel
+from ehr2vec.feature_importance.perturb_utils import (
+    average_sigmas,
+    compute_concept_frequency,
+    log_most_important_features_for_perturbation_model,
+)
+from ehr2vec.trainer.trainer import EHRTrainer
 
 matplotlib_spec = importlib.util.find_spec("matplotlib")
 if matplotlib_spec is not None:
@@ -33,13 +44,6 @@ else:
         "Warning: matplotlib is not installed. Plotting functionality will be disabled."
     )
 
-from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
-from ehr2vec.common.loader import load_config
-from ehr2vec.feature_importance.perturb import PerturbationModel
-from ehr2vec.feature_importance.perturb_utils import (
-    average_sigmas, compute_concept_frequency,
-    log_most_important_features_for_perturbation_model)
-from ehr2vec.trainer.trainer import EHRTrainer
 
 DEFAULT_CONFIG_NAME = "example_configs/05_feature_importance_perturb.yaml"
 
@@ -267,7 +271,9 @@ if __name__ == "__main__":
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
-            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), cfg.paths.model_path),
+            remote_path=join(
+                cfg.get("project", DEFAULT_BLOBSTORE), cfg.paths.model_path
+            ),
         )
         mount_context.stop()
 
