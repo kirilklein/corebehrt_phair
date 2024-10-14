@@ -35,14 +35,12 @@ from ehr2vec.evaluation.utils import (
     split_into_test_data_and_train_val_indices,
 )
 
-CONFIG_NAME = "configs/finetune/finetune_stats.yaml"
-if len(sys.argv) > 1:
-    # Use the first argument as the config file name
-    CONFIG_NAME = sys.argv[1]
+DEFAULT_CONFIG_NAME = "example_configs/04_finetune_stats.yaml"
 
 BLOBSTORE = "CINF"
 DEFAULT_N_SPLITS = 5
-args = get_args(CONFIG_NAME)
+
+args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
