@@ -90,7 +90,7 @@ metrics:
   pr_auc:
     _target_: ehr2vec.evaluation.metrics.PR_AUC
 
-  wandb_kwargs:
+wandb_kwargs:
   project: PHAIR
   group: finetuning_exposure
   name: *default_run_name
