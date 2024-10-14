@@ -30,7 +30,7 @@ from ehr2vec.data_fixes.handle import Handler
 DEFAULT_CONFIG_NAME = "example_configs/01_create_data.yaml"
 BLOBSTORE = "CINF"
 
-args = get_args(DEFAULT_CONFIG_NAME, "data_pretrain")
+args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 

@@ -38,10 +38,10 @@ from ehr2vec.effect_estimation.data import (
 )
 from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
 
-CONFIG_NAME = "example_configs/06_estimate_effect_binary.yaml"
+DEFAULT_CONFIG_NAME = "example_configs/06_estimate_effect_binary.yaml"
 BLOBSTORE = "CINF"
 
-args = get_args(CONFIG_NAME)
+args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 

@@ -25,12 +25,13 @@ from ehr2vec.evaluation.utils import (
 )
 from ehr2vec.trainer.trainer import EHRTrainer
 
-CONFIG_NAME = "finetune/finetune_time2event.yaml"
+DEFAULT_CONFIG_NAME = "finetune/finetune_time2event.yaml"
 DEFAULT_N_SPLITS = 5  # You can change this to desired value
+DEFAULT_VAL_SPLIT = 0.2
 BLOBSTORE = "CINF"
-DEAFAULT_VAL_SPLIT = 0.2
 
-args = get_args(CONFIG_NAME)
+
+args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
@@ -154,7 +155,7 @@ def cv_loop(
 def finetune_without_cv(
     data: Data, train_val_indices: list, test_data: Data = None, run=None
 ) -> None:
-    val_split = cfg.data.get("val_split", DEAFAULT_VAL_SPLIT)
+    val_split = cfg.data.get("val_split", DEFAULT_VAL_SPLIT)
     logger.info(
         f"Splitting train_val of length {len(train_val_indices)} into train and val with val_split={val_split}"
     )
