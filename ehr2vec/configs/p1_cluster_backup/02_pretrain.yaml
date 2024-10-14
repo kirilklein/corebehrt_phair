@@ -1,0 +1,76 @@
+env: local
+run_name: &default_run_name run_02
+project: &default_project "PHAIR"
+paths:
+  model_path: /dtu/p1/kirkle/corebehrt_phair/pretrain/run_01
+  data_path: /dtu/p1/kirkle/corebehrt_phair/features/synthea/100k
+  output_path: /dtu/p1/kirkle/corebehrt_phair/pretrain
+  type: synthea_100k
+  run_name: *default_run_name
+  tokenized_dir: tokenized
+  predefined_splits: /dtu/p1/kirkle/corebehrt_phair/pretrain/run_01
+  
+data:
+  dataset:
+    select_ratio: 0.20
+    masking_ratio: .8
+    replace_ratio: .1
+    ignore_special_tokens: true
+  truncation_len: 512 
+  num_train_patients: null
+  num_val_patients: null
+  remove_background: false
+  val_ratio: 0.2
+  min_len: 5
+
+trainer_args:
+  batch_size: 512
+  effective_batch_size: 512
+  epochs: 150
+  info: true
+  sampler: null
+  gradient_clip:
+    clip_value: 1.0
+  mixed_precision: false
+  shuffle: true
+  early_stopping: 10 # num_epochs or null/false
+model:
+  # type_vocab_size should be >= truncation_len//2+1 if sep token else >=truncation len+1
+  # !!! If you want to feed longer sequences during finetuning adjust type_vocab_size accordingly
+  hidden_size: 150
+  intermediate_size: 600
+  linear: true
+  num_attention_heads: 6
+  num_hidden_layers: 6
+  type_vocab_size: 257
+  behrt_embeddings: true
+
+optimizer:
+  lr: 1e-3
+  eps: 1e-6
+
+scheduler:
+  _target_: transformers.get_constant_schedule_with_warmup
+  num_warmup_epochs: 5
+
+metrics:
+  top1:
+    _target_: ehr2vec.evaluation.metrics.PrecisionAtK
+    topk: 1
+  top10:
+    _target_: ehr2vec.evaluation.metrics.PrecisionAtK
+    topk: 10
+  top100:
+    _target_: ehr2vec.evaluation.metrics.PrecisionAtK
+    topk: 100
+  loss:
+    _target_: ehr2vec.evaluation.metrics.LossAccessor
+    loss_name: loss
+
+wandb_kwargs:
+  project: *default_project
+  group: pretrain_00
+  name: *default_run_name
+  job_type: full
+  tags:
+    - continue

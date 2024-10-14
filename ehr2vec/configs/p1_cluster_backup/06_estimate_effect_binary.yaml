@@ -1,0 +1,14 @@
+env: local
+project: "PHAIR"
+paths:
+  ps_model_path: /dtu/p1/kirkle/corebehrt_phair/pretrain/run_01/finetune_EXPOSURE_censored_1_hours_pre_EXPOSURE_followup_start_at_index_date_ft_exposure
+  outcome: /dtu/p1/kirkle/corebehrt_phair/features/synthea/10k/outcomes/EXPOSURE_simulated_outcome/SIMULATED.csv
+  counterfactual_outcome: /dtu/p1/kirkle/corebehrt_phair/features/synthea/10k/outcomes/EXPOSURE_simulated_outcome/COUNTERFACTUAL.csv
+  output_path: /dtu/p1/kirkle/corebehrt_phair/effect_estimation
+  run_name: run_matching
+
+estimator:
+  methods: ["MATCHING", "IPW"]
+  effect_type: "ATE"
+  n_bootstrap: 10
+

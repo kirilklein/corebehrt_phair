@@ -16,3 +16,4 @@ data/formatted/synthea10k/concept.diagnose.csv
 ehr2vec/notebooks/*.png
 ehr2vec/notebooks/test*
 wandb/
+p1_cluster/

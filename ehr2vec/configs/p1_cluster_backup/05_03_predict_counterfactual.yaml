@@ -1,0 +1,31 @@
+env: local
+project: "PHAIR"
+paths:
+  model_path: outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test # adjust model
+  run_name: "test"
+
+model:
+  pool_type: "gru"
+  bidirectional: true
+
+data:
+  truncation_len: 512
+  counterfactual: # can be a list of regexes
+    exposure_regex:
+    - M617312 
+    - M617311
+    - M617310
+    - M617320
+    - M259255
+      
+
+tester_args:
+  batch_size: 256
+  val_batch_size: 256
+  info: true
+  shuffle: true
+
+
+  
+  
+ 
