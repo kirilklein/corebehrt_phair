@@ -8,23 +8,27 @@ except ImportError:
 
 def initialize_wandb(run, cfg, wandb_kwargs):
     """
-    Initialize Wand if available, else return run.
-    Return a tuple of (use_wandb, run)
+    Initialize Wandb if available, else return run.
+    Return the run object.
     """
     if not use_wandb:
         return run
     else:
-        wandb_config = {}
-        for key in [
-            "trainer_args",
-            "model",
-            "optimizer",
-            "data",
-            "test_args",
-            "scheduler",
-        ]:
+        wandb_config = {
+            key: {}
+            for key in [
+                "trainer_args",
+                "model",
+                "optimizer",
+                "data",
+                "test_args",
+                "scheduler",
+                "outcome",
+            ]
+        }
+        for key in wandb_config.keys():
             if hasattr(cfg, key):
-                wandb_config.update(cfg[key])
+                wandb_config[key].update(cfg[key])
         wandb.init(config=wandb_config, **wandb_kwargs)
         run = wandb.run
         return run
