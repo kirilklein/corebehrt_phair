@@ -1,0 +1,20 @@
+env: local
+project: "PHAIR"
+paths:
+  run_name: exposure
+outcomes_name: "EXPOSURE"
+features_dir: /dtu/p1/kirkle/corebehrt_phair/features/synthea/100k
+loader:
+  data_dir: /dtu/p1/kirkle/formatted_data/synthea/100k
+  concepts: [
+    medication
+  ]
+  batch_size: 20000
+  chunksize: 50000
+outcomes:
+  EXPOSURE:
+    type: [CONCEPT]
+    match: [[M617312, M617311, M617310, M617320, M259255]]
+    match_how: startswith
+    case_sensitive: false
+    

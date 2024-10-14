@@ -1,0 +1,98 @@
+env: local
+run_name: &default_run_name run_01
+project: &default_project "PHAIR"
+
+paths:
+  pretrain_model_path: /dtu/p1/kirkle/corebehrt_phair/pretrain/run_01
+  # model_path: # can provide ft model path
+  # checkpoint_epoch: 1
+  outcome: /dtu/p1/kirkle/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE/EXPOSURE.csv
+  exposure: /dtu/p1/kirkle/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE/EXPOSURE.csv
+  # output_path: "outputs/finetuning"
+  run_name: ft_exposure_test
+  # tokenized_dir:"tokenized"
+  tokenized_file: "tokenized_finetune.pt" # can also be a list
+  tokenized_pids: "pids_finetune.pt" # can also be a list
+  # predefined_splits: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test
+  # exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
+model:
+  pool_type: "gru"
+  bidirectional: true
+  # extend_head: 
+  # hidden_size: null
+
+data:
+  # num_patients: 300 #300
+  val_split: 0.2
+  test_split: 0.0
+  truncation_len: 512
+  # gender: M
+  min_age: 40
+  max_age: 80
+  # min_len: null
+  # code_types:
+   # - D
+  min_len: 2
+  # remove_features: ['abspos']
+
+
+outcome: 
+  n_hours_censoring: -1 # censor time after index date (negative means before)
+  n_hours_start_follow_up: -1
+  first_time_outcomes_only: false # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
+  # index_date: # if all patients should have the same censor date
+    # year: 2015
+    # month: 01
+    # day: 01
+
+trainer_args:
+  sampler: true
+  sample_weight_function:
+    _target_: ehr2vec.evaluation.utils.inverse_sqrt # function to calculate sample weights
+  sample_weight_multiplier: 1 # adjust the sampling weight of the positive class (1 is balanced)
+  pos_weight: null # weight for positive class in the loss
+  batch_size: 256
+  val_batch_size: 256
+  effective_batch_size: 256
+  epochs: 5
+  info: true
+  gradient_clip: 
+    clip_value: 1.0
+  mixed_precision: false
+  shuffle: true
+  checkpoint_frequency: 1
+  early_stopping: 10
+  stopping_criterion: roc_auc
+  
+optimizer:
+  lr: 2e-5
+  eps: 1e-6
+
+scheduler:
+  _target_: transformers.get_constant_schedule_with_warmup
+  num_warmup_epochs: 2
+
+metrics:
+  accuracy:
+    _target_: ehr2vec.evaluation.metrics.Accuracy
+    threshold: 0.6
+  balanced_accuracy:
+    _target_: ehr2vec.evaluation.metrics.Balanced_Accuracy
+  precision:
+    _target_: ehr2vec.evaluation.metrics.Precision
+  recall:
+    _target_: ehr2vec.evaluation.metrics.Recall
+  roc_auc:
+    _target_: ehr2vec.evaluation.metrics.ROC_AUC
+  pr_auc:
+    _target_: ehr2vec.evaluation.metrics.PR_AUC
+
+wandb_kwargs:
+  project: *default_project
+  group: finetuning_exposure
+  job_type: test
+  # tags:
+    # - baseline
+  
+  
+ 
