@@ -27,12 +27,13 @@ from ehr2vec.evaluation.utils import (
 )
 from ehr2vec.trainer.trainer import EHRTrainer
 
-DEAFAULT_CONFIG_NAME = "example_configs/04_finetune.yaml"
-N_SPLITS = 2  # You can change this to desired value
+DEFAULT_CONFIG_NAME = "example_configs/04_finetune.yaml"
+DEFAULT_N_SPLITS = 5  # You can change this to desired value
+DEFAULT_VAL_SPLIT = 0.2
 BLOBSTORE = "CINF"
-DEAFAULT_VAL_SPLIT = 0.2
 
-args = get_args(DEAFAULT_CONFIG_NAME)
+
+args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
@@ -135,13 +136,15 @@ def _limit_patients(indices_or_pids: list, split: str) -> list:
     return indices_or_pids
 
 
-def cv_loop(data: Data, train_val_indices: list, test_data: Data, run=None) -> None:
+def cv_loop(
+    data: Data, train_val_indices: list, test_data: Data, run=None, n_splits=5
+) -> None:
     """Loop over cross validation folds."""
     for fold, (train_indices, val_indices) in enumerate(
-        get_n_splits_cv(data, N_SPLITS, train_val_indices)
+        get_n_splits_cv(data, n_splits, train_val_indices)
     ):
         fold += 1
-        logger.info(f"Training fold {fold}/{N_SPLITS}")
+        logger.info(f"Training fold {fold}/{n_splits}")
         logger.info("Splitting data")
         train_indices = _limit_patients(train_indices, "train")
         val_indices = _limit_patients(val_indices, "val")
@@ -151,7 +154,7 @@ def cv_loop(data: Data, train_val_indices: list, test_data: Data, run=None) -> N
 def finetune_without_cv(
     data: Data, train_val_indices: list, test_data: Data = None, run=None
 ) -> None:
-    val_split = cfg.data.get("val_split", DEAFAULT_VAL_SPLIT)
+    val_split = cfg.data.get("val_split", DEFAULT_VAL_SPLIT)
     logger.info(
         f"Splitting train_val of length {len(train_val_indices)} into train and val with val_split={val_split}"
     )
@@ -171,7 +174,7 @@ def cv_loop_predefined_splits(
         for d in os.listdir(predefined_splits_dir)
         if os.path.isdir(os.path.join(predefined_splits_dir, d)) and "fold_" in d
     ]
-    N_SPLITS = len(fold_dirs)
+
     for fold_dir in fold_dirs:
         fold = int(split(fold_dir)[1].split("_")[1])
         logger.info(f"Training fold {fold}/{len(fold_dirs)}")
@@ -184,7 +187,8 @@ def cv_loop_predefined_splits(
             val_data = data.select_data_subset_by_pids(val_pids, mode="val")
         check_data_for_overlap(train_data, val_data, test_data)
         finetune_fold(cfg, train_data, val_data, fold, test_data)
-    return N_SPLITS
+    n_splits = len(fold_dirs)
+    return n_splits
 
 
 if __name__ == "__main__":
@@ -193,7 +197,7 @@ if __name__ == "__main__":
             config_path, dataset_name=BLOBSTORE
         )
     )
-
+    n_splits = cfg.data.get("cv_folds", DEFAULT_N_SPLITS)
     logger, finetune_folder = DirectoryPreparer.setup_run_folder(cfg)
 
     copy_data_config(cfg, finetune_folder)
@@ -213,7 +217,7 @@ if __name__ == "__main__":
         test_pids = list(set(test_pids))
         test_data = data.select_data_subset_by_pids(test_pids, mode="test")
         save_data(test_data, finetune_folder)
-        N_SPLITS = cv_loop_predefined_splits(
+        n_splits = cv_loop_predefined_splits(
             data, cfg.paths.predefined_splits, test_data
         )
 
@@ -223,16 +227,16 @@ if __name__ == "__main__":
             cfg, data
         )
         save_data(test_data, finetune_folder)
-        if N_SPLITS > 1:
-            cv_loop(data, train_val_indices, test_data, run=run)
+        if n_splits > 1:
+            cv_loop(data, train_val_indices, test_data, run=run, n_splits=n_splits)
         else:
             finetune_without_cv(data, train_val_indices, test_data, run=run)
 
-    compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="val")
-    save_combined_predictions(N_SPLITS, finetune_folder, mode="val")
+    compute_and_save_scores_mean_std(n_splits, finetune_folder, mode="val")
+    save_combined_predictions(n_splits, finetune_folder, mode="val")
     if len(test_data) > 0:
-        compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="test")
-        save_combined_predictions(N_SPLITS, finetune_folder, mode="test")
+        compute_and_save_scores_mean_std(n_splits, finetune_folder, mode="test")
+        save_combined_predictions(n_splits, finetune_folder, mode="test")
 
     if "calibration" in cfg:
         compute_calibration(finetune_folder, cfg.calibration)

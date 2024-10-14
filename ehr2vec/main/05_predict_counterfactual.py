@@ -23,10 +23,10 @@ from ehr2vec.double_robust.save import save_combined_predictions_evaluation
 from ehr2vec.evaluation.encodings import EHRTester
 from ehr2vec.evaluation.utils import save_data
 
-CONFIG_NAME = "example_configs/05_predict_counterfactual.yaml"
+DEFAULT_CONFIG_NAME = "example_configs/05_predict_counterfactual.yaml"
 BLOBSTORE = "CINF"
 
-args = get_args(CONFIG_NAME)
+args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 

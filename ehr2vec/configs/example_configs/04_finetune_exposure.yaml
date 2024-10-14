@@ -34,6 +34,7 @@ data:
   min_len: 2
   # remove_features: ['abspos']
   number_of_train_patients: 10
+  cv_folds: 2
 
 
 outcome: 

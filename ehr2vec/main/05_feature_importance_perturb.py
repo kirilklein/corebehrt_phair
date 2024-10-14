@@ -45,11 +45,10 @@ from ehr2vec.feature_importance.perturb_utils import (
 from ehr2vec.trainer.trainer import EHRTrainer
 
 
-CONFIG_NAME = "example_configs/05_feature_importance_perturb.yaml"
+DEFAULT_CONFIG_NAME = "example_configs/05_feature_importance_perturb.yaml"
 BLOBSTORE = "CINF"
-DEAFAULT_VAL_SPLIT = 0.2
 
-args = get_args(CONFIG_NAME)
+args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
@@ -195,7 +194,7 @@ def cv_loop_predefined_splits(
         for d in os.listdir(predefined_splits_dir)
         if os.path.isdir(os.path.join(predefined_splits_dir, d)) and "fold_" in d
     ]
-    N_SPLITS = len(fold_dirs)
+
     for fold_dir in fold_dirs:
         fold = int(split(fold_dir)[1].split("_")[1])
         logger.info(f"Training fold {fold}/{len(fold_dirs)}")
@@ -213,8 +212,8 @@ def cv_loop_predefined_splits(
             run=run,
             test_data=test_data,
         )
-
-    return N_SPLITS
+    n_splits = len(fold_dirs)
+    return n_splits
 
 
 def prepare_and_load_data():

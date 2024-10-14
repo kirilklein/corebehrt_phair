@@ -22,10 +22,10 @@ from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.evaluation.encodings import EHRTester
 from ehr2vec.evaluation.utils import save_data
 
-CONFIG_NAME = "example_configs/05_finetune_evaluate.yaml"
+DEFAULT_CONFIG_NAME = "example_configs/05_finetune_evaluate.yaml"
 BLOBSTORE = "CINF"
 
-args = get_args(CONFIG_NAME)
+args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 

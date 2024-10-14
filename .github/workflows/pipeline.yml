@@ -56,6 +56,11 @@ jobs:
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.05_cv_evaluate 
+
+            - name: get_finetune_stats
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.05_cv_get_stats
             
             - name: simulate_binary_outcome
               run: |
