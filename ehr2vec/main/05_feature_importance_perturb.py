@@ -164,6 +164,7 @@ def finetune_fold(
     )
     finish_wandb()
 
+
 def _limit_patients(indices_or_pids: list, split: str) -> list:
     if f"number_of_{split}_patients" in cfg.data:
         number_of_patients = cfg.data.get(f"number_of_{split}_patients")

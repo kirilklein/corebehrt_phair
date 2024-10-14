@@ -106,6 +106,7 @@ def finetune_fold(
     trainer._evaluate(checkpoint["epoch"], mode="test")
     finish_wandb()
 
+
 def split_and_finetune(
     data: Data,
     train_indices: list,
