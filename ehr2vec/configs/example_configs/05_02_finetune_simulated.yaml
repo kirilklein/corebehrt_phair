@@ -21,6 +21,7 @@ data:
   max_age: 70
   min_len: 2
   number_of_train_patients: 10
+  cv_folds: 2
 
 
 outcome: 
