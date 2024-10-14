@@ -1,5 +1,5 @@
 env: local
-run_name: &default_run_name run_01
+run_name: &default_run_name example
 paths:
   data_path: outputs/example_features
   output_path: outputs/example_pretraining
