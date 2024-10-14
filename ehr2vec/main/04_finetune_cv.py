@@ -194,7 +194,7 @@ if __name__ == "__main__":
             config_path, dataset_name=BLOBSTORE
         )
     )
-    N_SPLITS = cfg.data.get("cv_folds", DEFAULT_N_SPLITS)
+    n_splits = cfg.data.get("cv_folds", DEFAULT_N_SPLITS)
     logger, finetune_folder = DirectoryPreparer.setup_run_folder(cfg)
 
     copy_data_config(cfg, finetune_folder)
@@ -214,7 +214,7 @@ if __name__ == "__main__":
         test_pids = list(set(test_pids))
         test_data = data.select_data_subset_by_pids(test_pids, mode="test")
         save_data(test_data, finetune_folder)
-        N_SPLITS = cv_loop_predefined_splits(
+        n_splits = cv_loop_predefined_splits(
             data, cfg.paths.predefined_splits, test_data
         )
 
@@ -224,16 +224,16 @@ if __name__ == "__main__":
             cfg, data
         )
         save_data(test_data, finetune_folder)
-        if N_SPLITS > 1:
-            cv_loop(data, train_val_indices, test_data, run=run, n_splits=N_SPLITS)
+        if n_splits > 1:
+            cv_loop(data, train_val_indices, test_data, run=run, n_splits=n_splits)
         else:
             finetune_without_cv(data, train_val_indices, test_data, run=run)
 
-    compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="val")
-    save_combined_predictions(N_SPLITS, finetune_folder, mode="val")
+    compute_and_save_scores_mean_std(n_splits, finetune_folder, mode="val")
+    save_combined_predictions(n_splits, finetune_folder, mode="val")
     if len(test_data) > 0:
-        compute_and_save_scores_mean_std(N_SPLITS, finetune_folder, mode="test")
-        save_combined_predictions(N_SPLITS, finetune_folder, mode="test")
+        compute_and_save_scores_mean_std(n_splits, finetune_folder, mode="test")
+        save_combined_predictions(n_splits, finetune_folder, mode="test")
 
     if "calibration" in cfg:
         compute_calibration(finetune_folder, cfg.calibration)
