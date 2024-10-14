@@ -8,7 +8,6 @@ from ehr2vec.common.utils import Data
 from ehr2vec.data.filter import PatientFilter
 
 
-
 def calculate_statistics(tensor_data: torch.Tensor) -> tuple:
     """Calculate mean, standard deviation, median, lower and upper quartiles."""
     mean = round(tensor_data.mean().item(), 4)
