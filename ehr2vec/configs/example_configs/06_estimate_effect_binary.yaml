@@ -5,7 +5,7 @@ paths:
   outcome: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_OUTCOME.csv"
   output_path: "outputs/experiments/test"
   run_name: "test"
-
+ps_file: "predictions_and_targets.csv"
 estimator:
   methods: ["IPW"]
   effect_type: "ATE"

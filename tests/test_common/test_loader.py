@@ -7,28 +7,11 @@ from ehr2vec.common.loader import (
     load_checkpoint_and_epoch,
     load_model_cfg_from_checkpoint,
     FeaturesLoader,
-    load_propensities,
     load_outcomes,
 )
 
 
 class TestLoaders(unittest.TestCase):
-    @patch("ehr2vec.common.loader.load_predictions_from_finetune_dir")
-    def test_load_propensities(self, mock_load_predictions):
-        # Set up mock return value
-        mock_data = pd.DataFrame(
-            {"pid": [1, 2, 3], "target": [0, 1, 0], "proba": [0.2, 0.8, 0.5]}
-        )
-        mock_load_predictions.return_value = mock_data
-
-        # Run function
-        result = load_propensities("test_folder")
-
-        # Check expected outcome
-        expected_result = mock_data.rename(
-            columns={"pid": "PID", "target": "treatment", "proba": "ps"}
-        ).set_index("PID")
-        pd.testing.assert_frame_equal(result, expected_result)
 
     @patch("pandas.read_csv")
     def test_load_outcomes(self, mock_read_csv):

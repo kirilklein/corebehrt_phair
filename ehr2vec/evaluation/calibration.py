@@ -7,7 +7,12 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 
 
-def compute_calibration(finetune_folder: str, method: str = "isotonic") -> None:
+def compute_and_save_calibration(
+    finetune_folder: str, method: str = "isotonic"
+) -> None:
+    """
+    Compute calibration for the predictions and save the results in a csv file: predictions_and_targets_calibrated_{method}.csv
+    """
     predictions_df = pd.read_csv(join(finetune_folder, "predictions_and_targets.csv"))
     N_SPLITS: int = get_number_of_folds(finetune_folder)
 
@@ -23,7 +28,8 @@ def compute_calibration(finetune_folder: str, method: str = "isotonic") -> None:
 
     combined_calibrated_df = pd.concat(all_calibrated_predictions, ignore_index=True)
     combined_calibrated_df.to_csv(
-        join(finetune_folder, "predictions_and_targets_calibrated.csv"), index=False
+        join(finetune_folder, f"predictions_and_targets_calibrated_{method}.csv"),
+        index=False,
     )
 
 

@@ -6,7 +6,7 @@ paths:
   counterfactual_outcome: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/COUNTERFACTUAL.csv"
   output_path: "outputs/experiments/test"
   run_name: "test"
-
+ps_file: "predictions_and_targets.csv"
 estimator:
   methods: ["IPW"]
   effect_type: "ATE"
