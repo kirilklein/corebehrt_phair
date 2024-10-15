@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import sys
 import uuid
 from os.path import join, split
 from pathlib import Path
@@ -42,12 +43,36 @@ def get_args(default_config_name, default_run_name=None):
 
 def setup_logger(dir: str, log_file: str = "info.log"):
     """Sets up the logger."""
-    logging.basicConfig(
-        filename=join(dir, log_file),
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    os.makedirs(dir, exist_ok=True)  # Ensure the directory exists
+    log_path = join(dir, log_file)
+
+    # Configure file handler
+    file_handler = logging.FileHandler(log_path, mode="a")
+    file_handler.setLevel(logging.INFO)
+    file_formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    return logging.getLogger(__name__)
+    file_handler.setFormatter(file_formatter)
+
+    # Configure stream handler (for stdout)
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.INFO)
+    stream_formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    stream_handler.setFormatter(stream_formatter)
+
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(stream_handler)
+
+    # Log a test message
+    logger = logging.getLogger(__name__)
+    logger.info(f"Logging initialized. Log file: {log_path}")
+
+    return logger
 
 
 def copy_data_config(cfg: Config, run_folder: str) -> None:
