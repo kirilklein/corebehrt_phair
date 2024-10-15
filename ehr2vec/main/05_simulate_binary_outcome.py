@@ -37,7 +37,7 @@ def main(config_path: str) -> None:
     os.makedirs(simulation_folder, exist_ok=True)
     logger = setup_logger(simulation_folder)
 
-    cfg.save_to_yaml(simulation_folder, "simulation_config.yaml")
+    cfg.save_to_yaml(join(simulation_folder, "simulation_config.yaml"))
     logger.info("Load predictions from %s", cfg.paths.model_path)
     df_predictions = load_predictions_from_finetune_dir(cfg.paths.model_path)
     logger.info("Load index dates from %s", cfg.paths.model_path)
