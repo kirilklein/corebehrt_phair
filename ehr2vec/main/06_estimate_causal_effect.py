@@ -24,8 +24,8 @@ from ehr2vec.common.loader import (
     load_config,
     load_counterfactual_outcomes,
     load_outcomes,
-    load_propensities,
 )
+import pandas as pd
 from ehr2vec.common.logger import log_config
 from ehr2vec.common.setup import (
     fix_tmp_prefixes_for_azure_paths,
@@ -64,7 +64,11 @@ def main(config_path: str):
         # Here we will also load the counterfactual predictions necessary for double robustness
         # Should be automated, i.e. if method is double robust, e.g. TMLE, then load the necessary files
         raise NotImplementedError("Double robustness not implemented yet")
-    propensity_scores = load_propensities(cfg.paths.get("ps_model_path"))
+    propensity_scores = (
+        pd.read_csv(join(cfg.paths.get("ps_model_path"), cfg.ps_file))
+        .rename(columns={"pid": "PID", "target": "treatment", "proba": "ps"})
+        .set_index("PID")
+    )
     outcomes = load_outcomes(cfg.paths.get("outcome"))
     df = construct_data_for_effect_estimation(propensity_scores, outcomes)
 

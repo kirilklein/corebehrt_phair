@@ -5,6 +5,8 @@ paths:
   run_name: simulate_binary_outcome
   output: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome"
 
+predictions_file: "predictions_and_targets.csv"
+
 simulation:
   _target_: ehr2vec.simulation.binary_outcome.tbehrt
   params: 

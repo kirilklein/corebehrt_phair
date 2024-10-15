@@ -9,11 +9,7 @@ import pandas as pd
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.config import Config, get_function
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
-from ehr2vec.common.loader import (
-    load_config,
-    load_index_dates,
-    load_predictions_from_finetune_dir,
-)
+from ehr2vec.common.loader import load_config, load_index_dates
 from ehr2vec.common.setup import (
     get_args,
     initialize_configuration_finetune,
@@ -39,7 +35,8 @@ def main(config_path: str) -> None:
 
     cfg.save_to_yaml(join(simulation_folder, "simulation_config.yaml"))
     logger.info("Load predictions from %s", cfg.paths.model_path)
-    df_predictions = load_predictions_from_finetune_dir(cfg.paths.model_path)
+    df_predictions = pd.read_csv(join(cfg.paths.model_path, cfg.predictions_file))
+
     logger.info("Load index dates from %s", cfg.paths.model_path)
     df_index_dates = load_index_dates(cfg.paths.model_path)
     logger.info("Merge predictions and index dates")

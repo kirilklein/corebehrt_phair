@@ -256,15 +256,6 @@ def load_and_select_splits(split_dir: str, data: Data) -> Tuple[Data, Data]:
     return train_data, val_data
 
 
-def load_propensities(ps_folder: str) -> pd.DataFrame:
-    """Loads the propensity scores from the given folder."""
-    propensities = load_predictions_from_finetune_dir(ps_folder)
-    check_columns(propensities, ["pid", "target", "proba"])
-    return propensities.rename(
-        columns={"pid": "PID", "target": "treatment", "proba": "ps"}
-    ).set_index("PID")
-
-
 def load_outcomes(outcome_path: str) -> pd.DataFrame:
     """Loads the outcomes from the given path and converts them to binary."""
     # Add error handling for missing files or columns
@@ -281,18 +272,6 @@ def load_counterfactual_outcomes(counterfactual_outcome_path: str) -> pd.DataFra
     counterfactual_outcomes = pd.read_csv(counterfactual_outcome_path)
     check_columns(counterfactual_outcomes, ["PID", "Y0", "Y1"])
     return counterfactual_outcomes
-
-
-def load_predictions_from_finetune_dir(
-    finetune_dir: str, calibrated: bool = False
-) -> pd.DataFrame:
-    """Load predictions from finetune directory."""
-    file = (
-        "predictions_and_targets_calibrated.csv"
-        if calibrated
-        else "predictions_and_targets.csv"
-    )
-    return pd.read_csv(join(finetune_dir, file))
 
 
 def load_index_dates(finetune_dir: str) -> pd.DataFrame:
