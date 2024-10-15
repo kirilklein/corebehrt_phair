@@ -18,6 +18,7 @@ from CausalEstimate.interface.estimator import Estimator
 
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
+from ehr2vec.common.config import Config
 
 # from ehr2vec.common.calibration import calibrate_cv
 from ehr2vec.common.loader import (
@@ -48,7 +49,7 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 
 def main(config_path: str):
-    cfg = load_config(config_path)
+    cfg: Config = load_config(config_path)
     cfg, run, mount_context, azure_context = initialize_configuration_effect_estimation(
         config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
@@ -59,7 +60,7 @@ def main(config_path: str):
 
     # later we will add outcome folder
     logger = setup_logger(exp_folder, "info.log")
-
+    cfg.save_to_yaml(join(exp_folder, "config.yaml"))
     if cfg.get("double_robust", False):
         # Here we will also load the counterfactual predictions necessary for double robustness
         # Should be automated, i.e. if method is double robust, e.g. TMLE, then load the necessary files
