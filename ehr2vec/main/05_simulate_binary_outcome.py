@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from ehr2vec.common.azure import save_to_blobstore
-from ehr2vec.common.config import get_function
+from ehr2vec.common.config import Config, get_function
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.loader import (
     load_config,
@@ -15,9 +15,9 @@ from ehr2vec.common.loader import (
     load_predictions_from_finetune_dir,
 )
 from ehr2vec.common.setup import (
-    DirectoryPreparer,
     get_args,
     initialize_configuration_finetune,
+    setup_logger,
 )
 from ehr2vec.simulation.longitudinal_outcome import simulate_abspos_from_binary_outcome
 
@@ -29,27 +29,34 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 
 def main(config_path: str) -> None:
-    cfg = load_config(config_path)
+    cfg: Config = load_config(config_path)
     cfg, run, mount_context, pretrain_model_path = initialize_configuration_finetune(
         config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
-    logger, simulation_folder = DirectoryPreparer.setup_run_folder(cfg)
+    simulation_folder = cfg.paths.output
+    os.makedirs(simulation_folder, exist_ok=True)
+    logger = setup_logger(simulation_folder)
+
     cfg.save_to_yaml(join(simulation_folder, "simulation_config.yaml"))
-
+    logger.info("Load predictions from %s", cfg.paths.model_path)
     df_predictions = load_predictions_from_finetune_dir(cfg.paths.model_path)
+    logger.info("Load index dates from %s", cfg.paths.model_path)
     df_index_dates = load_index_dates(cfg.paths.model_path)
+    logger.info("Merge predictions and index dates")
     df_merged = pd.merge(df_predictions, df_index_dates, on="pid")
-
+    logger.info("Simulate outcome")
     binary_outcome = simulate_outcome(
         df_merged["proba"], df_merged["target"], cfg.simulation
     )
+    logger.info("Simulate outcome under treatment")
     binary_outcome_exp = simulate_outcome(
         df_merged["proba"], np.ones(len(df_merged)), cfg.simulation
     )
+    logger.info("Simulate outcome under control")
     binary_outcome_ctrl = simulate_outcome(
         df_merged["proba"], np.zeros(len(df_merged)), cfg.simulation
     )
-
+    logger.info("Simulate absolute position")
     abspos_outcome = simulate_abspos_from_binary_outcome(
         binary_outcome,
         df_merged["index_date"],
@@ -57,12 +64,13 @@ def main(config_path: str) -> None:
         cfg.get("days_offset", 0),
     )
     result_df = pd.DataFrame({"PID": df_merged["pid"], "TIMESTAMP": abspos_outcome})
-    os.makedirs(cfg.paths.output, exist_ok=True)
-    result_df.dropna().to_csv(join(cfg.paths.output, "SIMULATED.csv"), index=False)
+    logger.info("Save simulated outcome to %s", simulation_folder)
+    os.makedirs(simulation_folder, exist_ok=True)
+    result_df.dropna().to_csv(join(simulation_folder, "SIMULATED.csv"), index=False)
     counterfactual_df = pd.DataFrame(
         {"PID": df_merged["pid"], "Y1": binary_outcome_exp, "Y0": binary_outcome_ctrl}
     )
-    counterfactual_df.to_csv(join(cfg.paths.output, "COUNTERFACTUAL.csv"), index=False)
+    counterfactual_df.to_csv(join(simulation_folder, "COUNTERFACTUAL.csv"), index=False)
 
     if cfg.env == "azure":
         save_path = (

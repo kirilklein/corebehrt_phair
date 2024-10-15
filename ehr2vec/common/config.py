@@ -66,9 +66,9 @@ class Config(dict):
                 result[key] = value
         return result
 
-    def save_to_yaml(config, file_name):
-        with open(file_name, "w") as file:
-            yaml.dump(config.to_dict(), file)
+    def save_to_yaml(self, path: str):
+        with open(path, "w") as file:
+            yaml.dump(self.to_dict(), file)
 
     def save_pretrained(self, folder: str):
         """
