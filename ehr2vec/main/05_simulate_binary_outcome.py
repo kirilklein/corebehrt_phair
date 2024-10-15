@@ -38,21 +38,25 @@ def main(config_path: str) -> None:
     logger = setup_logger(simulation_folder)
 
     cfg.save_to_yaml(simulation_folder, "simulation_config.yaml")
-
+    logger.info("Load predictions from %s", cfg.paths.model_path)
     df_predictions = load_predictions_from_finetune_dir(cfg.paths.model_path)
+    logger.info("Load index dates from %s", cfg.paths.model_path)
     df_index_dates = load_index_dates(cfg.paths.model_path)
+    logger.info("Merge predictions and index dates")
     df_merged = pd.merge(df_predictions, df_index_dates, on="pid")
-
+    logger.info("Simulate outcome")
     binary_outcome = simulate_outcome(
         df_merged["proba"], df_merged["target"], cfg.simulation
     )
+    logger.info("Simulate outcome under treatment")
     binary_outcome_exp = simulate_outcome(
         df_merged["proba"], np.ones(len(df_merged)), cfg.simulation
     )
+    logger.info("Simulate outcome under control")
     binary_outcome_ctrl = simulate_outcome(
         df_merged["proba"], np.zeros(len(df_merged)), cfg.simulation
     )
-
+    logger.info("Simulate absolute position")
     abspos_outcome = simulate_abspos_from_binary_outcome(
         binary_outcome,
         df_merged["index_date"],
@@ -60,6 +64,7 @@ def main(config_path: str) -> None:
         cfg.get("days_offset", 0),
     )
     result_df = pd.DataFrame({"PID": df_merged["pid"], "TIMESTAMP": abspos_outcome})
+    logger.info("Save simulated outcome to %s", simulation_folder)
     os.makedirs(simulation_folder, exist_ok=True)
     result_df.dropna().to_csv(join(simulation_folder, "SIMULATED.csv"), index=False)
     counterfactual_df = pd.DataFrame(
