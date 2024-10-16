@@ -1,9 +1,10 @@
 name: 'Unittests'
 
 on:
-    workflow_dispatch:
-    pull_request:
-      branches: [ "core" ]
+  push:
+    branches: [ "core" ]
+  pull_request:
+    branches: [ "core" ]
 
 permissions:
   contents: read
