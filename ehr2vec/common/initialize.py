@@ -9,7 +9,7 @@ from torch.utils.data import Sampler
 from transformers import BertConfig
 
 from ehr2vec.common.azure import AzurePathContext
-from ehr2vec.common.config import Config, instantiate, load_config
+from ehr2vec.common.config import Config, instantiate
 from ehr2vec.common.loader import ModelLoader, load_model_cfg_from_checkpoint
 from ehr2vec.common.setup import DirectoryPreparer
 from ehr2vec.data.utils import Utilities
@@ -126,10 +126,9 @@ class Initializer:
 
     @staticmethod
     def initialize_configuration_finetune(
-        config_path: str, dataset_name: str = "PHAIR"
+        cfg: Config, dataset_name: str = "PHAIR"
     ) -> Tuple[Config, str, str, str]:
         """Load and adjust the configuration."""
-        cfg = load_config(config_path)
         pretrain_model_path = cfg.paths.get("pretrain_model_path", None)
         cfg = DirectoryPreparer.adjust_paths_for_finetune(cfg)
         azure_context = AzurePathContext(cfg, dataset_name=dataset_name)

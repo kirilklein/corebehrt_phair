@@ -18,8 +18,11 @@ import pandas as pd
 from CausalEstimate.interface.estimator import Estimator
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import Config
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
+
+# from ehr2vec.common.calibration import calibrate_cv
 from ehr2vec.common.loader import (
     load_config,
     load_counterfactual_outcomes,
@@ -49,8 +52,10 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 def main(config_path: str):
     cfg: Config = load_config(config_path)
+    override_config_from_cli(cfg)
+
     cfg, run, mount_context, azure_context = initialize_configuration_effect_estimation(
-        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
+        cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
     run = initialize_wandb(run, cfg, cfg.wandb_kwargs)
     # create test folder
@@ -75,8 +80,10 @@ def main(config_path: str):
     logger.info("Estimating causal effect")
     estimator_cfg = cfg.get("estimator")
     estimator = Estimator(
-        methods=estimator_cfg.methods, effect_type=estimator_cfg.effect_type
+        methods=estimator_cfg.methods,
+        effect_type=estimator_cfg.effect_type,
     )
+    print(estimator_cfg)
     effect = estimator.compute_effect(
         df,
         treatment_col="treatment",

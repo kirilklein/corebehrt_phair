@@ -1,8 +1,11 @@
 name: 'Pipeline test'
 
 on:
-    workflow_dispatch:
-    pull_request:
+  push:
+    branches: [ "core" ]
+  pull_request:
+    branches: [ "core" ]
+          
 
 permissions:
   contents: read
@@ -75,7 +78,7 @@ jobs:
             - name: estimate_causal_effect
               run: |
                 source .venv/bin/activate  
-                python -m ehr2vec.main.06_estimate_causal_effect
+                python -m ehr2vec.main.06_estimate_causal_effect estimator.n_bootstrap=10
 
             - name: estimate_causal_effect_counterfactual_simulation
               run: |
@@ -85,7 +88,7 @@ jobs:
             - name: predict_counterfactual
               run: |
                 source .venv/bin/activate  
-                python -m ehr2vec.main.05_predict_counterfactual
+                python -m ehr2vec.main.05_predict_counterfactual 
             
 
              

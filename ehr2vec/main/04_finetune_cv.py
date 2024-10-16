@@ -31,6 +31,7 @@ from ehr2vec.evaluation.utils import (
     split_into_test_data_and_train_val_indices,
 )
 from ehr2vec.trainer.trainer import EHRTrainer
+from ehr2vec.common.cli import override_config_from_cli
 
 DEFAULT_CONFIG_NAME = "example_configs/04_finetune.yaml"
 
@@ -195,9 +196,10 @@ def cv_loop_predefined_splits(
 
 if __name__ == "__main__":
     cfg = load_config(config_path)
+    override_config_from_cli(cfg)
     cfg, run, mount_context, pretrain_model_path = (
         Initializer.initialize_configuration_finetune(
-            config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
+            cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
         )
     )
     n_splits = cfg.data.get("cv_folds", DEFAULT_N_SPLITS)

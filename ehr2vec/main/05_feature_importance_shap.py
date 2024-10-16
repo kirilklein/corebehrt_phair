@@ -13,6 +13,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import ModelManager
 from ehr2vec.common.loader import load_config
@@ -130,8 +131,9 @@ def cv_loop_predefined_splits(
 
 def prepare_and_load_data():
     cfg = load_config(config_path)
+    override_config_from_cli(cfg)
     cfg, run, mount_context, azure_context = initialize_configuration_finetune(
-        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
+        cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
     date = datetime.now().strftime("%Y%m%d-%H%M")
 

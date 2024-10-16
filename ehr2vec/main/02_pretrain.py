@@ -3,6 +3,7 @@
 from os.path import abspath, dirname, join
 
 from ehr2vec.common.azure import AzurePathContext, save_to_blobstore
+from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import load_config
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import Initializer
@@ -25,7 +26,7 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 def main_train(config_path):
     cfg = load_config(config_path)
-
+    override_config_from_cli(cfg)
     cfg, run, mount_context = AzurePathContext(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     ).adjust_paths_for_azure_pretrain()

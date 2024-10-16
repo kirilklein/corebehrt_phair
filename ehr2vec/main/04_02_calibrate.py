@@ -8,6 +8,7 @@ from ehr2vec.common.setup import (
     initialize_configuration_finetune,
     setup_logger,
 )
+from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.evaluation.calibration import compute_and_save_calibration
 
 DEFAULT_CONFIG_NAME = "example_configs/04_02_calibrate.yaml"
@@ -19,8 +20,9 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 def main(config_path: str) -> None:
     cfg = load_config(config_path)
+    override_config_from_cli(cfg)
     cfg, run, mount_context, azure_context = initialize_configuration_finetune(
-        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
+        cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
     finetune_folder = cfg.paths.output_path
     logger = setup_logger(finetune_folder, f"calibration.log")
