@@ -27,6 +27,8 @@ def parse_cli_args():
                 is_new = True
                 key = key[1:]  # Remove '+' prefix
             overrides.append((key, value, is_new))
+        elif arg.startswith("--"): # ignore argparse arguments, already parsed
+            pass
         else:
             raise ValueError(f"Argument '{arg}' is not in 'key=value' format.")
     return overrides

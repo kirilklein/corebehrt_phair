@@ -3,6 +3,7 @@ name: 'Unittests'
 on:
     workflow_dispatch:
     pull_request:
+      branches: [ "core" ]
 
 permissions:
   contents: read
