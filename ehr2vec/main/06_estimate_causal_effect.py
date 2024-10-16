@@ -85,7 +85,8 @@ def main(config_path: str):
         bootstrap=True if estimator_cfg.n_bootstrap > 1 else False,
         n_bootstraps=estimator_cfg.n_bootstrap,
     )
-    run.log({"causal_effect": effect})
+    if run is not None:
+        run.log({"causal_effect": effect})
     effect_df = convert_effect_to_dataframe(effect)
 
     logger.info(f"Causal effect: {effect}")
@@ -104,8 +105,8 @@ def main(config_path: str):
         )
         effect_df["effect_counterfactual"] = effect_counterfactual
         logger.info(f"Causal effect from counterfactuals: {effect_counterfactual}")
-
-    run.log({"causal_effect_counterfactual": effect_counterfactual})
+        if run is not None:
+            run.log({"causal_effect_counterfactual (true)": effect_counterfactual})
     effect_df.to_csv(join(exp_folder, "effect.csv"), index=False)
 
     finish_wandb()
