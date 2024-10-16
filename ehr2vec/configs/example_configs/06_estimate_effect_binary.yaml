@@ -1,10 +1,22 @@
 env: local
-project: "PHAIR"
+project: &default_project PHAIR
+run_name: &default_run_name test
+wandb_kwargs:
+  project: *default_project
+  name: *default_run_name
+  group: estimate_effect_binary
+  job_type: test
+  tags:
+    - synthea 
+    - local
+    - ATE
+    - test
+
 paths:
   ps_model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_1_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test"
   outcome: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_OUTCOME.csv"
   output_path: "outputs/experiments/test"
-  run_name: "test"
+  run_name: *default_run_name
 ps_file: "predictions_and_targets.csv"
 estimator:
   methods: ["IPW"]
