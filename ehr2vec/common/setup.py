@@ -32,7 +32,7 @@ def get_args(default_config_name, default_run_name=None):
             default_run_name if default_run_name else default_config_name.split(".")[0]
         ),
     )
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
     if not args.config_path.startswith("configs"):
         args.config_path = join("configs", args.config_path)
     if not args.config_path.endswith(".yaml"):
@@ -179,12 +179,11 @@ def fix_tmp_prefixes_for_azure_paths(
     return cfg
 
 
-def initialize_configuration_finetune(config_path: str, dataset_name: str):
+def initialize_configuration_finetune(cfg: Config, dataset_name: str):
     """
     Load and adjust the configuration. Used if finetune models are loaded.
     E.g. in test or feature importance scripts.
     """
-    cfg = load_config(config_path)
     azure_context = AzurePathContext(cfg, dataset_name=dataset_name)
     cfg, run, mount_context = azure_context.azure_finetune_setup()
     if cfg.env == "azure":
@@ -194,12 +193,11 @@ def initialize_configuration_finetune(config_path: str, dataset_name: str):
     return cfg, run, mount_context, azure_context
 
 
-def initialize_configuration_effect_estimation(config_path: str, dataset_name: str):
+def initialize_configuration_effect_estimation(cfg: Config, dataset_name: str):
     """
     Load and adjust the configuration. Used if finetune models are loaded.
     E.g. in test or feature importance scripts.
     """
-    cfg = load_config(config_path)
     azure_context = AzurePathContext(cfg, dataset_name=dataset_name)
     cfg, run, mount_context = azure_context.azure_estimate_setup()
     if cfg.env == "azure":

@@ -12,30 +12,26 @@ import pandas as pd
 import torch
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE, DEFAULT_N_SPLITS
 from ehr2vec.common.initialize import Initializer
 from ehr2vec.common.loader import load_and_select_splits, load_config
-from ehr2vec.common.setup import (
-    DirectoryPreparer,
-    copy_data_config,
-    copy_pretrain_config,
-    get_args,
-)
+from ehr2vec.common.setup import (DirectoryPreparer, copy_data_config,
+                                  copy_pretrain_config, get_args)
 from ehr2vec.common.utils import Data
 from ehr2vec.data.prepare_data import DatasetPreparer
 from ehr2vec.data.split import get_n_splits_cv
 from ehr2vec.data.utils import Utilities
-from ehr2vec.evaluation.stats import calculate_statistics, save_gender_distribution
+from ehr2vec.evaluation.stats import (calculate_statistics,
+                                      save_gender_distribution)
 
 plot_and_save_hist = None
 if find_spec("matplotlib") is not None:
     from ehr2vec.evaluation.vis import plot_and_save_hist
 
 from ehr2vec.evaluation.utils import (
-    check_data_for_overlap,
-    save_data,
-    split_into_test_data_and_train_val_indices,
-)
+    check_data_for_overlap, save_data,
+    split_into_test_data_and_train_val_indices)
 
 DEFAULT_CONFIG_NAME = "example_configs/04_finetune_stats.yaml"
 
@@ -199,9 +195,10 @@ def cv_get_predefined_splits(
 
 if __name__ == "__main__":
     cfg = load_config(config_path)
+    override_config_from_cli(cfg)
     cfg, run, mount_context, pretrain_model_path = (
         Initializer.initialize_configuration_finetune(
-            config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
+            cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
         )
     )
 

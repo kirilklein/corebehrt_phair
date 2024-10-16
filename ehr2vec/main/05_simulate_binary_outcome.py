@@ -10,6 +10,7 @@ from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.config import Config, get_function
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.loader import load_config, load_index_dates
+from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.setup import (
     get_args,
     initialize_configuration_finetune,
@@ -26,8 +27,9 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 def main(config_path: str) -> None:
     cfg: Config = load_config(config_path)
+    override_config_from_cli(cfg)
     cfg, run, mount_context, pretrain_model_path = initialize_configuration_finetune(
-        config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
+        cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
     simulation_folder = cfg.paths.output
     os.makedirs(simulation_folder, exist_ok=True)

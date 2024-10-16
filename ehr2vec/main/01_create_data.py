@@ -16,7 +16,9 @@ import torch
 from tqdm import tqdm
 
 from ehr2vec.common.azure import AzurePathContext, save_to_blobstore
+from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import load_config
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.logger import TqdmToLogger
 from ehr2vec.common.setup import DirectoryPreparer, get_args
 from ehr2vec.common.utils import check_directory_for_features
@@ -26,7 +28,6 @@ from ehr2vec.data.featuremaker import FeatureMaker
 from ehr2vec.data.tokenizer import EHRTokenizer
 from ehr2vec.data_fixes.exclude import Excluder
 from ehr2vec.data_fixes.handle import Handler
-from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 
 DEFAULT_CONFIG_NAME = "example_configs/01_create_data.yaml"
 
@@ -46,6 +47,7 @@ def main_data(config_path):
     Saves
     """
     cfg = load_config(config_path)
+    override_config_from_cli(cfg)  # Apply CLI overrides
     cfg, _, mount_context = AzurePathContext(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     ).azure_data_pretrain_setup()

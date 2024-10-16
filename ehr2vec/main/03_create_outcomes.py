@@ -11,6 +11,7 @@ from ehr2vec.common.config import load_config
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.logger import TqdmToLogger
 from ehr2vec.common.setup import DirectoryPreparer, get_args
+from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.utils import check_patient_counts
 from ehr2vec.data.concept_loader import ConceptLoaderLarge
 from ehr2vec.downstream_tasks.outcomes import OutcomeMaker
@@ -42,6 +43,7 @@ def process_data(loader, cfg, features_cfg, logger) -> dict:
 
 def main_data(config_path):
     cfg = load_config(config_path)
+    override_config_from_cli(cfg)
     cfg.paths.outcome_dir = join(cfg.features_dir, "outcomes", cfg.outcomes_name)
 
     cfg, _, mount_context = AzurePathContext(

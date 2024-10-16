@@ -25,11 +25,14 @@ class Config(dict):
         super(Config, self).__setitem__(key, value)
 
     def str_to_num(self, s):
-        """Converts a string to a float or int if possible."""
+        """Converts a string to an int or float if possible."""
         try:
-            return float(s)
+            return int(s)
         except ValueError:
-            return s
+            try:
+                return float(s)
+            except ValueError:
+                return s
 
     def __setitem__(self, key, value):
         if isinstance(value, str):
@@ -114,3 +117,5 @@ def load_config(config_file):
         cfg = yaml.safe_load(ymlfile)
     cfg = Config(cfg)
     return cfg
+
+
