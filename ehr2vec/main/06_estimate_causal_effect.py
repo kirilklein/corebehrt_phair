@@ -92,7 +92,7 @@ def main(config_path: str):
 
     log_config(cfg, logger)
     cfg.paths.run_name = split(exp_folder)[-1]
-    
+
     if cfg.paths.get("counterfactual_outcome", None):
         logger.info("Computing effect from counterfactual outcomes")
         counterfactuals = load_counterfactual_outcomes(cfg.paths.counterfactual_outcome)
@@ -104,7 +104,7 @@ def main(config_path: str):
         )
         effect_df["effect_counterfactual"] = effect_counterfactual
         logger.info(f"Causal effect from counterfactuals: {effect_counterfactual}")
-        
+
     run.log({"causal_effect_counterfactual": effect_counterfactual})
     effect_df.to_csv(join(exp_folder, "effect.csv"), index=False)
 
