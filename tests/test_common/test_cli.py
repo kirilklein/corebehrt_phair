@@ -2,11 +2,17 @@ import sys
 import unittest
 from unittest.mock import patch
 
-from ehr2vec.common.cli import override_config_from_cli, parse_cli_args, set_nested_attr
+from ehr2vec.common.cli import (
+    handle_argparse_arg,
+    override_config_from_cli,
+    parse_cli_args,
+    parse_key_value_arg,
+    process_args,
+    set_nested_attr,
+)
 from ehr2vec.common.config import Config
 
 
-# Unit tests
 class TestConfigOverride(unittest.TestCase):
     def test_parse_cli_args_normal(self):
         """Test parsing normal key=value arguments."""
@@ -22,6 +28,22 @@ class TestConfigOverride(unittest.TestCase):
         with patch.object(sys, "argv", test_args):
             overrides = parse_cli_args()
             expected = [("newkey", "newvalue", True)]
+            self.assertEqual(overrides, expected)
+
+    def test_parse_cli_args_with_argparse_arguments(self):
+        """Test that argparse-style arguments are ignored."""
+        test_args = ["script.py", "--config_path", "config.yaml", "key=value"]
+        with patch.object(sys, "argv", test_args):
+            overrides = parse_cli_args()
+            expected = [("key", "value", False)]
+            self.assertEqual(overrides, expected)
+
+    def test_parse_cli_args_with_argparse_flags(self):
+        """Test that flags starting with '--' are ignored."""
+        test_args = ["script.py", "--verbose", "true", "key=value"]
+        with patch.object(sys, "argv", test_args):
+            overrides = parse_cli_args()
+            expected = [("key", "value", False)]
             self.assertEqual(overrides, expected)
 
     def test_parse_cli_args_invalid_format(self):
@@ -135,6 +157,46 @@ class TestConfigOverride(unittest.TestCase):
         with patch.object(sys, "argv", test_args):
             override_config_from_cli(cfg)
             self.assertEqual(cfg.level1.level2, 42)
+
+    def test_parse_cli_args_skip_next(self):
+        """Test that arguments after '--' flags are skipped appropriately."""
+        test_args = ["script.py", "--config", "config.yaml", "key=value"]
+        with patch.object(sys, "argv", test_args):
+            overrides = parse_cli_args()
+            expected = [("key", "value", False)]
+            self.assertEqual(overrides, expected)
+
+    def test_parse_cli_args_handle_argparse_arg(self):
+        """Test the handle_argparse_arg function indirectly via parse_cli_args."""
+        test_args = ["script.py", "--flag", "--another_flag", "key=value"]
+        with patch.object(sys, "argv", test_args):
+            overrides = parse_cli_args()
+            expected = [("key", "value", False)]
+            self.assertEqual(overrides, expected)
+
+    def test_process_args_skip_next_logic(self):
+        """Test the skip_next logic in process_args."""
+        args = ["--config", "config.yaml", "key=value", "--verbose"]
+        overrides = process_args(args)
+        expected = [("key", "value", False)]
+        self.assertEqual(overrides, expected)
+
+    def test_parse_key_value_arg(self):
+        """Test parsing of key=value arguments."""
+        arg = "+newkey=newvalue"
+        result = parse_key_value_arg(arg)
+        expected = ("newkey", "newvalue", True)
+        self.assertEqual(result, expected)
+
+    def test_handle_argparse_arg(self):
+        """Test the handle_argparse_arg function."""
+        args = ["--config", "config.yaml"]
+        skip_next = handle_argparse_arg(args, 0)
+        self.assertTrue(skip_next)
+
+        args = ["--flag"]
+        skip_next = handle_argparse_arg(args, 0)
+        self.assertFalse(skip_next)
 
 
 # Run the unit tests
