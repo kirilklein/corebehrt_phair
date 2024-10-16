@@ -7,8 +7,10 @@ from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import load_config
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import Initializer
-from ehr2vec.common.loader import (load_checkpoint_and_epoch,
-                                   load_model_cfg_from_checkpoint)
+from ehr2vec.common.loader import (
+    load_checkpoint_and_epoch,
+    load_model_cfg_from_checkpoint,
+)
 from ehr2vec.common.setup import DirectoryPreparer, copy_data_config, get_args
 from ehr2vec.common.utils import compute_number_of_warmup_steps
 from ehr2vec.common.wandb import finish_wandb, initialize_wandb

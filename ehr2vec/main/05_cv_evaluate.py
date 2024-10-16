@@ -11,10 +11,13 @@ from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import ModelManager
 from ehr2vec.common.loader import load_config
 from ehr2vec.common.logger import log_config
-from ehr2vec.common.setup import (fix_tmp_prefixes_for_azure_paths, get_args,
-                                  initialize_configuration_finetune,
-                                  setup_logger,
-                                  update_test_cfg_with_pt_ft_cfgs)
+from ehr2vec.common.setup import (
+    fix_tmp_prefixes_for_azure_paths,
+    get_args,
+    initialize_configuration_finetune,
+    setup_logger,
+    update_test_cfg_with_pt_ft_cfgs,
+)
 from ehr2vec.common.utils import Data
 from ehr2vec.common.wandb import finish_wandb, initialize_wandb
 from ehr2vec.data.dataset import BinaryOutcomeDataset

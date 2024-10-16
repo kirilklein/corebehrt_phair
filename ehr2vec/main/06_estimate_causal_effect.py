@@ -21,9 +21,13 @@ from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import Config
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
+
 # from ehr2vec.common.calibration import calibrate_cv
-from ehr2vec.common.loader import (load_config, load_counterfactual_outcomes,
-                                   load_outcomes)
+from ehr2vec.common.loader import (
+    load_config,
+    load_counterfactual_outcomes,
+    load_outcomes,
+)
 from ehr2vec.common.logger import log_config
 from ehr2vec.common.setup import (
     fix_tmp_prefixes_for_azure_paths,
@@ -35,7 +39,8 @@ from ehr2vec.common.wandb import finish_wandb, initialize_wandb
 from ehr2vec.effect_estimation.counterfactual import compute_effect_from_counterfactuals
 from ehr2vec.effect_estimation.data import (
     construct_data_for_effect_estimation,
-    construct_data_to_estimate_effect_from_counterfactuals)
+    construct_data_to_estimate_effect_from_counterfactuals,
+)
 from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
 
 DEFAULT_CONFIG_NAME = "example_configs/06_estimate_effect_binary.yaml"
@@ -75,7 +80,8 @@ def main(config_path: str):
     logger.info("Estimating causal effect")
     estimator_cfg = cfg.get("estimator")
     estimator = Estimator(
-        methods=estimator_cfg.methods, effect_type=estimator_cfg.effect_type, 
+        methods=estimator_cfg.methods,
+        effect_type=estimator_cfg.effect_type,
     )
     print(estimator_cfg)
     effect = estimator.compute_effect(

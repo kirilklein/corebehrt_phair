@@ -32,6 +32,7 @@ from ehr2vec.evaluation.utils import (
 )
 from ehr2vec.trainer.trainer import EHRTrainer
 from ehr2vec.common.cli import override_config_from_cli
+
 DEFAULT_CONFIG_NAME = "example_configs/04_finetune.yaml"
 
 

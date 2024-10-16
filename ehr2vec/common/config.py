@@ -117,5 +117,3 @@ def load_config(config_file):
         cfg = yaml.safe_load(ymlfile)
     cfg = Config(cfg)
     return cfg
-
-
