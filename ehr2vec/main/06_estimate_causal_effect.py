@@ -14,19 +14,17 @@ Optional (for double robustness):
 import os
 from os.path import abspath, dirname, join, split
 
+import pandas as pd
 from CausalEstimate.interface.estimator import Estimator
 
 from ehr2vec.common.azure import save_to_blobstore
-from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.config import Config
-
-# from ehr2vec.common.calibration import calibrate_cv
+from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.loader import (
     load_config,
     load_counterfactual_outcomes,
     load_outcomes,
 )
-import pandas as pd
 from ehr2vec.common.logger import log_config
 from ehr2vec.common.setup import (
     fix_tmp_prefixes_for_azure_paths,
@@ -34,6 +32,7 @@ from ehr2vec.common.setup import (
     initialize_configuration_effect_estimation,
     setup_logger,
 )
+from ehr2vec.common.wandb import finish_wandb, initialize_wandb
 from ehr2vec.effect_estimation.counterfactual import compute_effect_from_counterfactuals
 from ehr2vec.effect_estimation.data import (
     construct_data_for_effect_estimation,
@@ -53,7 +52,7 @@ def main(config_path: str):
     cfg, run, mount_context, azure_context = initialize_configuration_effect_estimation(
         config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
-
+    run = initialize_wandb(run, cfg, cfg.wandb_kwargs)
     # create test folder
     exp_folder = join(cfg.paths.output_path, f"experiment_{cfg.paths.run_name}")
     os.makedirs(exp_folder, exist_ok=True)
@@ -86,6 +85,8 @@ def main(config_path: str):
         bootstrap=True if estimator_cfg.n_bootstrap > 1 else False,
         n_bootstraps=estimator_cfg.n_bootstrap,
     )
+    if run is not None:
+        run.log({"causal_effect": effect})
     effect_df = convert_effect_to_dataframe(effect)
 
     logger.info(f"Causal effect: {effect}")
@@ -104,9 +105,11 @@ def main(config_path: str):
         )
         effect_df["effect_counterfactual"] = effect_counterfactual
         logger.info(f"Causal effect from counterfactuals: {effect_counterfactual}")
-
+        if run is not None:
+            run.log({"causal_effect_counterfactual (true)": effect_counterfactual})
     effect_df.to_csv(join(exp_folder, "effect.csv"), index=False)
 
+    finish_wandb()
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'

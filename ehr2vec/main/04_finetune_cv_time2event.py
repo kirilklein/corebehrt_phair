@@ -197,7 +197,7 @@ if __name__ == "__main__":
     cfg = load_config(config_path)
     cfg, run, mount_context, pretrain_model_path = (
         Initializer.initialize_configuration_finetune(
-            config_path, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
+            cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
         )
     )
     cfg.outcome.time2event = True
