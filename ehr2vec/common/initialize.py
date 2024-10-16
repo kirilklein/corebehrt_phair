@@ -9,7 +9,7 @@ from torch.utils.data import Sampler
 from transformers import BertConfig
 
 from ehr2vec.common.azure import AzurePathContext
-from ehr2vec.common.config import Config, instantiate, load_config
+from ehr2vec.common.config import Config, instantiate
 from ehr2vec.common.loader import ModelLoader, load_model_cfg_from_checkpoint
 from ehr2vec.common.setup import DirectoryPreparer
 from ehr2vec.data.utils import Utilities
