@@ -7,7 +7,7 @@ except ImportError:
 from ehr2vec.common.config import Config
 
 
-def initialize_wandb(run, cfg: Config, wandb_kwargs: dict) -> wandb.run:
+def initialize_wandb(run, cfg: Config, wandb_kwargs: dict):
     """
     Initialize Wandb if available, else return run.
     Return the run object.
