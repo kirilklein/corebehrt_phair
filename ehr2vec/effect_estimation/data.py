@@ -1,7 +1,12 @@
-import pandas as pd
-from ehr2vec.common.default_args import TREATMENT_COL, COUNTERFACTUAL_CONTROL_COL, COUNTERFACTUAL_TREATED_COL, OUTCOME_PREDICTIONS_COL
 import logging
+
 import numpy as np
+import pandas as pd
+
+from ehr2vec.common.default_args import (COUNTERFACTUAL_CONTROL_COL,
+                                         COUNTERFACTUAL_TREATED_COL,
+                                         OUTCOME_PREDICTIONS_COL,
+                                         TREATMENT_COL)
 from ehr2vec.data.utils import remove_duplicate_indices
 
 logger = logging.getLogger(__name__)
@@ -42,7 +47,7 @@ def add_outcome_predictions(
         counterfactual_predictions: DataFrame with counterfactual predictions.
 
     Returns:
-        pd.DataFrame: Updated DataFrame with added outcome and counterfactual predictions.
+        df: Updated DataFrame with added outcome and counterfactual predictions.
 
     Note:
         - This function removes duplicate indices from all input DataFrames.
@@ -75,8 +80,6 @@ def add_outcome_predictions(
     )
 
     df = assign_counterfactuals(df)
-
-    df = check_for_duplicate_indices(df)
 
     logger.info(
         f"Final DataFrame shape: {df.shape}, Unique PIDs: {len(df.index.unique())}"
@@ -111,15 +114,6 @@ def assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
     )
     return df
 
-def check_for_duplicate_indices(df: pd.DataFrame) -> pd.DataFrame:
-    """Check for duplicate indices and remove them, logging a warning."""
-    if df.index.duplicated().any():
-        num_duplicates = df.index.duplicated().sum()
-        logger.warning(
-            f"Found {num_duplicates} duplicate indices after merging. Keeping first occurrence."
-        )
-        df = df[~df.index.duplicated(keep='first')]
-    return df
 
 
 

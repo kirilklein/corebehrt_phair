@@ -359,5 +359,13 @@ def shuffle_df(df: pd.DataFrame) -> pd.DataFrame:
     return df.sample(frac=1)
 
 def remove_duplicate_indices(df: pd.DataFrame) -> pd.DataFrame:
-    """Remove duplicate indices from a DataFrame."""
-    return df[~df.index.duplicated(keep='first')]
+    """
+    Removes duplicate indices from the DataFrame and logs a warning if any are found.
+    """
+    if df.index.duplicated().any():
+        num_duplicates = df.index.duplicated().sum()
+        logger.warning(
+            f"Found {num_duplicates} duplicate indices after merging. Keeping first occurrence."
+        )
+        df = df.loc[~df.index.duplicated(keep='first')]
+    return df
