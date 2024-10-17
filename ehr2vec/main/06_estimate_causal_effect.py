@@ -101,7 +101,6 @@ def main(config_path: str):
         propensity_scores, outcomes, outcome_predictions, counterfactual_predictions
     )
 
-
     stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
     stats_table.index.name = "Treatment"
     stats_table.reset_index(inplace=True)

@@ -11,6 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def initialize_wandb(run, cfg: Config, wandb_kwargs: dict):
     """
     Initialize Wandb if available, else return run.
@@ -55,9 +56,9 @@ def finish_wandb() -> None:
     if use_wandb:
         wandb.finish()
 
+
 def log_dataframe(table: pd.DataFrame, name: str) -> None:
     if use_wandb:
         wandb.log({name: wandb.Table(dataframe=table)})
     else:
         logger.info(f"{name}: {table}")
-

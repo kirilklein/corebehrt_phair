@@ -3,16 +3,22 @@ import logging
 import numpy as np
 import pandas as pd
 
-from ehr2vec.common.default_args import (COUNTERFACTUAL_CONTROL_COL,
-                                         COUNTERFACTUAL_TREATED_COL,
-                                         OUTCOME_PREDICTIONS_COL,
-                                         TREATMENT_COL)
+from ehr2vec.common.default_args import (
+    COUNTERFACTUAL_CONTROL_COL,
+    COUNTERFACTUAL_TREATED_COL,
+    OUTCOME_PREDICTIONS_COL,
+    TREATMENT_COL,
+)
 from ehr2vec.data.utils import remove_duplicate_indices
 
 logger = logging.getLogger(__name__)
 
+
 def construct_data_for_effect_estimation(
-    propensity_scores: pd.DataFrame, outcomes: pd.DataFrame, outcome_predictions: pd.DataFrame=None, counterfactual_predictions: pd.DataFrame=None
+    propensity_scores: pd.DataFrame,
+    outcomes: pd.DataFrame,
+    outcome_predictions: pd.DataFrame = None,
+    counterfactual_predictions: pd.DataFrame = None,
 ) -> pd.DataFrame:
     """
     Constructs the data for effect estimation from the propensity scores and outcomes dataframes.
@@ -26,14 +32,17 @@ def construct_data_for_effect_estimation(
     df["outcome"].fillna(0, inplace=True)
     df["outcome"] = df["outcome"].astype(int)
     if counterfactual_predictions is not None and outcome_predictions is not None:
-        df = add_outcome_predictions(df, counterfactual_predictions, outcome_predictions)
+        df = add_outcome_predictions(
+            df, counterfactual_predictions, outcome_predictions
+        )
 
     return df
+
 
 def add_outcome_predictions(
     df: pd.DataFrame,
     outcome_predictions: pd.DataFrame,
-    counterfactual_predictions: pd.DataFrame
+    counterfactual_predictions: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Adds outcome predictions and counterfactual predictions to the input DataFrame.
@@ -61,10 +70,7 @@ def add_outcome_predictions(
     initial_pids = df.index.unique()
 
     df = merge_with_predictions(
-        df,
-        outcome_predictions,
-        OUTCOME_PREDICTIONS_COL,
-        OUTCOME_PREDICTIONS_COL
+        df, outcome_predictions, OUTCOME_PREDICTIONS_COL, OUTCOME_PREDICTIONS_COL
     )
 
     if len(df.index.unique()) != len(initial_pids):
@@ -73,10 +79,7 @@ def add_outcome_predictions(
         )
 
     df = merge_with_predictions(
-        df,
-        counterfactual_predictions,
-        OUTCOME_PREDICTIONS_COL,
-        'Y_hat_counterfactual'
+        df, counterfactual_predictions, OUTCOME_PREDICTIONS_COL, "Y_hat_counterfactual"
     )
 
     df = assign_counterfactuals(df)
@@ -87,15 +90,16 @@ def add_outcome_predictions(
 
     return df
 
+
 def merge_with_predictions(
-    df: pd.DataFrame,
-    predictions: pd.DataFrame,
-    predictions_col: str,
-    new_col_name: str
+    df: pd.DataFrame, predictions: pd.DataFrame, predictions_col: str, new_col_name: str
 ) -> pd.DataFrame:
     """Merge df with predictions DataFrame on index."""
     predictions = predictions.rename(columns={predictions_col: new_col_name})
-    return df.merge(predictions[[new_col_name]], left_index=True, right_index=True, how='inner')
+    return df.merge(
+        predictions[[new_col_name]], left_index=True, right_index=True, how="inner"
+    )
+
 
 def assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
     """Assign Y1_hat and Y0_hat based on treatment status."""
@@ -103,18 +107,12 @@ def assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
     untreated_mask = ~treated_mask
 
     df[COUNTERFACTUAL_TREATED_COL] = np.where(
-        treated_mask,
-        df[OUTCOME_PREDICTIONS_COL],
-        df['Y_hat_counterfactual']
+        treated_mask, df[OUTCOME_PREDICTIONS_COL], df["Y_hat_counterfactual"]
     )
     df[COUNTERFACTUAL_CONTROL_COL] = np.where(
-        untreated_mask,
-        df[OUTCOME_PREDICTIONS_COL],
-        df['Y_hat_counterfactual']
+        untreated_mask, df[OUTCOME_PREDICTIONS_COL], df["Y_hat_counterfactual"]
     )
     return df
-
-
 
 
 def construct_data_to_estimate_effect_from_counterfactuals(
