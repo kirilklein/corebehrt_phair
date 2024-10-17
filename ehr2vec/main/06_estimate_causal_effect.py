@@ -16,7 +16,7 @@ from os.path import abspath, dirname, join, split
 
 import pandas as pd
 from CausalEstimate.interface.estimator import Estimator
-
+from CausalEstimate.stats.stats import compute_treatment_outcome_table
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import Config
@@ -48,6 +48,7 @@ from ehr2vec.effect_estimation.data import (
     construct_data_to_estimate_effect_from_counterfactuals,
 )
 from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
+from ehr2vec.common.wandb import log_dataframe
 
 DEFAULT_CONFIG_NAME = "example_configs/06_estimate_effect_binary.yaml"
 
@@ -100,6 +101,12 @@ def main(config_path: str):
         propensity_scores, outcomes, outcome_predictions, counterfactual_predictions
     )
 
+
+    stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
+    stats_table.index.name = "Treatment"
+    stats_table.reset_index(inplace=True)
+    log_dataframe(stats_table, "stats_table")
+
     logger.info("Estimating causal effect")
     estimator_cfg = cfg.get("estimator")
     estimator = Estimator(
@@ -139,6 +146,7 @@ def main(config_path: str):
         logger.info(f"Causal effect from counterfactuals: {effect_counterfactual}")
         if run is not None:
             run.log({"causal_effect_counterfactual (true)": effect_counterfactual})
+    log_dataframe(effect_df, "effect_df")
     effect_df.to_csv(join(exp_folder, "effect.csv"), index=False)
 
     finish_wandb()

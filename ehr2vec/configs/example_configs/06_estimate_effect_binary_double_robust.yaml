@@ -23,7 +23,7 @@ paths:
   run_name: *default_run_name
 ps_file: "predictions_and_targets.csv"
 estimator:
-  methods: ["IPW"]
+  methods: ["AIPW"]
   effect_type: "ATE"
   n_bootstrap: 30
 

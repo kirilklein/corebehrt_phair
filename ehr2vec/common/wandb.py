@@ -4,8 +4,12 @@ try:
     use_wandb = True
 except ImportError:
     use_wandb = False
-from ehr2vec.common.config import Config
 
+import pandas as pd
+from ehr2vec.common.config import Config
+import logging
+
+logger = logging.getLogger(__name__)
 
 def initialize_wandb(run, cfg: Config, wandb_kwargs: dict):
     """
@@ -50,3 +54,10 @@ def create_wandb_config(cfg: Config) -> dict:
 def finish_wandb() -> None:
     if use_wandb:
         wandb.finish()
+
+def log_dataframe(table: pd.DataFrame, name: str) -> None:
+    if use_wandb:
+        wandb.log({name: wandb.Table(dataframe=table)})
+    else:
+        logger.info(f"{name}: {table}")
+
