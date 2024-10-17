@@ -105,6 +105,8 @@ def get_sampler(cfg, train_dataset, outcomes):
         label_weight = get_function(cfg.trainer_args["sample_weight_function"])(
             value_counts
         )
+        # sometimes we don't have a label_weight[1] for positive class
+        label_weight[1] = label_weight.get(1, 0)
         label_weight[1] *= cfg.trainer_args.get("sample_weight_multiplier", 1.0)
         weights = labels.map(label_weight).values
         # Adjust the weight for the positive class (1) using the sample_weight
