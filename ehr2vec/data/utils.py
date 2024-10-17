@@ -357,3 +357,7 @@ class Utilities:
 
 def shuffle_df(df: pd.DataFrame) -> pd.DataFrame:
     return df.sample(frac=1)
+
+def remove_duplicate_indices(df: pd.DataFrame) -> pd.DataFrame:
+    """Remove duplicate indices from a DataFrame."""
+    return df[~df.index.duplicated(keep='first')]
