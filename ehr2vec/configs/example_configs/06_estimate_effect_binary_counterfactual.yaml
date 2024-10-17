@@ -13,14 +13,14 @@ wandb_kwargs:
     - test
 
 paths:
-  ps_model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_1_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test"
+  ps_model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test"
   outcome: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/SIMULATED.csv"
-  counterfactual_outcome: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/COUNTERFACTUAL.csv"
+  # used for computation of true effect:
+  counterfactual_outcome: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/COUNTERFACTUAL.csv" 
   output_path: "outputs/experiments/test"
   run_name: *default_run_name
 ps_file: "predictions_and_targets.csv"
 estimator:
   methods: ["IPW"]
   effect_type: "ATE"
-  n_bootstrap: 1000
-
+  n_bootstrap: 30

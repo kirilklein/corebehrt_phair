@@ -11,10 +11,14 @@ wandb_kwargs:
     - local
     - ATE
     - test
+    - double_robust
 
 paths:
   ps_model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test"
   outcome: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_OUTCOME.csv"
+  # used for double-robust estimation:
+  outcome_predictions: "outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test/predictions_and_targets.csv"
+  outcome_predictions_counterfactual: "outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test/counterfactual_predictions_test/counterfactual_predictions.csv"
   output_path: "outputs/experiments/test"
   run_name: *default_run_name
 ps_file: "predictions_and_targets.csv"
