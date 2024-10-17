@@ -180,7 +180,8 @@ class ModelLoader:
             raise ValueError(
                 f"Embeddings not loaded. Ensure that model.behrt_embeddings is compatible with pretrained model embeddings {pretrained_model_embeddings}."
             )
-        logger.warning("missing state dict keys: %s", missing_keys)
+        if len(missing_keys) > 0:
+            logger.warning("missing state dict keys: %s", missing_keys)
         return model
 
     def load_checkpoint(self) -> dict:

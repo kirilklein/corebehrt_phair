@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 from unittest.mock import Mock, MagicMock, patch
 
-from ehr2vec.data.utils import Utilities
+from ehr2vec.data.utils import Utilities, remove_duplicate_indices
 
 
 class TestUtilities(unittest.TestCase):
@@ -158,6 +158,113 @@ class TestUtilities(unittest.TestCase):
         result = Utilities.get_codes_from_regex(mock_vocabulary, regex)
         expected_result = set()  # No matches expected
         self.assertEqual(result, expected_result)
+
+    # Define the unittest class
+    class TestRemoveDuplicateIndices(unittest.TestCase):
+
+        def test_remove_duplicate_indices_with_duplicates(self):
+            """
+            Test that the function removes duplicate indices and logs a warning.
+            """
+            # Create a DataFrame with duplicate indices
+            df = pd.DataFrame(
+                {"A": [10, 20, 30, 40], "B": ["a", "b", "c", "d"]}, index=[1, 2, 2, 3]
+            )  # Duplicate index at 2
+
+            # Expected DataFrame after removing duplicates
+            expected_df = pd.DataFrame(
+                {"A": [10, 20, 40], "B": ["a", "b", "d"]}, index=[1, 2, 3]
+            )
+
+            with self.assertLogs("effect_estimation", level="WARNING") as log:
+                result_df = remove_duplicate_indices(df)
+
+            # Check that the warning was logged
+            self.assertTrue(
+                any(
+                    "Found 1 duplicate indices after merging. Keeping first occurrence."
+                    in message
+                    for message in log.output
+                ),
+                "Expected warning message not found in logs.",
+            )
+
+            # Check that the duplicates were removed correctly
+            pd.testing.assert_frame_equal(result_df, expected_df)
+
+        def test_remove_duplicate_indices_no_duplicates(self):
+            """
+            Test that the function returns the same DataFrame when there are no duplicates and does not log a warning.
+            """
+            # Create a DataFrame without duplicate indices
+            df = pd.DataFrame(
+                {"A": [10, 20, 30], "B": ["a", "b", "c"]}, index=[1, 2, 3]
+            )
+
+            expected_df = df.copy()
+
+            with self.assertLogs("effect_estimation", level="WARNING") as log:
+                result_df = remove_duplicate_indices(df)
+
+            # Check that no warnings were logged
+            self.assertEqual(
+                len(log.output),
+                0,
+                "No warnings should be logged when there are no duplicate indices.",
+            )
+
+            # Check that the DataFrame remains unchanged
+            pd.testing.assert_frame_equal(result_df, expected_df)
+
+        def test_remove_duplicate_indices_all_duplicates(self):
+            """
+            Test that the function handles DataFrames where all indices are duplicates.
+            """
+            # Create a DataFrame where all indices are the same
+            df = pd.DataFrame(
+                {"A": [10, 20, 30], "B": ["a", "b", "c"]}, index=[1, 1, 1]
+            )  # All indices are 1
+
+            # Expected DataFrame after removing duplicates
+            expected_df = pd.DataFrame({"A": [10], "B": ["a"]}, index=[1])
+
+            with self.assertLogs("effect_estimation", level="WARNING") as log:
+                result_df = remove_duplicate_indices(df)
+
+            # Check that the warning was logged
+            self.assertTrue(
+                any(
+                    "Found 2 duplicate indices after merging. Keeping first occurrence."
+                    in message
+                    for message in log.output
+                ),
+                "Expected warning message not found in logs.",
+            )
+
+            # Check that only the first occurrence is kept
+            pd.testing.assert_frame_equal(result_df, expected_df)
+
+        def test_remove_duplicate_indices_empty_dataframe(self):
+            """
+            Test that the function handles an empty DataFrame without errors.
+            """
+            # Create an empty DataFrame
+            df = pd.DataFrame(columns=["A", "B"])
+
+            expected_df = df.copy()
+
+            with self.assertLogs("effect_estimation", level="WARNING") as log:
+                result_df = remove_duplicate_indices(df)
+
+            # Check that no warnings were logged
+            self.assertEqual(
+                len(log.output),
+                0,
+                "No warnings should be logged for an empty DataFrame.",
+            )
+
+            # Check that the result is an empty DataFrame
+            pd.testing.assert_frame_equal(result_df, expected_df)
 
 
 if __name__ == "__main__":

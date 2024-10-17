@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from os.path import abspath, dirname, join, split
 
 import torch
@@ -111,9 +110,8 @@ def main(config_path: str):
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
 
-    date = datetime.now().strftime("%Y%m%d-%H%M")
     counterfactual_folder = join(
-        cfg.paths.output_path, f"counterfactual_predictions_{date}"
+        cfg.paths.output_path, f"counterfactual_predictions_{cfg.paths.run_name}"
     )
     os.makedirs(counterfactual_folder, exist_ok=True)
 

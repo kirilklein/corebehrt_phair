@@ -39,7 +39,7 @@ data:
 
 
 outcome: 
-  n_hours_censoring: -1 # censor time after index date (negative means before)
+  n_hours_censoring: -24 # censor time after index date (negative means before)
   n_hours_start_follow_up: 0
   first_time_outcomes_only: False # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
   # index_date: # if all patients should have the same censor date
