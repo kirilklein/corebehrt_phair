@@ -12,5 +12,5 @@ setuptools==71.1.0
 torch==2.3.1
 tqdm==4.66.4
 transformers==4.41.2
-CausalEstimate==0.2.2
+CausalEstimate==0.4.0
 matplotlib>=3.8.5
