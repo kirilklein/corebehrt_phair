@@ -60,7 +60,8 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 def main(config_path: str):
     cfg: Config = load_config(config_path)
     override_config_from_cli(cfg)
-
+    if "wandb_kwargs" in cfg:
+        cfg.wandb_kwargs.name = cfg.paths.run_name
     cfg, run, mount_context, azure_context = initialize_configuration_effect_estimation(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
@@ -125,9 +126,14 @@ def main(config_path: str):
         methods=estimator_cfg.methods,
         effect_type=estimator_cfg.effect_type,
     )
-
-    method_args = {method : {"predicted_outcome_treated_col":COUNTERFACTUAL_TREATED_COL,
-                             "predicted_outcome_control_col":COUNTERFACTUAL_CONTROL_COL} for method in DOUBLE_ROBUST_METHODS}
+    # temporary fix for double robustness
+    method_args = {
+        method: {
+            "predicted_outcome_treated_col": COUNTERFACTUAL_TREATED_COL,
+            "predicted_outcome_control_col": COUNTERFACTUAL_CONTROL_COL,
+        }
+        for method in DOUBLE_ROBUST_METHODS
+    }
 
     effect = estimator.compute_effect(
         df,
