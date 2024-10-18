@@ -27,3 +27,5 @@ estimator:
   effect_type: "ATE"
   n_bootstrap: 30
 
+num_patients: 1000
+

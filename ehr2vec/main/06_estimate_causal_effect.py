@@ -12,6 +12,7 @@ Optional (for double robustness):
 """
 
 import os
+import numpy as np
 from os.path import abspath, dirname, join, split
 
 import pandas as pd
@@ -101,6 +102,18 @@ def main(config_path: str):
         propensity_scores, outcomes, outcome_predictions, counterfactual_predictions
     )
 
+    if cfg.get("num_patients", None) is not None and cfg.get("num_patients") < len(df):
+        df = df.sample(n=cfg.num_patients)
+        logger.info(f"Sampling {cfg.num_patients} patients")
+
+    if cfg.get("ps noise", 0) > 0:
+        logger.info(f"Adding {cfg.get('ps noise')} noise to propensity scores")
+        propensity_scores[PS_COL] = propensity_scores[PS_COL] * (
+            1
+            + np.random.uniform(
+                -cfg.get("ps noise"), cfg.get("ps noise"), len(propensity_scores)
+            )
+        )
     stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
     stats_table.index.name = "Treatment"
     stats_table.reset_index(inplace=True)
