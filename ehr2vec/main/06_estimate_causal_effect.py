@@ -12,6 +12,7 @@ Optional (for double robustness):
 """
 
 import os
+import numpy as np
 from os.path import abspath, dirname, join, split
 
 import pandas as pd
@@ -51,7 +52,7 @@ from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
 from ehr2vec.common.wandb import log_dataframe
 
 DEFAULT_CONFIG_NAME = "example_configs/06_estimate_effect_binary.yaml"
-
+DOUBLE_ROBUST_METHODS = ["AIPW", "TMLE"]
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
@@ -59,7 +60,8 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 def main(config_path: str):
     cfg: Config = load_config(config_path)
     override_config_from_cli(cfg)
-
+    if "wandb_kwargs" in cfg:
+        cfg.wandb_kwargs.name = cfg.paths.run_name
     cfg, run, mount_context, azure_context = initialize_configuration_effect_estimation(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
@@ -101,6 +103,18 @@ def main(config_path: str):
         propensity_scores, outcomes, outcome_predictions, counterfactual_predictions
     )
 
+    if cfg.get("num_patients", None) is not None and cfg.get("num_patients") < len(df):
+        df = df.sample(n=cfg.num_patients)
+        logger.info(f"Sampling {cfg.num_patients} patients")
+
+    if cfg.get("ps noise", 0) > 0:
+        logger.info(f"Adding {cfg.get('ps noise')} noise to propensity scores")
+        propensity_scores[PS_COL] = propensity_scores[PS_COL] * (
+            1
+            + np.random.uniform(
+                -cfg.get("ps noise"), cfg.get("ps noise"), len(propensity_scores)
+            )
+        )
     stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
     stats_table.index.name = "Treatment"
     stats_table.reset_index(inplace=True)
@@ -112,6 +126,14 @@ def main(config_path: str):
         methods=estimator_cfg.methods,
         effect_type=estimator_cfg.effect_type,
     )
+    # temporary fix for double robustness
+    method_args = {
+        method: {
+            "predicted_outcome_treated_col": COUNTERFACTUAL_TREATED_COL,
+            "predicted_outcome_control_col": COUNTERFACTUAL_CONTROL_COL,
+        }
+        for method in DOUBLE_ROBUST_METHODS
+    }
 
     effect = estimator.compute_effect(
         df,
@@ -120,8 +142,7 @@ def main(config_path: str):
         ps_col=PS_COL,
         bootstrap=True if estimator_cfg.n_bootstrap > 1 else False,
         n_bootstraps=estimator_cfg.n_bootstrap,
-        predicted_outcome_treated_col=COUNTERFACTUAL_TREATED_COL,
-        predicted_outcome_control_col=COUNTERFACTUAL_CONTROL_COL,
+        method_args=method_args,
     )
     if run is not None:
         run.log({"causal_effect": effect})
