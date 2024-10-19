@@ -83,10 +83,9 @@ def add_outcome_predictions(
     )
 
     df = assign_counterfactuals(df)
+    df.drop(columns=["Y_hat_counterfactual"], inplace=True)
 
-    logger.info(
-        f"Final DataFrame shape: {df.shape}, Unique PIDs: {len(df.index.unique())}"
-    )
+    logger.info(f"Final DataFrame shape: {df.shape}, Unique PIDs: {df.index.nunique()}")
 
     return df
 
