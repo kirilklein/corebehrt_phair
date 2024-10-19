@@ -109,10 +109,7 @@ class DatasetPreparer:
                 )
             self.cfg.outcome = original_config.outcome
             data = self._select_predefined_pids(data)
-            if self.cfg.outcome.get("simulate_outcomes", False):
-                self._simulate_outcomes_for_data(data, self.cfg.outcome)
-            else:
-                self._load_outcomes_to_data(data)
+            self._load_outcomes_to_data(data)
 
         if not predefined_pids:
             # 2. Optional: Select gender group
@@ -314,19 +311,6 @@ class DatasetPreparer:
                     join(self.cfg.paths.predefined_splits, f"{outcome_type}.pt")
                 ),
             )
-
-    def _simulate_outcomes_for_data(self, data: Data):
-        """
-        Here goes the implementation of the outcome simulation.
-        What we will do is the following:
-        1. Load propensity scores
-        2. Pass exposure
-        3. Based on ps and exposure, simulate binary outcomes
-        4. Simulate time2event outcomes (based on index date)
-        5. Save simulated outcomes to data
-
-        """
-        pass
 
     def _load_popensity_scores_to_data(self) -> dict:
         """Load propensity scores to data."""
