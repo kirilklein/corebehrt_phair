@@ -49,11 +49,13 @@ def save_predictions(
     run_folder: str, logits: torch.Tensor, targets: torch.Tensor, epoch: int, mode="val"
 ) -> None:
     """Saves the predictions to npz files in the run folder"""
+    targets = targets.cpu().numpy()  # !! important, otherwise stored incorrectly
     probas_name = os.path.join(run_folder, "checkpoints", f"probas_{mode}_{epoch}.npz")
     targets_name = os.path.join(
         run_folder, "checkpoints", f"targets_{mode}_{epoch}.npz"
     )
     probas = torch.sigmoid(logits).cpu().numpy()
+
     np.savez_compressed(probas_name, probas=probas)
     np.savez_compressed(targets_name, targets=targets)
 
