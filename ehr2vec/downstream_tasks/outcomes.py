@@ -244,7 +244,7 @@ class OutcomeHandler:
 
         # Step 7: Select first outcome after censoring for each patient
         outcomes, outcome_pre_followup_pids = self.get_first_outcome_in_follow_up(
-            outcomes, index_dates
+            outcomes, index_dates, self.n_hours_start_followup
         )
         # Step 8 (Optional): Remove patients with outcome(s) before censoring
         if self.drop_pids_w_outcome_pre_followup:
@@ -258,7 +258,8 @@ class OutcomeHandler:
             data = self.assign_time2event(data)
         return data
 
-    def check_input(self, outcomes, exposures):
+    @staticmethod
+    def check_input(outcomes, exposures):
         """Check that outcomes and exposures have columns PID and TIMESTAMP."""
         if "PID" not in outcomes.columns or "TIMESTAMP" not in outcomes.columns:
             raise ValueError("Outcomes must have columns PID and TIMESTAMP.")
@@ -432,8 +433,9 @@ class OutcomeHandler:
         logger.info(f"Selecting earliest censoring timestamp for each patient.")
         return table.groupby("PID").TIMESTAMP.min()
 
+    @staticmethod
     def remove_outcomes_before_start_of_follow_up(
-        self, outcomes: pd.DataFrame, index_dates: pd.Series
+        outcomes: pd.DataFrame, index_dates: pd.Series, n_hours_start_followup: int = 0
     ) -> Tuple[pd.DataFrame, set]:
         """
         Filter the outcomes to include only those occurring at or after the censor timestamp for each PID.
@@ -446,8 +448,7 @@ class OutcomeHandler:
         joint_df = outcomes.merge(index_date_df, on="PID")
         # Filter outcomes to get only those at or after the censor timestamp
         filtered_df = joint_df[
-            joint_df["TIMESTAMP"]
-            >= joint_df["index_date"] + self.n_hours_start_followup
+            joint_df["TIMESTAMP"] >= joint_df["index_date"] + n_hours_start_followup
         ]
         # Get the PIDs that were removed
         filtered_pids = set(filtered_df["PID"].unique())
@@ -455,13 +456,16 @@ class OutcomeHandler:
 
         return outcomes, pids_w_outcome_pre_followup
 
+    @staticmethod
     def get_first_outcome_in_follow_up(
-        self, outcomes: pd.DataFrame, index_dates: pd.Series
+        outcomes: pd.DataFrame, index_dates: pd.Series, n_hours_start_followup: int = 0
     ) -> pd.Series:
         """Get the first outcome event occurring at or after the censor timestamp for each PID."""
         # First filter the outcomes based on the censor timestamps
         filtered_outcomes, outcome_pre_followup_pids = (
-            self.remove_outcomes_before_start_of_follow_up(outcomes, index_dates)
+            OutcomeHandler.remove_outcomes_before_start_of_follow_up(
+                outcomes, index_dates, n_hours_start_followup
+            )
         )
-        first_outcome = self.get_first_event_by_pid(filtered_outcomes)
+        first_outcome = OutcomeHandler.get_first_event_by_pid(filtered_outcomes)
         return first_outcome, outcome_pre_followup_pids

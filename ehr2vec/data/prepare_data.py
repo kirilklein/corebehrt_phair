@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from ehr2vec.common.config import Config, load_config
+from ehr2vec.common.config import Config
 from ehr2vec.common.loader import (
     FeaturesLoader,
     get_pids_file,
@@ -87,32 +87,24 @@ class DatasetPreparer:
 
         predefined_pids = "predefined_splits" in self.cfg.paths
         if predefined_pids:
-            logger.warning("Using predefined splits. Ignoring test_split parameter")
-            logger.warning("Use original censoring time. Overwrite n_hours parameter.")
             if not os.path.exists(self.cfg.paths.predefined_splits):
                 raise ValueError(
                     f"Predefined splits folder {self.cfg.paths.predefined_splits} does not exist."
                 )
-            if os.path.exists(
-                join(self.cfg.paths.predefined_splits, "finetune_config.yaml")
-            ):
-                original_config = load_config(
-                    join(self.cfg.paths.predefined_splits, "finetune_config.yaml")
-                )
-            else:
-                if "model_path" not in self.cfg.paths:
-                    raise ValueError(
-                        "Model path must be provided if no finetune_config in predefined splits folder."
-                    )
-                original_config = load_config(
-                    join(self.cfg.paths.model_path, "finetune_config.yaml")
-                )
-            self.cfg.outcome = original_config.outcome
+            logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = self._select_predefined_pids(data)
-            if self.cfg.outcome.get("simulate_outcomes", False):
-                self._simulate_outcomes_for_data(data, self.cfg.outcome)
-            else:
-                self._load_outcomes_to_data(data)
+            logger.warning("Use index dates from predefined splits.")
+            self._load_index_dates_to_data(data)
+
+            index_dates = pd.Series(data.index_dates, index=data.pids)
+            index_dates.index.name = "PID"
+
+            outcome_dates, _, _ = self.loader.load_outcomes_and_exposures()
+            outcomes, _ = OutcomeHandler.get_first_outcome_in_follow_up(
+                outcome_dates, index_dates
+            )
+            data.add_outcomes(outcomes)
+            data.check_lengths()
 
         if not predefined_pids:
             # 2. Optional: Select gender group
@@ -304,29 +296,10 @@ class DatasetPreparer:
         data = data.select_data_subset_by_pids(predefined_pids, mode=data.mode)
         return data
 
-    def _load_outcomes_to_data(self, data: Data) -> None:
-        """Load outcomes and censor outcomes to data."""
-        for outcome_type in ["outcomes", "index_dates"]:
-            setattr(
-                data,
-                outcome_type,
-                torch.load(
-                    join(self.cfg.paths.predefined_splits, f"{outcome_type}.pt")
-                ),
-            )
-
-    def _simulate_outcomes_for_data(self, data: Data):
-        """
-        Here goes the implementation of the outcome simulation.
-        What we will do is the following:
-        1. Load propensity scores
-        2. Pass exposure
-        3. Based on ps and exposure, simulate binary outcomes
-        4. Simulate time2event outcomes (based on index date)
-        5. Save simulated outcomes to data
-
-        """
-        pass
+    def _load_index_dates_to_data(self, data: Data):
+        data.index_dates = torch.load(
+            join(self.cfg.paths.predefined_splits, "index_dates.pt")
+        )
 
     def _load_popensity_scores_to_data(self) -> dict:
         """Load propensity scores to data."""

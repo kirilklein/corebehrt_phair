@@ -28,7 +28,6 @@ jobs:
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.01_create_data
-                
             
             - name: pretrain
               run: |
@@ -40,15 +39,15 @@ jobs:
                 source .venv/bin/activate  
                 python -m ehr2vec.main.03_create_outcomes
             
-            - name: finetune_outcome
-              run: |
-                source .venv/bin/activate  
-                python -m ehr2vec.main.04_finetune_cv
-            
             - name: finetune_exposure
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.04_finetune_cv --config_path example_configs/04_finetune_exposure.yaml
+
+            - name: finetune_outcome
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.04_finetune_cv
 
             - name: feature_importance_perturb
               run: |
