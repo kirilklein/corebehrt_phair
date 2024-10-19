@@ -448,7 +448,7 @@ class EHRTrainer:
         return DataLoader(
             self.test_dataset,
             batch_size=self.args.get("test_batch_size", self.args["batch_size"]),
-            shuffle=self.args.get("shuffle", True),
+            shuffle=self.args.get("shuffle", False),
             collate_fn=self.args["collate_fn"],
         )
 

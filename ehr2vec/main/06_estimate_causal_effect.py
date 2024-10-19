@@ -103,9 +103,10 @@ def main(config_path: str):
         propensity_scores, outcomes, outcome_predictions, counterfactual_predictions
     )
 
-    if cfg.get("num_patients", None) is not None and cfg.get("num_patients") < len(df):
-        df = df.sample(n=cfg.num_patients)
+    num_patients = cfg.get("num_patients")
+    if (num_patients is not None) and (num_patients < len(df)):
         logger.info(f"Sampling {cfg.num_patients} patients")
+        df = df.sample(n=cfg.num_patients, replace=False)
 
     if cfg.get("ps noise", 0) > 0:
         logger.info(f"Adding {cfg.get('ps noise')} noise to propensity scores")
@@ -131,6 +132,7 @@ def main(config_path: str):
         method: {
             "predicted_outcome_treated_col": COUNTERFACTUAL_TREATED_COL,
             "predicted_outcome_control_col": COUNTERFACTUAL_CONTROL_COL,
+            "predicted_outcome_col": OUTCOME_PREDICTIONS_COL,
         }
         for method in DOUBLE_ROBUST_METHODS
     }
