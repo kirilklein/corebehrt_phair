@@ -22,6 +22,7 @@ estimator:
   methods: ["IPW"]
   effect_type: "ATE"
   n_bootstrap: 30
+  common_support_threshold: 0.01
   
-ps_noise: 0.1
+ps_noise: 0.05
 
