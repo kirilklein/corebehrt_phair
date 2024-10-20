@@ -18,6 +18,7 @@ from os.path import abspath, dirname, join, split
 import pandas as pd
 from CausalEstimate.interface.estimator import Estimator
 from CausalEstimate.stats.stats import compute_treatment_outcome_table
+from CausalEstimate.filter.propensity import filter_common_support
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import Config
@@ -133,15 +134,20 @@ def main(config_path: str):
         }
         for method in DOUBLE_ROBUST_METHODS
     }
-
+    common_support = (
+        True if cfg.estimator.get("common_support_threshold", False) else False
+    )
+    common_support_threshold = cfg.estimator.get("common_support_threshold", None)
     effect = estimator.compute_effect(
         df,
         treatment_col=TREATMENT_COL,
         outcome_col=OUTCOME_COL,
         ps_col=PS_COL,
-        bootstrap=True if estimator_cfg.n_bootstrap > 1 else False,
-        n_bootstraps=estimator_cfg.n_bootstrap,
+        bootstrap=True if estimator_cfg.get("n_bootstrap", 0) > 1 else False,
+        n_bootstraps=estimator_cfg.get("n_bootstrap", 0),
         method_args=method_args,
+        apply_common_support=common_support,
+        common_support_threshold=common_support_threshold,
     )
     if run is not None:
         run.log({"causal_effect": effect})
@@ -158,6 +164,14 @@ def main(config_path: str):
         df_counterfactual = construct_data_to_estimate_effect_from_counterfactuals(
             propensity_scores, counterfactuals
         )
+        if common_support:
+            df_counterfactual = filter_common_support(
+                df_counterfactual,
+                ps_col=PS_COL,
+                treatment_col=TREATMENT_COL,
+                threshold=common_support_threshold,
+            )
+
         effect_counterfactual = compute_effect_from_counterfactuals(
             df_counterfactual, estimator_cfg.effect_type
         )
