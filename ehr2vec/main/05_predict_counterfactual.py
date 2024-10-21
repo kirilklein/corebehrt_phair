@@ -4,6 +4,7 @@ from os.path import abspath, dirname, join, split
 import torch
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.evaluation.calibration import compute_and_save_calibration
 from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.initialize import ModelManager
@@ -147,6 +148,8 @@ def main(config_path: str):
         run,
     )
     save_combined_predictions_evaluation(n_splits, counterfactual_folder, mode="val")
+        if "calibration" in cfg:
+        compute_and_save_calibration(finetune_folder, cfg.calibration)
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'

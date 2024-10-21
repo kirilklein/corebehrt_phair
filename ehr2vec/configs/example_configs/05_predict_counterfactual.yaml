@@ -19,7 +19,7 @@ tester_args:
   val_batch_size: 16
   info: true
   shuffle: true
-
+calibration: isotonic
 
   
   
