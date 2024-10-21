@@ -10,10 +10,12 @@ paths:
   tokenized_file: "tokenized_finetune.pt" # can also be a list
   tokenized_pids: "pids_finetune.pt" # can also be a list
   predefined_splits: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test"
-  
+
 model:
   pool_type: "gru"
   bidirectional: true
+
+calibration: isotonic
 
 data:
   num_patients: 300 

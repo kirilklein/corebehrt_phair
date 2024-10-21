@@ -3,16 +3,18 @@ project: "PHAIR"
 paths:
   model_path: outputs/example_pretraining/example/finetune_SIMULATED_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test
   run_name: "test"
+
 model:
   pool_type: "gru"
   bidirectional: true
+
+calibration: isotonic
 
 data:
   truncation_len: 30
   counterfactual: # can be a list of regexes
     exposure_regex:
       - "M308136"
-      
 
 tester_args:
   batch_size: 16
