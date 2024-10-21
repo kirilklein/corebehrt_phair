@@ -109,8 +109,10 @@ def main(config_path: str):
         logger.info(f"Sampling {cfg.num_patients} patients")
         df = df.sample(n=cfg.num_patients, replace=False)
 
-    df_copy = df.copy(deep=True) # ! apply noise to the copy but use original to estimate true effect
-    
+    df_copy = df.copy(
+        deep=True
+    )  # ! apply noise to the copy but use original to estimate true effect
+
     if cfg.get("ps_noise", 0) > 0:
         logger.info(f"Adding {cfg.get('ps_noise')} noise to propensity scores")
         df_copy[PS_COL] = df_copy[PS_COL] * (
