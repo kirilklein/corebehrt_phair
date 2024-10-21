@@ -21,6 +21,7 @@ from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data_fixes.truncate import Truncator
 from ehr2vec.double_robust.counterfactual import create_counterfactual_data
 from ehr2vec.double_robust.save import save_combined_predictions_evaluation
+from ehr2vec.evaluation.calibration import calibrate_and_save_counterfactual_predictions
 from ehr2vec.evaluation.encodings import EHRTester
 from ehr2vec.evaluation.utils import save_data
 
@@ -147,6 +148,11 @@ def main(config_path: str):
         run,
     )
     save_combined_predictions_evaluation(n_splits, counterfactual_folder, mode="val")
+    if "calibration" in cfg:
+        calibrate_and_save_counterfactual_predictions(
+            finetune_folder, counterfactual_folder, cfg.calibration
+        )
+
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",  # uses everything in 'outputs'
