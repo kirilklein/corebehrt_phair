@@ -24,5 +24,5 @@ def save_combined_predictions_evaluation(
 
     predictions = np.concatenate(predictions).flatten()
 
-    df = pd.DataFrame({"PID": pids, "proba": predictions})
+    df = pd.DataFrame({"pid": pids, "proba": predictions})
     df.to_csv(join(evaluation_folder, "counterfactual_predictions.csv"), index=False)
