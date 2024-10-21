@@ -117,7 +117,7 @@ def main(config_path: str):
         logger.info(f"Adding {cfg.get('ps_noise')} noise to propensity scores")
         df_copy[PS_COL] = df_copy[PS_COL] * (
             1 + np.random.uniform(-cfg.ps_noise, cfg.ps_noise, len(df_copy))
-        )
+        ).clip(lower=1e-6, upper=1 - 1e-6)
     stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
     stats_table.index.name = "Treatment"
     stats_table.reset_index(inplace=True)
