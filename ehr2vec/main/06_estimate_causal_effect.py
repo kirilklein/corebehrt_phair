@@ -109,10 +109,12 @@ def main(config_path: str):
         logger.info(f"Sampling {cfg.num_patients} patients")
         df = df.sample(n=cfg.num_patients, replace=False)
 
+    df_copy = df.copy(deep=True) # ! apply noise to the copy but use original to estimate true effect
+    
     if cfg.get("ps_noise", 0) > 0:
         logger.info(f"Adding {cfg.get('ps_noise')} noise to propensity scores")
-        propensity_scores[PS_COL] = propensity_scores[PS_COL] * (
-            1 + np.random.uniform(-cfg.ps_noise, cfg.ps_noise, len(propensity_scores))
+        df_copy[PS_COL] = df_copy[PS_COL] * (
+            1 + np.random.uniform(-cfg.ps_noise, cfg.ps_noise, len(df_copy))
         )
     stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
     stats_table.index.name = "Treatment"
@@ -143,7 +145,7 @@ def main(config_path: str):
     common_support_threshold = cfg.estimator.get("common_support_threshold", None)
 
     effect = estimator.compute_effect(
-        df.copy(deep=True),
+        df_copy,
         treatment_col=TREATMENT_COL,
         outcome_col=OUTCOME_COL,
         ps_col=PS_COL,
