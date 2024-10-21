@@ -134,12 +134,16 @@ def main(config_path: str):
         }
         for method in DOUBLE_ROBUST_METHODS
     }
+    if cfg.estimator.get("method_args", None):
+        method_args.update(cfg.estimator.method_args)
+
     common_support = (
         True if cfg.estimator.get("common_support_threshold", False) else False
     )
     common_support_threshold = cfg.estimator.get("common_support_threshold", None)
+
     effect = estimator.compute_effect(
-        df,
+        df.copy(deep=True),
         treatment_col=TREATMENT_COL,
         outcome_col=OUTCOME_COL,
         ps_col=PS_COL,
@@ -161,8 +165,9 @@ def main(config_path: str):
     if path_cfg.get("counterfactual_outcome", None):
         logger.info("Computing effect from counterfactual outcomes")
         counterfactuals = load_counterfactual_outcomes(path_cfg.counterfactual_outcome)
+
         df_counterfactual = construct_data_to_estimate_effect_from_counterfactuals(
-            propensity_scores, counterfactuals
+            df, counterfactuals
         )
         if common_support:
             df_counterfactual = filter_common_support(
@@ -171,7 +176,6 @@ def main(config_path: str):
                 treatment_col=TREATMENT_COL,
                 threshold=common_support_threshold,
             )
-
         effect_counterfactual = compute_effect_from_counterfactuals(
             df_counterfactual, estimator_cfg.effect_type
         )
