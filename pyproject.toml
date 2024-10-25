@@ -26,7 +26,7 @@ dependencies = [
     "pyarrow",
     "torch",
     "transformers",
-    "CausalEstimate==0.3.2",
+    "CausalEstimate==0.4.2",
     "tqdm",
     "PyYAML",
     "dask",
@@ -38,6 +38,7 @@ dependencies = [
 dev = [
     "black",
     "flake8",
+    "jupytext",
     # Add other development dependencies here
 ]
 plotting = [
@@ -55,6 +56,9 @@ write_to = "ehr2vec/_version.py"
 [tool.setuptools.packages.find]
 include = ["ehr2vec"]
 exclude = ["notebooks", "tests"]
+
+[tool.jupytext]
+formats = "ipynb,py:percent"
 # Add your project URLs here
 [project.urls]
 "Source" = "https://github.com/kirilklein/corebehrt_phair.git"
