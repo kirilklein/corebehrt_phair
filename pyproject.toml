@@ -57,9 +57,8 @@ write_to = "ehr2vec/_version.py"
 include = ["ehr2vec"]
 exclude = ["notebooks", "tests"]
 
-[tool.jupytext.formats]
-"notebooks/" = "ipynb"
-"notebooks/scripts/" = "py:percent"
+[tool.jupytext]
+formats = "ipynb,py:percent"
 # Add your project URLs here
 [project.urls]
 "Source" = "https://github.com/kirilklein/corebehrt_phair.git"
