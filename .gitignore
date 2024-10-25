@@ -13,8 +13,8 @@ data/formatted/synthea10k/concept.medication.csv
 data/formatted/synthea10k/concept.diagnose.csv
 /results/initial_pt_experiments
 /results/GraphicalAbstract
-ehr2vec/notebooks/*.png
-ehr2vec/notebooks/test*
-ehr2vec/notebooks/*.ipynb
+notebooks/*.png
+notebooks/test*
+notebooks/*.ipynb
 wandb/
 p1_cluster/

@@ -22,4 +22,4 @@ jobs:
         pip install black>=23.10.1
     - name: Run black
       run: |
-        black --check ehr2vec tests
+        black --check ehr2vec tests --exclude ehr2vec/notebooks/scripts
