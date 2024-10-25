@@ -334,9 +334,9 @@ class DatasetPreparer:
         """
         predefined_split_config = self._load_predefined_split_config()
         delta_censoring = self._calculate_censoring_delta(predefined_split_config)
-        
+
         self._validate_censoring_delta(delta_censoring)
-        
+
         data.index_dates = [date + delta_censoring for date in data.index_dates]
         return data
 
@@ -351,7 +351,10 @@ class DatasetPreparer:
 
     def _validate_censoring_delta(self, delta_censoring: int) -> None:
         if delta_censoring < 0:
-            raise ValueError("New censoring time must be later than the predefined one.")
+            raise ValueError(
+                "New censoring time must be later than the predefined one."
+            )
+
 
 class OneHotEncoder:
 
