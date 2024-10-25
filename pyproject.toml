@@ -58,8 +58,8 @@ include = ["ehr2vec"]
 exclude = ["notebooks", "tests"]
 
 [tool.jupytext.formats]
-"ehr2vec/ehr2vec/notebooks/" = "ipynb"
-"ehr2vec/ehr2vec/notebooks/scripts/" = "py:percent"
+"notebooks/" = "ipynb"
+"notebooks/scripts/" = "py:percent"
 # Add your project URLs here
 [project.urls]
 "Source" = "https://github.com/kirilklein/corebehrt_phair.git"
