@@ -1,4 +1,5 @@
 """Utilities for analyzing patient cohorts in EHR data."""
+
 from typing import List, Dict, Set
 import logging
 import pandas as pd
@@ -10,6 +11,7 @@ PATIENT_COL = "PATIENT"
 CODE_COL = "CODE"
 DESCRIPTION_COL = "DESCRIPTION"
 
+
 class CohortUtils:
     """Utilities for analyzing patient cohorts by medical codes and descriptions."""
 
@@ -19,32 +21,54 @@ class CohortUtils:
         return set(df[df[CODE_COL] == code][PATIENT_COL].unique())
 
     @staticmethod
-    def get_rows_matching_description_pattern(df: pd.DataFrame, pattern: str) -> pd.DataFrame:
+    def get_rows_matching_description_pattern(
+        df: pd.DataFrame, pattern: str
+    ) -> pd.DataFrame:
         """Return rows where the description matches the given pattern."""
         return df[df[DESCRIPTION_COL].str.contains(pattern, na=False)]
 
     @staticmethod
-    def extract_all_codes_from_description_pattern(df: pd.DataFrame, pattern: str) -> List[str]:
+    def extract_all_codes_from_description_pattern(
+        df: pd.DataFrame, pattern: str
+    ) -> List[str]:
         """Extract unique codes from descriptions matching the given pattern."""
-        return CohortUtils.get_rows_matching_description_pattern(df, pattern)[CODE_COL].unique().tolist()
+        return (
+            CohortUtils.get_rows_matching_description_pattern(df, pattern)[CODE_COL]
+            .unique()
+            .tolist()
+        )
 
     @staticmethod
     def get_number_of_exposed(df: pd.DataFrame, pattern: str) -> int:
         """Count unique patients exposed to codes matching the pattern."""
-        unique_codes = CohortUtils.extract_all_codes_from_description_pattern(df, pattern)
-        unique_patients = {patient for code in unique_codes 
-                           for patient in CohortUtils.get_unique_patients_with_code(df, code)}
-        
-        logger.info(f"Found {len(unique_patients)} patients matching pattern: {pattern}")
+        unique_codes = CohortUtils.extract_all_codes_from_description_pattern(
+            df, pattern
+        )
+        unique_patients = {
+            patient
+            for code in unique_codes
+            for patient in CohortUtils.get_unique_patients_with_code(df, code)
+        }
+
+        logger.info(
+            f"Found {len(unique_patients)} patients matching pattern: {pattern}"
+        )
         return len(unique_patients)
 
     @staticmethod
     def break_down_by_code(df: pd.DataFrame, pattern: str) -> Dict[str, int]:
         """Return patient counts for each code matching the pattern."""
-        unique_codes = CohortUtils.extract_all_codes_from_description_pattern(df, pattern)
-        code_to_count = {code: len(CohortUtils.get_unique_patients_with_code(df, code)) for code in unique_codes}
-        
-        logger.info(f"Found {len(code_to_count)} unique codes matching pattern: {pattern}")
+        unique_codes = CohortUtils.extract_all_codes_from_description_pattern(
+            df, pattern
+        )
+        code_to_count = {
+            code: len(CohortUtils.get_unique_patients_with_code(df, code))
+            for code in unique_codes
+        }
+
+        logger.info(
+            f"Found {len(code_to_count)} unique codes matching pattern: {pattern}"
+        )
         return code_to_count
 
     @staticmethod
