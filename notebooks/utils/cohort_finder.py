@@ -1,5 +1,5 @@
 """Utilities for analyzing patient cohorts in EHR data."""
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set
 import logging
 import pandas as pd
 
