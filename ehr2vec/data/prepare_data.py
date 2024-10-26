@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from ehr2vec.common.config import Config
+from ehr2vec.common.config import Config, load_config
 from ehr2vec.common.loader import (
     FeaturesLoader,
     get_pids_file,
@@ -91,10 +91,14 @@ class DatasetPreparer:
                 raise ValueError(
                     f"Predefined splits folder {self.cfg.paths.predefined_splits} does not exist."
                 )
+
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = self._select_predefined_pids(data)
-            logger.warning("Use index dates from predefined splits.")
+
+            logger.info("Loading index dates from predefined splits.")
             self._load_index_dates_to_data(data)
+            logger.info("Adjusting index dates to new censoring time.")
+            data = self._adjust_predefined_index_dates(data)
 
             index_dates = pd.Series(data.index_dates, index=data.pids)
             index_dates.index.name = "PID"
@@ -310,6 +314,53 @@ class DatasetPreparer:
         logger.info("Example features: ")
         for k, v in data.features.items():
             logger.info(f"{k}: {v[0]}")
+
+    def _adjust_predefined_index_dates(self, data: Data) -> Data:
+        """
+        Adjust index dates for predefined splits based on new censoring time.
+
+        This function ensures consistency when using predefined splits by adjusting
+        the index dates according to a new censoring time. It maintains the original
+        population while shifting index dates to later times.
+
+        Args:
+            data (Data): The data object containing index dates to be adjusted.
+
+        Returns:
+            Data: The data object with adjusted index dates.
+
+        Raises:
+            ValueError: If the new censoring time is earlier than the predefined one.
+        """
+        predefined_split_config = self._load_predefined_split_config()
+        delta_censoring = self._calculate_censoring_delta(predefined_split_config)
+
+        self._validate_censoring_delta(delta_censoring)
+
+        data.index_dates = [date + delta_censoring for date in data.index_dates]
+        return data
+
+    def _load_predefined_split_config(self) -> Config:
+        """
+        Load the finetune config from the predefined splits directory.
+        """
+        cfg_path = join(self.cfg.paths.predefined_splits, "finetune_config.yaml")
+        return load_config(cfg_path)
+
+    def _calculate_censoring_delta(self, predefined_split_config: Config) -> int:
+        """
+        Calculate the difference in censoring time between the predefined splits and the current configuration.
+        """
+        predefined_censoring = predefined_split_config.outcome.n_hours_censoring
+        new_censoring = self.cfg.outcome.n_hours_censoring
+        return new_censoring - predefined_censoring
+
+    def _validate_censoring_delta(self, delta_censoring: int) -> None:
+        """Check that the new censoring time is later than the predefined one."""
+        if delta_censoring < 0:
+            raise ValueError(
+                "New censoring time must be later than the predefined one."
+            )
 
 
 class OneHotEncoder:

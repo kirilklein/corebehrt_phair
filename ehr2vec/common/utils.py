@@ -114,9 +114,9 @@ class Data:
 
     features: dict = field(default_factory=dict)
     pids: list = field(default_factory=list)
-    outcomes: Optional[List] = field(default=None)
-    index_dates: Optional[List] = field(default=None)
-    times2event: Optional[List] = field(default=None)
+    outcomes: Optional[List[int]] = field(default=None)
+    index_dates: Optional[List[int]] = field(default=None)
+    times2event: Optional[List[int]] = field(default=None)
     vocabulary: Optional[Dict] = field(default=None)
     mode: Optional[str] = field(default=None)
 

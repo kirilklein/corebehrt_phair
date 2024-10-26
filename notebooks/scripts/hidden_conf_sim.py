@@ -41,11 +41,20 @@
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from scipy.special import expit 
+from scipy.special import expit
+
+
 class Model:
-    def __init__(self, 
-                 alpha_C=1, alpha_X=1, alpha_Y=1, beta=2.0, 
-                 gamma_CX=0, sigma_C=0.5, gamma_CY=0):
+    def __init__(
+        self,
+        alpha_C=1,
+        alpha_X=1,
+        alpha_Y=1,
+        beta=2.0,
+        gamma_CX=0,
+        sigma_C=0.5,
+        gamma_CY=0,
+    ):
         """
         Initializes the structural causal model.
         Parameters:
@@ -65,7 +74,7 @@ class Model:
     def simulate_binary_data(self, n=1000):
         """
         Simulates data with binary X and Y based on the specified structural causal model.
-        
+
         Parameters:
         n (int): Number of samples to generate.
 
@@ -74,73 +83,77 @@ class Model:
         """
         # Generate unobserved confounder
         U_XY = np.random.normal(0, 1, n)
-        
+
         # Generate observed covariate C
         C = self.alpha_C * U_XY + np.random.normal(0, self.sigma_C, n)
-        
+
         # Generate binary X using logistic function
-        logit_X = self.alpha_X * U_XY + self.gamma_CX * C 
+        logit_X = self.alpha_X * U_XY + self.gamma_CX * C
         p_X = expit(logit_X)  # expit is the logistic sigmoid function
         X = np.random.binomial(1, p_X)
-        
+
         # Generate binary Y using logistic function
         logit_Y = self.beta * X + self.alpha_Y * U_XY + self.gamma_CY * C
         p_Y = expit(logit_Y)
         Y = np.random.binomial(1, p_Y)
-        
-        return pd.DataFrame({'X': X, 'Y': Y, 'C': C})
+
+        return pd.DataFrame({"X": X, "Y": Y, "C": C})
 
 
 # %%
 from sklearn.neighbors import NearestNeighbors
 
+
 def matching(data, adjustment_variable=None):
     adjustment_data = data[[adjustment_variable]]
     logit = LogisticRegression()
-    logit.fit(adjustment_data, data['X'])
-    data['propensity_score'] = logit.predict_proba(adjustment_data)[:, 1]
+    logit.fit(adjustment_data, data["X"])
+    data["propensity_score"] = logit.predict_proba(adjustment_data)[:, 1]
 
-    treated = data[data['X'] == 1]
-    control = data[data['X'] == 0]
-    
+    treated = data[data["X"] == 1]
+    control = data[data["X"] == 0]
+
     nn = NearestNeighbors(n_neighbors=1)
-    nn.fit(control[['propensity_score']])
-    distances, indices = nn.kneighbors(treated[['propensity_score']])
+    nn.fit(control[["propensity_score"]])
+    distances, indices = nn.kneighbors(treated[["propensity_score"]])
     matched_control_indices = indices.flatten()
     matched_control = control.iloc[matched_control_indices].reset_index()
     return treated, matched_control
 
+
 def calculate_log_odds_ratio(data, adjustment_variable=None):
     """
     Estimates the effect of a binary X on a binary Y using non-parametric methods.
-    
+
     Parameters:
     data (pd.DataFrame): DataFrame containing 'X' and 'Y'.
-    
+
     Returns:
     dict: Estimated difference in proportions and odds ratio
     """
     if adjustment_variable is not None:
-        treated, controls =  matching(data, adjustment_variable)
+        treated, controls = matching(data, adjustment_variable)
     else:
-        treated = data[data['X'] == 1]
-        controls = data[data['X'] == 0] 
+        treated = data[data["X"] == 1]
+        controls = data[data["X"] == 0]
     # Calculate proportions
-    treated_outcome_rate = treated['Y'].mean()
-    control_outcome_rate = controls['Y'].mean()
-    
+    treated_outcome_rate = treated["Y"].mean()
+    control_outcome_rate = controls["Y"].mean()
+
     # Odds ratio
     treated_odds = treated_outcome_rate / (1 - treated_outcome_rate)
     control_odds = control_outcome_rate / (1 - control_outcome_rate)
     odds_ratio = treated_odds / control_odds
-    
+
     return np.log(odds_ratio)
 
 
 # %%
 LOR = 2
-model = Model(alpha_C=0, alpha_X=0, alpha_Y=0, gamma_CX=0, gamma_CY=0, beta=LOR, sigma_C=0)
-data =  model.simulate_binary_data(100000)
+model = Model(
+    alpha_C=0, alpha_X=0, alpha_Y=0, gamma_CX=0, gamma_CY=0, beta=LOR, sigma_C=0
+)
+data = model.simulate_binary_data(100000)
 estimated_lor = calculate_log_odds_ratio(data)
 
 print(f"Estimated LOR {estimated_lor} (True LOR: 2.0) in the absence of confounding")
@@ -150,14 +163,19 @@ print(f"Estimated LOR {estimated_lor} (True LOR: 2.0) in the absence of confound
 # ### Strong effect of $U_{XY}$ on $C$
 
 # %%
-ALPHA_C = 10 # How strongly is C influenced by the unobserved confounder
-models = {'C': Model(alpha_C = ALPHA_C), 
-          'CX': Model(alpha_C = ALPHA_C, gamma_CX=1), 
-          'CY': Model(alpha_C = ALPHA_C, gamma_CY=1), 
-          'CXY': Model(alpha_C = ALPHA_C, gamma_CX=1, gamma_CY=1)}
+ALPHA_C = 10  # How strongly is C influenced by the unobserved confounder
+models = {
+    "C": Model(alpha_C=ALPHA_C),
+    "CX": Model(alpha_C=ALPHA_C, gamma_CX=1),
+    "CY": Model(alpha_C=ALPHA_C, gamma_CY=1),
+    "CXY": Model(alpha_C=ALPHA_C, gamma_CX=1, gamma_CY=1),
+}
 
 data = {name: model.simulate_binary_data(100000) for name, model in models.items()}
-lor_w_adj = {name: calculate_log_odds_ratio(data, adjustment_variable='C') for name, data in data.items()}
+lor_w_adj = {
+    name: calculate_log_odds_ratio(data, adjustment_variable="C")
+    for name, data in data.items()
+}
 lor_wo_adj = {name: calculate_log_odds_ratio(data) for name, data in data.items()}
 
 print(f"True LOR: {models['C'].beta}")
@@ -168,14 +186,19 @@ print(f"LOR withot adjustment: {lor_wo_adj}")
 # ### Weak effect of $U_{XY}$ on $C$
 
 # %%
-ALPHA_C = 1 # How strongly is C influenced by the unobserved confounder
-models = {'C': Model(alpha_C = ALPHA_C), 
-          'CX': Model(alpha_C = ALPHA_C, gamma_CX=1), 
-          'CY': Model(alpha_C = ALPHA_C, gamma_CY=1), 
-          'CXY': Model(alpha_C = ALPHA_C, gamma_CX=1, gamma_CY=1)}
+ALPHA_C = 1  # How strongly is C influenced by the unobserved confounder
+models = {
+    "C": Model(alpha_C=ALPHA_C),
+    "CX": Model(alpha_C=ALPHA_C, gamma_CX=1),
+    "CY": Model(alpha_C=ALPHA_C, gamma_CY=1),
+    "CXY": Model(alpha_C=ALPHA_C, gamma_CX=1, gamma_CY=1),
+}
 
 data = {name: model.simulate_binary_data(100000) for name, model in models.items()}
-lor_w_adj = {name: calculate_log_odds_ratio(data, adjustment_variable='C') for name, data in data.items()}
+lor_w_adj = {
+    name: calculate_log_odds_ratio(data, adjustment_variable="C")
+    for name, data in data.items()
+}
 lor_wo_adj = {name: calculate_log_odds_ratio(data) for name, data in data.items()}
 
 print(f"True LOR: {models['C'].beta}")
