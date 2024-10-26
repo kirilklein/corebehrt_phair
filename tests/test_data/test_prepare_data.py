@@ -1,9 +1,11 @@
+import os
+import shutil
 import unittest
 from unittest.mock import MagicMock, patch
-import os
-from ehr2vec.data.prepare_data import DatasetPreparer
+
 from ehr2vec.common.config import Config
 from ehr2vec.common.utils import Data
+from ehr2vec.data.prepare_data import DatasetPreparer
 
 
 class TestDatasetPreparerIndexDates(unittest.TestCase):
@@ -17,6 +19,11 @@ class TestDatasetPreparerIndexDates(unittest.TestCase):
 
         # Initialize DatasetPreparer with the mock config
         self.dataset_preparer = DatasetPreparer(self.mock_config)
+
+    def tearDown(self):
+        # Remove the temporary test directory after each test
+        if os.path.exists("MagicMock"):
+            shutil.rmtree("MagicMock")
 
     @patch("ehr2vec.data.prepare_data.load_config")
     def test_load_predefined_split_config(self, mock_load_config):
