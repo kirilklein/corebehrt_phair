@@ -26,8 +26,8 @@ raw_data_dir = (
 med = pd.read_csv(join(raw_data_dir, "medications.csv"))
 diag = pd.read_csv(join(raw_data_dir, "conditions.csv"))
 
-print(CohortUtils.get_number_of_exposed(med, "lisinopril"))
-print(CohortUtils.break_down_by_code(med, "lisinopril"))
+print(CohortUtils.get_number_of_exposed(med, "amLODIPine"))
+print(CohortUtils.break_down_by_code(med, "amLODIPine"))
 
 # %%
 heart_disease = CohortUtils.search_by_name(diag, "heart")
@@ -37,3 +37,7 @@ tvr = CohortUtils.search_by_name(diag, "revascularization")
 cardiovascular = CohortUtils.search_by_name(diag, "cardio*")
 print(cardiovascular)
 print(heart_disease)
+
+
+# %%
+CohortUtils.search_by_name(med, "amLODIPine")
