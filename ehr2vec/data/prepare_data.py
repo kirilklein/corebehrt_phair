@@ -341,15 +341,22 @@ class DatasetPreparer:
         return data
 
     def _load_predefined_split_config(self) -> Config:
+        """
+        Load the finetune config from the predefined splits directory.
+        """
         cfg_path = join(self.cfg.paths.predefined_splits, "finetune_config.yaml")
         return load_config(cfg_path)
 
     def _calculate_censoring_delta(self, predefined_split_config: Config) -> int:
+        """
+        Calculate the difference in censoring time between the predefined splits and the current configuration.
+        """
         predefined_censoring = predefined_split_config.outcome.n_hours_censoring
         new_censoring = self.cfg.outcome.n_hours_censoring
         return new_censoring - predefined_censoring
 
     def _validate_censoring_delta(self, delta_censoring: int) -> None:
+        """Check that the new censoring time is later than the predefined one."""
         if delta_censoring < 0:
             raise ValueError(
                 "New censoring time must be later than the predefined one."
