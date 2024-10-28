@@ -60,7 +60,7 @@ df_patients.head()
 
 # %%
 # Example usage for patient numbers:
-plot_effect_estimation(
+fig, ax = plot_effect_estimation(
     df_patients,
     x_var="N",
     x_label="Number of patients",
@@ -68,10 +68,11 @@ plot_effect_estimation(
     xticks=[200, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000],
     yticks=[-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3],
 )
+fig
 
 # %%
 # Example usage for noise levels:
-plot_effect_estimation(
+fig, ax = plot_effect_estimation(
     df_noise,
     x_var="noise",
     x_label="Noise level",
@@ -79,7 +80,7 @@ plot_effect_estimation(
     xticks=[0, 0.1, 0.2, 0.3, 0.4, 0.5],
     yticks=[-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3],
 )
-
+fig
 
 # %%
 # Example usage for patient numbers:
