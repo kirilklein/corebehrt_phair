@@ -42,8 +42,8 @@ plot_propensity_scores(ps)
 
 # %%
 base_dir = "/dtu/p1/kirkle/PHAIR_project/corebehrt_phair/effect_estimation/synthea/100k/simulated_outcome"
-patients_dir = os.path.join(base_dir, "n_patients_amlodipine_a_0p0")
-noise_dir = os.path.join(base_dir, "noise_amlodipine_a_0p0")
+patients_dir = os.path.join(base_dir, "n_patients_amlodipine_a_2p0")
+noise_dir = os.path.join(base_dir, "noise_amlodipine_a_2p0")
 effect_strength_dir = os.path.join(base_dir, "effect_strength_a")
 
 df_patients = load_estimates(patients_dir, is_noise=False, is_patient_number=True)
@@ -62,23 +62,24 @@ df_patients.head()
 # Example usage for patient numbers:
 fig, ax = plot_effect_estimation(
     df_patients,
-    x_var="N",
+    x_var="patient_number",
     x_label="Number of patients",
-    filename="effect_estimation_patients_amlodipine_a_0p0.png",
+    filename="effect_estimation_patients_amlodipine_a_2p0.png",
     xticks=[200, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000],
-    yticks=[-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3],
+    yticks=[-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
 )
 fig
+
 
 # %%
 # Example usage for noise levels:
 fig, ax = plot_effect_estimation(
     df_noise,
-    x_var="noise",
+    x_var="noise_level",
     x_label="Noise level",
-    filename="effect_estimation_noise_amlodipine_a_0p0.png",
+    filename="effect_estimation_noise_amlodipine_a_2p0.png",
     xticks=[0, 0.1, 0.2, 0.3, 0.4, 0.5],
-    yticks=[-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3],
+    yticks=[-0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
 )
 fig
 
