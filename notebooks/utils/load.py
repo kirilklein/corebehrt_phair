@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 
-def load_estimates(folder: str, is_noise: bool = False) -> pd.DataFrame:
+def load_estimates(folder: str, is_noise: bool = False, is_patient_number: bool = False) -> pd.DataFrame:
     """
     Load estimates from the given folder.
 
@@ -16,31 +16,39 @@ def load_estimates(folder: str, is_noise: bool = False) -> pd.DataFrame:
     """
     dfs = []
     for path in os.listdir(folder):
-        if is_valid_experiment_folder(path, is_noise):
+        if is_valid_experiment_folder(path, is_noise, is_patient_number):
             file_path = os.path.join(folder, path, "effect.csv")
             df_temp = pd.read_csv(file_path)
             if is_noise:
                 df_temp["noise"] = extract_noise_level(path)
-            else:
+            elif is_patient_number:
                 df_temp["N"] = extract_patient_number(path)
+                
             dfs.append(df_temp)
     return pd.concat(dfs).reset_index(drop=True)
 
-
-# Helper function to check if the folder matches the expected pattern
-def is_valid_experiment_folder(path: str, is_noise: bool) -> bool:
+def is_valid_experiment_folder(path: str, is_noise: bool, is_patient_number: bool) -> bool:
+    """
+    Check if the folder matches the expected pattern.
+    """
     if is_noise:
         return path.startswith("experiment_noise_")
-    return path.endswith(
-        tuple(str(i) for i in range(10))
-    )  # Checks if it ends with a number
+    elif is_patient_number:
+        return path.startswith("experiment_n_")
+    else:
+        return True
 
-
-# Helper function to extract noise level from the folder name
 def extract_noise_level(path: str) -> float:
+    """
+    Extract the noise level from the folder name.
+    """
     return float(path.split("_")[-1])
 
-
-# Helper function to extract patient number from the folder name
 def extract_patient_number(path: str) -> int:
+    """
+    Extract the patient number from the folder name.
+    """
     return int(path.split("_")[-1])
+
+
+
