@@ -2,7 +2,9 @@ import os
 import pandas as pd
 
 
-def load_estimates(folder: str, is_noise: bool = False, is_patient_number: bool = False) -> pd.DataFrame:
+def load_estimates(
+    folder: str, is_noise: bool = False, is_patient_number: bool = False
+) -> pd.DataFrame:
     """
     Load estimates from the given folder.
 
@@ -25,11 +27,14 @@ def load_estimates(folder: str, is_noise: bool = False, is_patient_number: bool 
                 df_temp["noise_level"] = extract_noise_level(path)
             elif is_patient_number:
                 df_temp["patient_number"] = extract_patient_number(path)
-                
+
             dfs.append(df_temp)
     return pd.concat(dfs).reset_index(drop=True)
 
-def is_valid_experiment_folder(path: str, is_noise: bool, is_patient_number: bool) -> bool:
+
+def is_valid_experiment_folder(
+    path: str, is_noise: bool, is_patient_number: bool
+) -> bool:
     """
     Check if the folder matches the expected pattern.
     Args:
@@ -45,7 +50,7 @@ def is_valid_experiment_folder(path: str, is_noise: bool, is_patient_number: boo
         True
         >>> is_valid_experiment_folder("experiment_n_100", False, True)
         True
-     """
+    """
     if not isinstance(path, str):
         return False
     if is_noise:
@@ -55,17 +60,16 @@ def is_valid_experiment_folder(path: str, is_noise: bool, is_patient_number: boo
     else:
         return True
 
+
 def extract_noise_level(path: str) -> float:
     """
     Extract the noise level from the folder name.
     """
     return float(path.split("_")[-1])
 
+
 def extract_patient_number(path: str) -> int:
     """
     Extract the patient number from the folder name.
     """
     return int(path.split("_")[-1])
-
-
-

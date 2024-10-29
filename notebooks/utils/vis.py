@@ -1,10 +1,11 @@
 import os
 from typing import Tuple
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-
-
+from scipy.special import expit
 
 
 def plot_effect_estimation(
@@ -84,6 +85,77 @@ def plot_propensity_scores(
     fig.savefig(os.path.join(save_path, filename), dpi=300, bbox_inches="tight")
     plt.close(fig)
     return fig
+
+
+def plot_expit_surface(
+    a_range: tuple = (-5, 5),
+    ps_range: tuple = (0, 1),
+    b: float = -2,
+    c: float = -2,
+    n_points: int = 100,
+    log_scale: bool = False,
+) -> tuple[plt.Figure, tuple[plt.Axes, plt.Axes]]:
+    """
+    Plot expit(a*t + b*(ps + c)) for varying 'a' and 'ps' values, with separate subplots for t=0 and t=1.
+
+    Args:
+        a_range (tuple): Range of 'a' values (min, max).
+        ps_range (tuple): Range of propensity score values (min, max).
+        b (float): Fixed value for parameter b.
+        c (float): Fixed value for parameter c.
+        n_points (int): Number of points to evaluate for each dimension.
+        log_scale (bool): Whether to use a logarithmic color scale.
+
+    Returns:
+        tuple: Matplotlib figure and axes objects.
+    """
+    # Create meshgrid for 'a' and 'ps' values
+    a_values = np.linspace(a_range[0], a_range[1], n_points)
+    ps_values = np.linspace(ps_range[0], ps_range[1], n_points)
+    A, PS = np.meshgrid(a_values, ps_values)
+
+    # Calculate expit values for t=0 and t=1
+    Z_t0 = expit(b * (PS + c))
+    Z_t1 = expit(A + b * (PS + c))
+
+    # Determine vmin and vmax
+    Z_min = min(Z_t0.min(), Z_t1.min())
+    Z_max = max(Z_t0.max(), Z_t1.max())
+
+    # Prepare plotting parameters based on log_scale
+    if log_scale:
+        # For log scale, vmin must be greater than 0
+        vmin = max(Z_min, 1e-10)
+        norm = mpl.colors.LogNorm(vmin=vmin, vmax=Z_max)
+        kwargs = {"norm": norm}
+    else:
+        kwargs = {"vmin": Z_min, "vmax": Z_max}
+        norm = None  # Not used, but kept for clarity
+
+    # Create figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+    # Plot for t=0
+    im1 = ax1.pcolormesh(A, PS, Z_t0, shading="auto", cmap="viridis", **kwargs)
+    ax1.set_title(f"Treatment = 0\nb={b}, c={c}")
+    ax1.set_xlabel("a")
+    ax1.set_ylabel("Propensity Score")
+
+    # Plot for t=1
+    im2 = ax2.pcolormesh(A, PS, Z_t1, shading="auto", cmap="viridis", **kwargs)
+    ax2.set_title(f"Treatment = 1\nb={b}, c={c}")
+    ax2.set_xlabel("a")
+    ax2.set_ylabel("Propensity Score")
+
+    # Add colorbars
+    colorbar_label = "Probability (log scale)" if log_scale else "Probability"
+    fig.colorbar(im1, ax=ax1, label=colorbar_label)
+    fig.colorbar(im2, ax=ax2, label=colorbar_label)
+
+    # Adjust layout
+    plt.tight_layout()
+
+    return fig, (ax1, ax2)
 
 
 def hide_spines(ax: plt.Axes) -> None:
