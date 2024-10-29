@@ -1,7 +1,10 @@
-import matplotlib.pyplot as plt
-import pandas as pd
 import os
+from typing import Tuple
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
 
 
 def plot_effect_estimation(
@@ -15,18 +18,20 @@ def plot_effect_estimation(
     yticks: list[float] = None,
     colors: list[str] = ["#ec008b", "#e88e2d", "#73bfe2"],
     baseline_color: str = "#696969",
-) -> plt.Figure:
+    plot_baseline: bool = True,
+) -> Tuple[plt.Figure, plt.Axes]:
     set_plot_defaults()
     fig, ax = plt.subplots(figsize=(10, 6))
 
     plot_methods(df, ax, x_var, colors)
-    plot_true_effect(ax, df, x_var, baseline_color, true_effect_label)
+    if plot_baseline:
+        plot_true_effect(ax, df, x_var, baseline_color, true_effect_label)
     set_axes_labels(ax, x_label, y_label, xticks, yticks)
     customize_plot_appearance(ax, xticks, max(df[x_var]))
     add_legend(ax, len(df["method"].unique()))
 
     save_plot(fig, filename)
-    return fig
+    return fig, ax
 
 
 def plot_propensity_scores(
