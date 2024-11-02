@@ -7,16 +7,21 @@ import numpy as np
 import pandas as pd
 
 from ehr2vec.common.azure import save_to_blobstore
-from ehr2vec.common.config import Config, get_function
+from ehr2vec.common.cli import override_config_from_cli
+from ehr2vec.common.config import Config
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
 from ehr2vec.common.loader import load_config, load_index_dates
-from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.setup import (
     get_args,
     initialize_configuration_finetune,
     setup_logger,
 )
 from ehr2vec.simulation.longitudinal_outcome import simulate_abspos_from_binary_outcome
+from ehr2vec.simulation.save import (
+    save_counterfactual_probas_and_targets,
+    save_probas_and_targets,
+)
+from ehr2vec.simulation.utils import simulate_outcome
 
 DEFAULT_CONFIG_NAME = "example_configs/05_simulate_binary_outcome.yaml"
 
@@ -41,20 +46,39 @@ def main(config_path: str) -> None:
 
     logger.info("Load index dates from %s", cfg.paths.model_path)
     df_index_dates = load_index_dates(cfg.paths.model_path)
+
     logger.info("Merge predictions and index dates")
     df_merged = pd.merge(df_predictions, df_index_dates, on="pid")
+
     logger.info("Simulate outcome")
-    binary_outcome = simulate_outcome(
+    binary_outcome, probability = simulate_outcome(
         df_merged["proba"], df_merged["target"], cfg.simulation
     )
     logger.info("Simulate outcome under treatment")
-    binary_outcome_exp = simulate_outcome(
+    binary_outcome_exp, probability_exp = simulate_outcome(
         df_merged["proba"], np.ones(len(df_merged)), cfg.simulation
     )
     logger.info("Simulate outcome under control")
-    binary_outcome_ctrl = simulate_outcome(
+    binary_outcome_ctrl, probability_ctrl = simulate_outcome(
         df_merged["proba"], np.zeros(len(df_merged)), cfg.simulation
     )
+
+    save_probas_and_targets(
+        df_merged["pid"],
+        binary_outcome,
+        probability,
+        join(simulation_folder, "probas_and_targets.csv"),
+    )
+    save_counterfactual_probas_and_targets(
+        df_merged["pid"],
+        df_merged["target"],
+        binary_outcome_exp,
+        binary_outcome_ctrl,
+        probability_exp,
+        probability_ctrl,
+        join(simulation_folder, "counterfactual_probas_and_targets.csv"),
+    )
+
     logger.info("Simulate absolute position")
     abspos_outcome = simulate_abspos_from_binary_outcome(
         binary_outcome,
@@ -85,10 +109,6 @@ def main(config_path: str) -> None:
         )
         mount_context.stop()
     logger.info("Done")
-
-
-def simulate_outcome(proba, target, simulation_cfg):
-    return get_function(simulation_cfg)(proba, target, **simulation_cfg.params)
 
 
 if __name__ == "__main__":
