@@ -12,7 +12,7 @@ def save_probas_and_targets(
     Save predicted probabilities and binary outcomes to a CSV file.
 
     Args:
-        df_merged: DataFrame containing patient IDs and other metadata
+        pids: Array of patient IDs
         binary_outcome: Array of binary outcomes (0/1)
         probability: Array of predicted probabilities
         output_path: Path where the CSV file will be saved
