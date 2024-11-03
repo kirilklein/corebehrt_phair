@@ -6,6 +6,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.special import expit
+from sklearn.calibration import calibration_curve
+
+
+def plot_calibration_curve(
+    ax,
+    target: pd.Series,
+    proba: pd.Series,
+    label: str,
+    color: str = None,
+    strategy: str = "quantile",
+) -> None:
+    """
+    Plot the calibration curve for the given target and probability values.
+    """
+    prob_true, prob_pred = calibration_curve(target, proba, strategy=strategy)
+    if color is None:
+        ax.plot(prob_pred, prob_true, marker="o", label=label)
+    else:
+        ax.plot(prob_pred, prob_true, marker="o", label=label, color=color)
+
+
+def plot_perfect_calibration(ax):
+    ax.plot([0, 1], [0, 1], color="black", linestyle="--", label="Perfect Calibration")
 
 
 def plot_effect_estimation(
