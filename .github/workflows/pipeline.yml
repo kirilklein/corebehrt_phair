@@ -94,6 +94,10 @@ jobs:
                 source .venv/bin/activate  
                 python -m ehr2vec.main.06_estimate_causal_effect --config_path example_configs/06_estimate_effect_binary_double_robust.yaml
             
+            - name: estimate_causal_effect_double_robust_true_outcome_probas
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.06_estimate_causal_effect --config_path example_configs/06_estimate_effect_binary_double_robust_true_outcome_probas.yaml
 
              
             
