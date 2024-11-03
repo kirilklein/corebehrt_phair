@@ -1,5 +1,6 @@
 import random
-from typing import List
+from typing import List, Dict, Set
+from collections import Counter
 
 from ehr2vec.common.utils import Data, iter_patients
 from ehr2vec.data.utils import Utilities
@@ -15,6 +16,9 @@ def create_counterfactual_data(data: Data, exposure_regex_list: List[str]) -> Da
             Utilities.get_codes_from_regex(data.vocabulary, exposure_regex)
         )
 
+    code_frequencies = get_frequency_of_codes(data.features, exposure_codes)
+    code_probabilities = get_probability_of_codes(code_frequencies)
+
     counterfactual_features = {key: [] for key in data.features}
 
     for patient in iter_patients(data.features):
@@ -22,7 +26,9 @@ def create_counterfactual_data(data: Data, exposure_regex_list: List[str]) -> Da
         if any(code in exposure_codes for code in concepts):
             patient = remove_codes(patient, exposure_codes)
         else:
-            patient = insert_random_code_to_end(patient, exposure_codes)
+            patient = insert_random_code_to_end(
+                patient, exposure_codes, code_probabilities
+            )
         for key, value in patient.items():
             counterfactual_features[key].append(value)
     return Data(
@@ -31,6 +37,47 @@ def create_counterfactual_data(data: Data, exposure_regex_list: List[str]) -> Da
         outcomes=data.outcomes,
         vocabulary=data.vocabulary,
     )
+
+
+def get_probability_of_codes(
+    code_frequencies: Dict[int, int],
+) -> Dict[int, float]:
+    """
+    Get the probability of codes according to their frequency.
+    We add 1 to the denominator to avoid division by zero.
+    """
+    return {
+        code: frequency / (sum(code_frequencies.values()) + 1)
+        for code, frequency in code_frequencies.items()
+    }
+
+
+def get_frequency_of_codes(
+    features: Dict[str, List[List[int]]], exposure_codes: Set[int]
+) -> Dict[int, int]:
+    """
+    Get the frequency of codes in the features.
+
+    Args:
+        features: Dictionary containing feature lists, including 'concept' key with lists of concept codes
+        exposure_codes: Set of codes to count frequencies for
+
+    Returns:
+        Dictionary mapping codes to their frequencies
+    """
+    # Flatten the list of concept lists and count only relevant codes
+    all_concepts = [
+        code
+        for concept_list in features["concept"]
+        for code in concept_list
+        if code in exposure_codes
+    ]
+
+    # Use Counter for efficient counting
+    code_counts = Counter(all_concepts)
+
+    # Ensure all exposure codes are in the result, even if count is 0
+    return {code: code_counts.get(code, 0) for code in exposure_codes}
 
 
 def remove_codes(patient: dict, codes: List[int]) -> dict:
@@ -44,14 +91,23 @@ def remove_codes(patient: dict, codes: List[int]) -> dict:
     return new_patient
 
 
-def insert_random_code_to_end(patient: dict, exposure_codes: set) -> dict:
+def insert_random_code_to_end(
+    patient: dict, exposure_codes: set, code_probabilities: Dict[int, float]
+) -> dict:
     """
     Insert random code from exposure codes to the end of patient sequences. T
     """
+
+    # make sure we have the correct order of the codes
+    exposure_codes = list(exposure_codes)
+    code_probabilities = [code_probabilities[code] for code in exposure_codes]
+
     new_patient = {}
     for key, value in patient.items():
         if key == "concept":
-            new_patient[key] = value + [random.choice(list(exposure_codes))]
+            new_patient[key] = value + [
+                random.choices(exposure_codes, weights=code_probabilities)[0]
+            ]
         else:
             new_patient[key] = value + [value[-1]]
     return new_patient
