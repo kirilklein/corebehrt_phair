@@ -23,18 +23,6 @@ def get_run_info():
     return experiment_name, run_id
 
 
-def get_workspace():
-    from azureml.core import Workspace
-
-    """Initializes workspase and gets datastore and dump_path"""
-    subscription_id = "f8c5aac3-29fc-4387-858a-1f61722fb57a"
-    resource_group = "forskerpl-n0ybkr-rg"
-    workspace_name = "forskerpl-n0ybkr-mlw"
-
-    workspace = Workspace(subscription_id, resource_group, workspace_name)
-    return workspace
-
-
 def setup_azure(run_name, datastore_name="workspaceblobstore", dataset_name="PHAIR"):
     """Sets up azure run and mounts data on PHAIR blobstore"""
     from ehr2vec.azure_run import datastore
