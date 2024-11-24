@@ -24,7 +24,7 @@ def main(config_path: str) -> None:
     cfg, run, mount_context, azure_context = initialize_configuration_finetune(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
-    
+
     finetune_folder = cfg.paths.output_path
     write_folder = cfg.paths.model_path
 

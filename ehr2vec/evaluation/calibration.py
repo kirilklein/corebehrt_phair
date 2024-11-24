@@ -137,7 +137,7 @@ def train_calibrator(
         calibrator = LogisticRegression()
     else:
         raise ValueError(f"Invalid calibration method: {method}")
-    
+
     calibrator.fit(
         train_data["proba"].to_numpy(),
         train_data["target"].to_numpy().ravel(),
