@@ -3,7 +3,7 @@ project: "PHAIR"
 paths:
   model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test"
   run_name: simulate_binary_outcome
-  output: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome"
+  output_path: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome"
 
 predictions_file: "predictions_and_targets.csv"
 

@@ -36,7 +36,9 @@ def main(config_path: str) -> None:
     cfg, run, mount_context, pretrain_model_path = initialize_configuration_finetune(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
-    simulation_folder = cfg.paths.output
+    simulation_folder = cfg.paths.output_path
+    if cfg.env == "azure":
+        simulation_folder = join(simulation_folder, cfg.paths.run_name)
     os.makedirs(simulation_folder, exist_ok=True)
     logger = setup_logger(simulation_folder)
 
@@ -96,15 +98,10 @@ def main(config_path: str) -> None:
     counterfactual_df.to_csv(join(simulation_folder, "COUNTERFACTUAL.csv"), index=False)
 
     if cfg.env == "azure":
-        save_path = (
-            pretrain_model_path
-            if cfg.paths.get("save_folder_path", None) is None
-            else cfg.paths.save_folder_path
-        )
         save_to_blobstore(
             local_path=cfg.paths.run_name,
             remote_path=join(
-                cfg.get("project", DEFAULT_BLOBSTORE), save_path, cfg.paths.run_name
+                cfg.get("project", DEFAULT_BLOBSTORE), "outcomes", cfg.paths.run_name
             ),
         )
         mount_context.stop()
