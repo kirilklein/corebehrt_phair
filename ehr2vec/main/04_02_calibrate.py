@@ -24,15 +24,18 @@ def main(config_path: str) -> None:
     cfg, run, mount_context, azure_context = initialize_configuration_finetune(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
+    
     finetune_folder = cfg.paths.output_path
+    write_folder = cfg.paths.model_path
+
     logger = setup_logger(finetune_folder, f"calibration.log")
     logger.info("Starting calibration")
-    compute_and_save_calibration(finetune_folder, cfg.calibration)
+    compute_and_save_calibration(write_folder, finetune_folder, cfg.calibration)
     logger.info("Done")
     if cfg.env == "azure":
         save_path = cfg.paths.model_path
         save_to_blobstore(
-            local_path=cfg.paths.run_name,
+            local_path="outputs",
             remote_path=join(
                 cfg.get("project", DEFAULT_BLOBSTORE), save_path, cfg.paths.run_name
             ),
