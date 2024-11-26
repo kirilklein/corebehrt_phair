@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression
 
 
 def compute_and_save_calibration(
-    finetune_folder: str, method: str = "isotonic"
+    write_folder: str, finetune_folder: str, method: str = "isotonic"
 ) -> None:
     """
     Compute calibration for the predictions and save the results in a csv file: predictions_and_targets_calibrated_{method}.csv
@@ -31,11 +31,13 @@ def compute_and_save_calibration(
         )
         calibrated_val_data: pd.DataFrame = calibrate_data(calibrator, val_data)
         all_calibrated_predictions.append(calibrated_val_data)
+        fold_folder = join(write_folder, f"fold_{fold}")
+        os.makedirs(fold_folder, exist_ok=True)
         save_model(calibrator, fold_folder, method)
 
     combined_calibrated_df = pd.concat(all_calibrated_predictions, ignore_index=True)
     combined_calibrated_df.to_csv(
-        join(finetune_folder, f"predictions_and_targets_calibrated_{method}.csv"),
+        join(write_folder, f"predictions_and_targets_calibrated_{method}.csv"),
         index=False,
     )
 
@@ -135,8 +137,9 @@ def train_calibrator(
         calibrator = LogisticRegression()
     else:
         raise ValueError(f"Invalid calibration method: {method}")
+
     calibrator.fit(
-        train_data["proba"].to_numpy().reshape(-1, 1),
+        train_data["proba"].to_numpy(),
         train_data["target"].to_numpy().ravel(),
     )
     return calibrator
@@ -151,6 +154,6 @@ def calibrate_data(
     Calibrate the probabilities of the given dataframe using the calibrator.
     Clip the probabilities to avoid values close to 0 or 1. (Often happening with isotonic regression)
     """
-    calibrated_probas = calibrator.predict(val_data["proba"].to_numpy().reshape(-1, 1))
+    calibrated_probas = calibrator.predict(val_data["proba"].to_numpy())
     calibrated_probas = np.clip(calibrated_probas, epsilon, 1 - epsilon)
     return val_data.assign(proba=calibrated_probas)
