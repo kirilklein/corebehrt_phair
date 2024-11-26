@@ -244,7 +244,11 @@ if __name__ == "__main__":
         save_combined_predictions(n_splits, finetune_folder, mode="test")
 
     if "calibration" in cfg:
-        compute_and_save_calibration(finetune_folder, cfg.calibration)
+        compute_and_save_calibration(
+            write_folder=finetune_folder,
+            finetune_folder=finetune_folder,
+            method=cfg.calibration,
+        )
 
     if cfg.env == "azure":
         save_path = (
