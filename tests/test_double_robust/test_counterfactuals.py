@@ -98,27 +98,40 @@ class TestCounterfactuals(unittest.TestCase):
             features=self.sample_features,
             pids=["p1", "p2", "p3"],
             outcomes=[0, 1, 0],
-            vocabulary={"1": "code1", "2": "code2", "3": "code3"},
+            vocabulary={"code1": 1, "code2": 2, "code3": 3, "code4": 4, "code5": 5},
         )
-        exposure_regex_list = ["code[12]"]  # This should match codes 1 and 2
-
+        exposure_regex_list = ["code1", "code[35]"]  # This should match codes 1, 3 and 5
+        exposure_codes = {1, 3, 5}
         result = create_counterfactual_data(original_data, exposure_regex_list)
-
+        
         # Check that the structure is preserved
-        self.assertEqual(
-            len(result.features["concept"]), len(original_data.features["concept"])
-        )
         self.assertEqual(result.pids, original_data.pids)
         self.assertEqual(result.outcomes, original_data.outcomes)
         self.assertEqual(result.vocabulary, original_data.vocabulary)
 
-        # Check that exposures have been flipped
         for orig_seq, new_seq in zip(
             original_data.features["concept"], result.features["concept"]
         ):
-            orig_has_exposure = any(code in {1, 2} for code in orig_seq)
-            new_has_exposure = any(code in {1, 2} for code in new_seq)
-            self.assertNotEqual(orig_has_exposure, new_has_exposure)
+            orig_has_exposure = any(code in exposure_codes for code in orig_seq)
+            new_has_exposure = any(code in exposure_codes for code in new_seq)
+            
+            if orig_has_exposure:
+                # If original had exposure:
+                # 1. New sequence should not have any exposure codes
+                self.assertFalse(new_has_exposure)
+                # 2. New sequence should be shorter by the number of exposure codes
+                orig_exposure_count = sum(1 for code in orig_seq if code in exposure_codes)
+                self.assertEqual(len(new_seq), len(orig_seq) - orig_exposure_count)
+            else:
+                # If original had no exposure:
+                # 1. New sequence should have exactly one exposure code
+                self.assertTrue(new_has_exposure)
+                # 2. New sequence should be longer by 1
+                self.assertEqual(len(new_seq), len(orig_seq) + 1)
+                # 3. The added code should be one of the exposure codes
+                self.assertIn(new_seq[-1], exposure_codes)
+                # 4. All codes except the last one should match the original
+                self.assertEqual(new_seq[:-1], orig_seq)
 
 
 if __name__ == "__main__":
