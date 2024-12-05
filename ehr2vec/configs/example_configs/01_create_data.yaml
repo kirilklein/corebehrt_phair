@@ -46,7 +46,7 @@ handler:
   max_age: 120
 
 exposure_patterns:
-  - "M308136"  # Add more patterns as needed
+  - "M308136"  # Add more patterns as needed. Patients with these codes are put into the finetune set
 
 # can be a list
 # exclude_pids: 
