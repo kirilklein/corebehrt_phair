@@ -7,7 +7,7 @@ making backups to a separate datastore, and more...
 from azureml.core import Dataset, Datastore, Workspace
 from os.path import split
 import pandas as pd
-
+import json
 
 def log():
     return logger.log(name=__name__)
@@ -20,7 +20,9 @@ _DATASTORES = {
     "workspaceartifactstore",
 }
 # FILL IN YOUR WORKSPACE CONFIG HERE
-_WS_CONFIG = {"subscription_id": "", "resource_group": "", "workspace_name": ""}
+with open("credentials.json", "r") as f:
+    credentials = json.load(f)
+_WS_CONFIG = credentials
 _WS = None
 
 
