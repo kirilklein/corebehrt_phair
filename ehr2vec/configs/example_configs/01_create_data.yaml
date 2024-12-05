@@ -29,8 +29,7 @@ tokenizer:
   cls_token: true
   padding: false
   truncation: null
-  additional_codes:
-    - M308136
+  additional_codes: [M308136, PLACEHOLDER_1, PLACEHOLDER_2, PLACEHOLDER_3, PLACEHOLDER_4, PLACEHOLDER_5] # placeholders can be used for new codes during ft and for instance "no exposure"
   # cutoffs:
    # D: 3 # diagnosis
    # M: 4 # medication
