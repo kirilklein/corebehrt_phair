@@ -213,4 +213,4 @@ class DeathCreator(BaseCreator):
                 "Make sure SEGMENT is created before DeathCreator is used."
             )
         last_segments = concepts.groupby("PID")["SEGMENT"].last().to_dict()
-        return [last_segments[pid] for pid in patients_info["PID"]]
+        return [last_segments.get(pid, 0) for pid in patients_info["PID"]]
