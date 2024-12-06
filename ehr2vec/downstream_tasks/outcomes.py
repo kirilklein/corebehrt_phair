@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-from ehr2vec.common.utils import Data
+from ehr2vec.common.utils import Data, iter_patients
 from ehr2vec.data.utils import Utilities, shuffle_df
 
 logger = logging.getLogger(__name__)
@@ -168,6 +168,7 @@ class OutcomeHandler:
         time2event: whether survival analysis data (T and E) should be returned.
         end_of_time: dictionary with year, month, day, hour, minute, second for the end of data collection period.
         death_is_event: count death as event in survival analysis
+        control_code: code to be used for "no exposure"
         """
         self.index_date = index_date
         self.select_patient_group = select_patient_group
@@ -218,9 +219,9 @@ class OutcomeHandler:
             index_dates = self.compute_abspos_for_index_date(data.pids)
 
         # Step 4: Assign censoring to patients without it (random assignment)
-        exposed_patients = set(case_index_dates.index)
-        logger.info(f"Number of exposed patients: {len(exposed_patients)}")
-        control_patients = self.get_control_pids(data.pids, exposed_patients)
+        exposed_pids = set(case_index_dates.index)
+        logger.info(f"Number of exposed patients: {len(exposed_pids)}")
+        control_patients = self.get_control_pids(data.pids, exposed_pids)
         logger.info(f"Number of control patients: {len(control_patients)}")
 
         if control_exposures is None:
@@ -240,7 +241,7 @@ class OutcomeHandler:
 
         # Step 6 (Optional): Select only exposed/unexposed patients
         if self.select_patient_group:
-            data = self.select_exposed_or_unexposed_patients(data, exposed_patients)
+            data = self.select_exposed_or_unexposed_patients(data, exposed_pids)
 
         # Step 7: Select first outcome after censoring for each patient
         outcomes, outcome_pre_followup_pids = self.get_first_outcome_in_follow_up(
@@ -256,6 +257,7 @@ class OutcomeHandler:
         data = self.assign_exposures_and_outcomes_to_data(data, index_dates, outcomes)
         if self.time2event:
             data = self.assign_time2event(data)
+        data.exposed_patients = exposed_pids
         return data
 
     @staticmethod
@@ -469,3 +471,5 @@ class OutcomeHandler:
         )
         first_outcome = OutcomeHandler.get_first_event_by_pid(filtered_outcomes)
         return first_outcome, outcome_pre_followup_pids
+
+
