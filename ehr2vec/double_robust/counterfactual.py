@@ -142,8 +142,8 @@ def insert_control_code_for_patient(patient_data: dict, index_date: float, contr
     closest_event_idx = np.abs(index_date - np.array(patient_data["abspos"])).argmin()
     
     # Insert control code and associated data at closest event position
-    for field in ["concept", "abspos", "age", "segment"]:
-        value = (control_code if field == "concept" 
-                else index_date if field == "abspos"
-                else patient_data[field][closest_event_idx])
-        patient_data[field].insert(closest_event_idx, value)
+    for key in patient_data.keys():
+        value = (control_code if key == "concept" 
+                else index_date if key == "abspos"
+                else patient_data[key][closest_event_idx])
+        patient_data[key].insert(closest_event_idx, value)
