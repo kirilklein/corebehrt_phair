@@ -3,7 +3,8 @@ import time
 import json
 
 from azureml.core import Model as AzureModel
-from . import workspace, Run, log
+from . import workspace, log
+from .run import Run
 
 
 class Model:
