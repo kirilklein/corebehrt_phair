@@ -110,7 +110,7 @@ class Saver:
         torch.save(data.pids, join(self.run_folder, "pids.pt"))
         torch.save(data.vocabulary, join(self.run_folder, "vocabulary.pt"))
         if data.exposed_patients is not None:
-            torch.save(data.exposed_patients, join(self.run_folder, "exposed_patients.pt"))
+            torch.save(data.exposed_patients, join(self.run_folder, "exposed_pids.pt"))
         if data.outcomes is not None:
             torch.save(data.outcomes, join(self.run_folder, "outcomes.pt"))
         if data.index_dates is not None:
