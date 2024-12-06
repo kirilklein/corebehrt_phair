@@ -8,20 +8,17 @@ import pandas as pd
 import torch
 
 from ehr2vec.common.config import Config, load_config
-from ehr2vec.common.loader import (
-    FeaturesLoader,
-    get_pids_file,
-    load_and_select_splits,
-    load_exclude_pids,
-)
+from ehr2vec.common.loader import (FeaturesLoader, get_pids_file,
+                                   load_and_select_splits, load_exclude_pids)
 from ehr2vec.common.saver import Saver
 from ehr2vec.common.utils import Data
 from ehr2vec.data.dataset import MLMDataset
 from ehr2vec.data.filter import CodeTypeFilter, PatientFilter
 from ehr2vec.data.utils import Utilities
+from ehr2vec.data_fixes.censor import Censorer
 from ehr2vec.data_fixes.handle import Handler
 from ehr2vec.data_fixes.truncate import Truncator
-from ehr2vec.data_fixes.censor import Censorer
+from ehr2vec.double_robust.counterfactual import insert_control_codes
 from ehr2vec.downstream_tasks.outcomes import OutcomeHandler
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -99,7 +96,7 @@ class DatasetPreparer:
             self._load_index_dates_to_data(data)
             logger.info("Adjusting index dates to new censoring time.")
             data = self._adjust_predefined_index_dates(data)
-
+            self._load_exposed_pids_to_data(data)
             index_dates = pd.Series(data.index_dates, index=data.pids)
             index_dates.index.name = "PID"
 
@@ -108,6 +105,10 @@ class DatasetPreparer:
                 outcome_dates, index_dates
             )
             data.add_outcomes(outcomes)
+            control_pids = set(data.pids) - set(data.exposed_patients)
+            if self.cfg.outcome.get("control_code", None) is not None:
+                logger.info(f"Inserting control codes for {len(control_pids)} patients")
+                data = insert_control_codes(data, control_pids, self.cfg.outcome.control_code)
             data.check_lengths()
 
         if not predefined_pids:
@@ -147,7 +148,6 @@ class DatasetPreparer:
                     self.patient_filter.exclude_short_sequences,
                     log_positive_patients_num=True,
                 )
-
         # 5. Data censoring
         data = self.utils.process_data(
             data, self.data_modifier.censor_data, log_positive_patients_num=True
@@ -305,6 +305,11 @@ class DatasetPreparer:
             join(self.cfg.paths.predefined_splits, "index_dates.pt")
         )
 
+    def _load_exposed_pids_to_data(self, data: Data):
+        data.exposed_patients = torch.load(
+            join(self.cfg.paths.predefined_splits, "exposed_pids.pt")
+        )
+
     def _load_popensity_scores_to_data(self) -> dict:
         """Load propensity scores to data."""
         return np.load(join(self.cfg.paths.predefined_splits, "predictions.npz"))
@@ -444,6 +449,7 @@ class DataModifier:
             censor_diag_end_of_visit=self.cfg.outcome.get(
                 "censor_diag_end_of_visit", False
             ),
+            keep_codes=self.cfg.outcome.get("keep_codes", None),
         )
         data.features = censorer(data.features, data.index_dates)
         return data
