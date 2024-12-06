@@ -4,10 +4,13 @@ Core functionality includes e.g. loading and saving of datasets, manipulating ru
 making backups to a separate datastore, and more...
 """
 
-from azureml.core import Dataset, Datastore, Workspace
-from os.path import split
-import pandas as pd
 import json
+import os
+from os.path import split
+
+import pandas as pd
+from azureml.core import Dataset, Datastore, Workspace
+
 
 def log():
     return logger.log(name=__name__)
@@ -20,7 +23,8 @@ _DATASTORES = {
     "workspaceartifactstore",
 }
 # FILL IN YOUR WORKSPACE CONFIG HERE
-with open("credentials.json", "r") as f:
+
+with open(os.path.join(os.path.dirname(__file__), "credentials.json"), "r") as f:
     credentials = json.load(f)
 _WS_CONFIG = credentials
 _WS = None
@@ -202,8 +206,7 @@ def dataset_list(tags=None):
     return res
 
 
-from . import backup
-from . import logger
-from .run import Run
+from . import backup, logger
 from .model import Model
+from .run import Run
 from .validation import validate
