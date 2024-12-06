@@ -8,8 +8,12 @@ import pandas as pd
 import torch
 
 from ehr2vec.common.config import Config, load_config
-from ehr2vec.common.loader import (FeaturesLoader, get_pids_file,
-                                   load_and_select_splits, load_exclude_pids)
+from ehr2vec.common.loader import (
+    FeaturesLoader,
+    get_pids_file,
+    load_and_select_splits,
+    load_exclude_pids,
+)
 from ehr2vec.common.saver import Saver
 from ehr2vec.common.utils import Data
 from ehr2vec.data.dataset import MLMDataset
@@ -108,7 +112,9 @@ class DatasetPreparer:
             control_pids = set(data.pids) - set(data.exposed_patients)
             if self.cfg.outcome.get("control_code", None) is not None:
                 logger.info(f"Inserting control codes for {len(control_pids)} patients")
-                data = insert_control_codes(data, control_pids, self.cfg.outcome.control_code)
+                data = insert_control_codes(
+                    data, control_pids, self.cfg.outcome.control_code
+                )
             data.check_lengths()
 
         if not predefined_pids:

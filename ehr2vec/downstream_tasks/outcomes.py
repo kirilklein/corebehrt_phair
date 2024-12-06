@@ -471,5 +471,3 @@ class OutcomeHandler:
         )
         first_outcome = OutcomeHandler.get_first_event_by_pid(filtered_outcomes)
         return first_outcome, outcome_pre_followup_pids
-
-
