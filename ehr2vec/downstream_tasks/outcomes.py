@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-from ehr2vec.common.utils import Data, iter_patients
+from ehr2vec.common.utils import Data
 from ehr2vec.data.utils import Utilities, shuffle_df
 
 logger = logging.getLogger(__name__)

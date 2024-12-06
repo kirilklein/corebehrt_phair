@@ -100,10 +100,13 @@ class TestCounterfactuals(unittest.TestCase):
             outcomes=[0, 1, 0],
             vocabulary={"code1": 1, "code2": 2, "code3": 3, "code4": 4, "code5": 5},
         )
-        exposure_regex_list = ["code1", "code[35]"]  # This should match codes 1, 3 and 5
+        exposure_regex_list = [
+            "code1",
+            "code[35]",
+        ]  # This should match codes 1, 3 and 5
         exposure_codes = {1, 3, 5}
         result = create_counterfactual_data(original_data, exposure_regex_list)
-        
+
         # Check that the structure is preserved
         self.assertEqual(result.pids, original_data.pids)
         self.assertEqual(result.outcomes, original_data.outcomes)
@@ -114,13 +117,15 @@ class TestCounterfactuals(unittest.TestCase):
         ):
             orig_has_exposure = any(code in exposure_codes for code in orig_seq)
             new_has_exposure = any(code in exposure_codes for code in new_seq)
-            
+
             if orig_has_exposure:
                 # If original had exposure:
                 # 1. New sequence should not have any exposure codes
                 self.assertFalse(new_has_exposure)
                 # 2. New sequence should be shorter by the number of exposure codes
-                orig_exposure_count = sum(1 for code in orig_seq if code in exposure_codes)
+                orig_exposure_count = sum(
+                    1 for code in orig_seq if code in exposure_codes
+                )
                 self.assertEqual(len(new_seq), len(orig_seq) - orig_exposure_count)
             else:
                 # If original had no exposure:

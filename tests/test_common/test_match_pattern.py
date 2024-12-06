@@ -1,6 +1,7 @@
 import unittest
 from ehr2vec.common.utils import match_pattern, match_patterns
 
+
 class TestPatternMatching(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures before each test method."""
@@ -10,7 +11,7 @@ class TestPatternMatching(unittest.TestCase):
             "CONTROL_1": 1001,
             "CONTROL_2": 1002,
             "OTHER_CONTROL": 1003,
-            "TEST": 3000
+            "TEST": 3000,
         }
 
     def test_match_pattern_exact(self):
@@ -61,5 +62,6 @@ class TestPatternMatching(unittest.TestCase):
         """Clean up after each test method."""
         self.vocabulary = None
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
