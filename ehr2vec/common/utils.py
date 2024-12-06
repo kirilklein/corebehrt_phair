@@ -119,6 +119,7 @@ class Data:
     times2event: Optional[List[int]] = field(default=None)
     vocabulary: Optional[Dict] = field(default=None)
     mode: Optional[str] = field(default=None)
+    exposed_patients: Optional[set] = field(default=None)
 
     def __len__(self):
         return len(self.pids)
@@ -153,6 +154,7 @@ class Data:
         index_dates = load_tensor(f"{prepend}index_dates.pt")
         times2event = load_tensor(f"{prepend}times2event.pt")
         vocabulary = load_tensor("vocabulary.pt")
+        exposed_patients = load_tensor(f"{prepend}exposed_patients.pt")
         return cls(
             features,
             pids,
@@ -161,6 +163,7 @@ class Data:
             times2event=times2event,
             vocabulary=vocabulary,
             mode=mode,
+            exposed_patients=exposed_patients,
         )
 
     def check_lengths(self):
@@ -214,6 +217,7 @@ class Data:
             ),
             vocabulary=self.vocabulary,
             mode=mode,
+            exposed_patients=self.exposed_patients,
         )
 
     def select_data_subset_by_pids(self, pids: list, mode: str = "") -> "Data":
