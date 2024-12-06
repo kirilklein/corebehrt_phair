@@ -6,7 +6,7 @@ import re
 from copy import deepcopy
 from dataclasses import dataclass, field
 from os.path import join
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Set, Tuple, Union
 
 import pandas as pd
 import torch
@@ -280,17 +280,17 @@ class Data:
         """Add time to event to data"""
         self.times2event = self._outcome_helper(times2event)
 
-def match_patterns(patterns: List[str], vocabulary: Dict) -> List[int]:
+def match_patterns(patterns: List[str], vocabulary: Dict) -> Set[int]:
     """
     Match a list of patterns to a vocabulary and return the corresponding codes
     For exact matches use ^exactmatch$
     """
-    matched_codes = []
+    matched_codes = set()
     for pattern in patterns:
-        matched_codes.extend(match_pattern(pattern, vocabulary))
+        matched_codes.update(match_pattern(pattern, vocabulary))
     return matched_codes
 
-def match_pattern(pattern: str, vocabulary: Dict) -> List[int]:
+def match_pattern(pattern: str, vocabulary: Dict) -> Set[int]:
     """Match a pattern to a vocabulary and return the corresponding codes"""
-    return [v for k,v in vocabulary.items() if re.match(pattern, k)]
+    return {v for k,v in vocabulary.items() if re.match(pattern, k)}
 

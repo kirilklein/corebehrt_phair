@@ -124,7 +124,7 @@ class Censorer:
 
             censor_flags = self._combine_lists_with_or(censor_flags, diag_censor_flags)
 
-        if self.keep_codes:
+        if self.keep_codes is not None:
             censor_flags = self._keep_codes_first_occurrence(censor_flags, patient)
 
         return censor_flags
@@ -132,10 +132,9 @@ class Censorer:
     def _keep_codes_first_occurrence(self, censor_flags: List[bool], patient: Dict[str, list]) -> List[bool]:
         """Keep only the first occurrence of any code in self.keep_codes."""
         concepts = patient["concept"]
-        keep_codes_set = set(self.keep_codes)
         # Find first occurrence of any code in keep_codes_set
         for i, code in enumerate(concepts):
-            if code in keep_codes_set:
+            if code in self.keep_codes:
                 censor_flags[i] = True
                 break
         return censor_flags
