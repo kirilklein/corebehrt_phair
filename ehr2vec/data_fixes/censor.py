@@ -3,7 +3,7 @@ from typing import List, Union, Dict
 import pandas as pd
 
 from ehr2vec.common.logger import TqdmToLogger
-from ehr2vec.common.utils import iter_patients
+from ehr2vec.common.utils import iter_patients, match_patterns
 from tqdm import tqdm
 import logging
 
@@ -17,9 +17,12 @@ class Censorer:
         n_hours_diag_censoring: int,
         vocabulary: dict = None,
         censor_diag_end_of_visit: bool = False,
+        keep_codes: List[str] = None,
     ) -> None:
         """Censor the features based on the event timestamp.
-        n_hours if positive, censor all items that occur n_hours after event."""
+        n_hours if positive, censor all items that occur n_hours after event.
+        keep_codes is a list of regex expressions to not censor.
+        """
         self.n_hours = n_hours
         self.vocabulary = vocabulary
         self.background_length = None
@@ -31,6 +34,7 @@ class Censorer:
         if self.censor_diag_separately:
             self.diagnoses_codes = self.get_diagnoses_codes()
             self.sep_code = self.vocabulary.get("[SEP]", -1)
+        self.keep_codes = match_patterns(keep_codes, self.vocabulary) if keep_codes else None
 
     def __call__(self, features: dict, index_dates: list) -> tuple:
         sample_concepts = features["concept"][0]
@@ -97,7 +101,10 @@ class Censorer:
     def _generate_censor_flags(
         self, patient: Dict[str, List], index_timestamp: float
     ) -> List[bool]:
-        """Generate flags indicating which items to censor, based on index_timestamp and self.n_hours."""
+        """
+        Generate flags indicating which items to censor, based on index_timestamp and self.n_hours.
+        True indicates that the item should be kept.
+        """
         absolute_positions = patient["abspos"]
         censor_flags = [
             position <= (index_timestamp + self.n_hours)
@@ -114,7 +121,23 @@ class Censorer:
                 diag_censor_flags = self._generate_sep_diag_censor_flags(
                     patient, index_timestamp
                 )
+
             censor_flags = self._combine_lists_with_or(censor_flags, diag_censor_flags)
+
+        if self.keep_codes:
+            censor_flags = self._keep_codes_first_occurrence(censor_flags, patient)
+
+        return censor_flags
+
+    def _keep_codes_first_occurrence(self, censor_flags: List[bool], patient: Dict[str, list]) -> List[bool]:
+        """Keep only the first occurrence of any code in self.keep_codes."""
+        concepts = patient["concept"]
+        keep_codes_set = set(self.keep_codes)
+        # Find first occurrence of any code in keep_codes_set
+        for i, code in enumerate(concepts):
+            if code in keep_codes_set:
+                censor_flags[i] = True
+                break
         return censor_flags
 
     def _generate_sep_diag_censor_flags(
