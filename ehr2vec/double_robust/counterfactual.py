@@ -1,6 +1,8 @@
 import random
-from typing import List, Dict, Set
 from collections import Counter
+from typing import Dict, List, Set
+
+import numpy as np
 
 from ehr2vec.common.utils import Data, iter_patients
 from ehr2vec.data.utils import Utilities
@@ -111,3 +113,37 @@ def insert_random_code_to_end(
         else:
             new_patient[key] = value + [value[-1]]
     return new_patient
+
+def insert_control_codes(data: Data, control_patients: set, control_code: str) -> Data:
+    """Insert control codes for control patients at the closest event to the index date."""
+    control_code = data.vocabulary[control_code]
+    for i, patient in enumerate(iter_patients(data.features)):
+        if data.pids[i] in control_patients:
+            insert_control_code_for_patient(patient, data.index_dates[i], control_code)
+    return data
+
+def insert_control_code_for_patient(patient_data: dict, index_date: float, control_code: int) -> None:
+    """
+    Insert a control code and associated data into a patient's timeline at the event closest to their index date.
+
+    Args:
+        patient_data (dict): Dictionary containing patient timeline data with fields for concept codes,
+            absolute positions (abspos), age, and segments
+        index_date (float): The index date timestamp to insert the control code near
+        control_code (int): The control code to insert into the patient timeline
+
+    The function modifies the patient_data dictionary in-place by:
+    1. Finding the event closest in time to the index_date
+    2. Inserting the control_code at that position in the concept sequence
+    3. Inserting corresponding values for abspos (index_date), age and segment
+       (copied from closest event)
+    """
+    # Find event closest to index date
+    closest_event_idx = np.abs(index_date - np.array(patient_data["abspos"])).argmin()
+    
+    # Insert control code and associated data at closest event position
+    for field in ["concept", "abspos", "age", "segment"]:
+        value = (control_code if field == "concept" 
+                else index_date if field == "abspos"
+                else patient_data[field][closest_event_idx])
+        patient_data[field].insert(closest_event_idx, value)
