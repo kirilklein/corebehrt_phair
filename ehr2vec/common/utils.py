@@ -2,10 +2,11 @@ import glob
 import logging
 import os
 import random
+import re
 from copy import deepcopy
 from dataclasses import dataclass, field
 from os.path import join
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Set, Tuple, Union
 
 import pandas as pd
 import torch
@@ -119,6 +120,7 @@ class Data:
     times2event: Optional[List[int]] = field(default=None)
     vocabulary: Optional[Dict] = field(default=None)
     mode: Optional[str] = field(default=None)
+    exposed_patients: Optional[set] = field(default=None)
 
     def __len__(self):
         return len(self.pids)
@@ -153,6 +155,7 @@ class Data:
         index_dates = load_tensor(f"{prepend}index_dates.pt")
         times2event = load_tensor(f"{prepend}times2event.pt")
         vocabulary = load_tensor("vocabulary.pt")
+        exposed_patients = load_tensor(f"{prepend}exposed_patients.pt")
         return cls(
             features,
             pids,
@@ -161,6 +164,7 @@ class Data:
             times2event=times2event,
             vocabulary=vocabulary,
             mode=mode,
+            exposed_patients=exposed_patients,
         )
 
     def check_lengths(self):
@@ -214,6 +218,7 @@ class Data:
             ),
             vocabulary=self.vocabulary,
             mode=mode,
+            exposed_patients=self.exposed_patients,
         )
 
     def select_data_subset_by_pids(self, pids: list, mode: str = "") -> "Data":
@@ -274,3 +279,19 @@ class Data:
     def add_times2event(self, times2event: Union[List, Dict]):
         """Add time to event to data"""
         self.times2event = self._outcome_helper(times2event)
+
+
+def match_patterns(patterns: List[str], vocabulary: Dict) -> Set[int]:
+    """
+    Match a list of patterns to a vocabulary and return the corresponding codes
+    For exact matches use ^exactmatch$
+    """
+    matched_codes = set()
+    for pattern in patterns:
+        matched_codes.update(match_pattern(pattern, vocabulary))
+    return matched_codes
+
+
+def match_pattern(pattern: str, vocabulary: Dict) -> Set[int]:
+    """Match a pattern to a vocabulary and return the corresponding codes"""
+    return {v for k, v in vocabulary.items() if re.match(pattern, k)}

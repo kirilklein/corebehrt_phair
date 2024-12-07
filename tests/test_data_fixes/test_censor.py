@@ -1,5 +1,5 @@
 import unittest
-from ehr2vec.data_fixes.censor import Censorer  # Replace with the correct import path
+from ehr2vec.data_fixes.censor import Censorer
 
 
 class TestCensorer(unittest.TestCase):
@@ -121,6 +121,24 @@ class TestCensorer(unittest.TestCase):
             "abspos": [0, 0, 0, 1, 1, 2],
             "attention_mask": [1, 1, 1, 1, 1, 1],
         }
+        result = self.censorer._censor_patient(patient, index_timestamp)
+        self.assertEqual(result, expected_patient)
+
+    def test_keep_codes_first_occurrence(self):
+        self.censorer.keep_codes = [100]
+        self.censorer.n_hours = 0
+        patient = {
+            "concept": [1, 2, 3, 4, 100],
+            "abspos": [0, 0, 0, 1, 2],
+            "attention_mask": [1, 1, 1, 1, 1],
+        }
+        expected_patient = {
+            "concept": [1, 2, 3, 100],
+            "abspos": [0, 0, 0, 2],
+            "attention_mask": [1, 1, 1, 1],
+        }
+        index_timestamp = 0.9
+
         result = self.censorer._censor_patient(patient, index_timestamp)
         self.assertEqual(result, expected_patient)
 
@@ -332,6 +350,67 @@ class TestCensorerDiagnosesLater(unittest.TestCase):
     def run_combine_lists_test(self, list1, list2, expected_result, combine_func):
         result = combine_func(list1, list2)
         self.assertEqual(result, expected_result)
+
+
+class TestKeepCodesFirstOccurrence(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures before each test method."""
+
+        # Create a mock class to test the method
+        class MockCensor:
+            def __init__(self, keep_codes):
+                self.keep_codes = keep_codes
+
+            def _keep_codes_first_occurrence(self, censor_flags, patient):
+                return Censorer._keep_codes_first_occurrence(
+                    self, censor_flags, patient
+                )
+
+        self.censor = MockCensor(keep_codes=[100, 200, 300])
+
+    def test_keep_codes_first_occurrence_basic(self):
+        """Test basic functionality with a single keep code."""
+        censor_flags = [False, False, False, False]
+        patient = {"concept": [1, 100, 200, 100]}  # 100 appears twice
+
+        result = self.censor._keep_codes_first_occurrence(censor_flags, patient)
+        self.assertEqual(result, [False, True, False, False])
+
+    def test_keep_codes_first_occurrence_no_matches(self):
+        """Test when no codes match the keep_codes list."""
+        censor_flags = [False, False, False]
+        patient = {"concept": [1, 2, 3]}
+
+        result = self.censor._keep_codes_first_occurrence(censor_flags, patient)
+        self.assertEqual(result, [False, False, False])
+
+    def test_keep_codes_first_occurrence_multiple_codes(self):
+        """Test with multiple keep codes present."""
+        censor_flags = [False, False, False, False]
+        patient = {"concept": [200, 100, 300, 200]}  # Multiple keep codes
+
+        result = self.censor._keep_codes_first_occurrence(censor_flags, patient)
+        self.assertEqual(result, [True, False, False, False])
+
+    def test_keep_codes_first_occurrence_empty_patient(self):
+        """Test with empty patient data."""
+        censor_flags = []
+        patient = {"concept": []}
+
+        result = self.censor._keep_codes_first_occurrence(censor_flags, patient)
+        self.assertEqual(result, [])
+
+    def test_keep_codes_first_occurrence_existing_flags(self):
+        """Test with some flags already set to True."""
+        censor_flags = [True, False, True, False]
+        patient = {"concept": [1, 100, 2, 200]}
+
+        result = self.censor._keep_codes_first_occurrence(censor_flags, patient)
+        self.assertEqual(result, [True, True, True, False])
+
+    def tearDown(self):
+        """Clean up after each test method."""
+        self.censor = None
 
 
 if __name__ == "__main__":

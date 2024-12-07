@@ -13,8 +13,9 @@ calibration: isotonic
 data:
   truncation_len: 30
   counterfactual: # can be a list of regexes
-    exposure_regex:
+    exposure_regex: # list of codes to use as exposure (insert at same frequency as present in data)
       - "M308136"
+    control_regex: "PLACEHOLDER_1" # code to use for "no exposure"
 
 tester_args:
   batch_size: 16
