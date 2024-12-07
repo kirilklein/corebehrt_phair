@@ -18,14 +18,9 @@ class TestCounterfactuals(unittest.TestCase):
                 [1, 2, 3, 5],  # ends with exposure code
                 [2, 3, 4, 9],  # ends with control code
                 [1, 3, 4, 4],  # ends with neither
-                [1, 5, 3]
+                [1, 5, 3],
             ],
-            "age": [
-                [20, 21, 22, 23],
-                [30, 31, 32, 33],
-                [40, 41, 42, 43],
-                [50, 51, 52]
-            ],
+            "age": [[20, 21, 22, 23], [30, 31, 32, 33], [40, 41, 42, 43], [50, 51, 52]],
         }
         self.exposure_codes: Set[int] = {5, 6}  # 6 doesn't appear in features
         self.control_code = 9
@@ -39,7 +34,9 @@ class TestCounterfactuals(unittest.TestCase):
             vocabulary={"code4": 4, "code5": 5, "code6": 6, "code9": 9},
         )
         exposure_regex_list = ["code[56]"]  # This should match codes 5 and 6
-        result = create_counterfactual_data(original_data, exposure_regex_list, control_regex="code9")
+        result = create_counterfactual_data(
+            original_data, exposure_regex_list, control_regex="code9"
+        )
 
         # Check that the structure is preserved
         self.assertEqual(result.pids, original_data.pids)
@@ -95,14 +92,10 @@ class TestCounterfactuals(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
-
     def test_swap_codes(self):
         # Test setup
         concepts = [1, 2, 3, 4, 5]
-        exposure_code_probabilities = {
-            5: 0.7,
-            6: 0.3
-        }
+        exposure_code_probabilities = {5: 0.7, 6: 0.3}
         control_code = 9
 
         # Test case 1: Exposure code at the end
@@ -112,20 +105,27 @@ class TestCounterfactuals(unittest.TestCase):
 
         # Test case 2: Control code at the end
         concepts_with_control = [1, 2, 3, 4, 9]
-        result = swap_codes(concepts_with_control, exposure_code_probabilities, control_code)
+        result = swap_codes(
+            concepts_with_control, exposure_code_probabilities, control_code
+        )
         self.assertIn(result[-1], {5, 6})  # Should be one of the exposure codes
         self.assertEqual(result[:-1], concepts_with_control[:-1])
 
         # Test case 3: No relevant codes
         concepts_no_codes = [1, 2, 3, 4]
-        result = swap_codes(concepts_no_codes, exposure_code_probabilities, control_code)
+        result = swap_codes(
+            concepts_no_codes, exposure_code_probabilities, control_code
+        )
         self.assertEqual(result, concepts_no_codes)
 
         # Test case 4: Relevant code in middle (should still only swap last occurrence)
         concepts_middle_code = [1, 5, 3, 4, 5]
-        result = swap_codes(concepts_middle_code, exposure_code_probabilities, control_code)
+        result = swap_codes(
+            concepts_middle_code, exposure_code_probabilities, control_code
+        )
         self.assertEqual(result[-1], control_code)
         self.assertEqual(result[1], 5)  # Earlier 5 should remain unchanged
+
 
 if __name__ == "__main__":
     unittest.main()

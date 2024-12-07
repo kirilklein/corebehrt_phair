@@ -34,7 +34,9 @@ class Censorer:
         if self.censor_diag_separately:
             self.diagnoses_codes = self.get_diagnoses_codes()
             self.sep_code = self.vocabulary.get("[SEP]", -1)
-        self.keep_codes = match_patterns(keep_codes, self.vocabulary) if keep_codes else None
+        self.keep_codes = (
+            match_patterns(keep_codes, self.vocabulary) if keep_codes else None
+        )
 
     def __call__(self, features: dict, index_dates: list) -> tuple:
         sample_concepts = features["concept"][0]
@@ -129,7 +131,9 @@ class Censorer:
 
         return censor_flags
 
-    def _keep_codes_first_occurrence(self, censor_flags: List[bool], patient: Dict[str, list]) -> List[bool]:
+    def _keep_codes_first_occurrence(
+        self, censor_flags: List[bool], patient: Dict[str, list]
+    ) -> List[bool]:
         """Keep only the first occurrence of any code in self.keep_codes."""
         concepts = patient["concept"]
         # Find first occurrence of any code in keep_codes_set

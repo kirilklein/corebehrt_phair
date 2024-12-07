@@ -5,8 +5,7 @@ from typing import Dict, List, Set
 
 import numpy as np
 
-from ehr2vec.common.utils import (Data, iter_patients, match_pattern,
-                                  match_patterns)
+from ehr2vec.common.utils import Data, iter_patients, match_pattern, match_patterns
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ def create_counterfactual_data(
     Create counterfactual data by flipping the exposure variable.
     """
     exposure_codes = match_patterns(exposure_regex, data.vocabulary)
-    control_code = list(match_pattern(control_regex, data.vocabulary))[0] 
+    control_code = list(match_pattern(control_regex, data.vocabulary))[0]
 
     code_frequencies = get_frequency_of_codes(data.features, exposure_codes)
     logger.info(f"exposure code frequencies: {code_frequencies}")
@@ -27,7 +26,9 @@ def create_counterfactual_data(
     # Get counterfactual concepts by swapping codes for each patient
     counterfactual_concepts = []
     for patient in iter_patients(data.features):
-        swapped_concepts = swap_codes(patient["concept"], exposure_code_probabilities, control_code)
+        swapped_concepts = swap_codes(
+            patient["concept"], exposure_code_probabilities, control_code
+        )
         counterfactual_concepts.append(swapped_concepts)
 
     # Copy features and replace concept entry
@@ -83,12 +84,16 @@ def get_frequency_of_codes(
     return {code: code_counts.get(code, 0) for code in exposure_codes}
 
 
-def swap_codes(concepts: List[int], exposure_code_probabilities: Dict[int, float], control_code: int) -> List[int]:
+def swap_codes(
+    concepts: List[int],
+    exposure_code_probabilities: Dict[int, float],
+    control_code: int,
+) -> List[int]:
     """
     Swap codes in concept field starting from the end of the sequence, stopping after first match.
     If exposure code present, replace it with control code.
     If control code present, draw exposure code with given probabilities.
-    
+
     Args:
         concepts: List of concepts to swap
         exposure_code_probabilities: Dictionary of probabilities for each exposure code
@@ -97,7 +102,7 @@ def swap_codes(concepts: List[int], exposure_code_probabilities: Dict[int, float
         List of new concepts
     """
     new_concepts = concepts.copy()
-    
+
     exposure_codes = list(exposure_code_probabilities.keys())
     probs = [exposure_code_probabilities[code] for code in exposure_codes]
     # Process from end to start
@@ -109,7 +114,5 @@ def swap_codes(concepts: List[int], exposure_code_probabilities: Dict[int, float
         elif code == control_code:
             new_concepts[i] = random.choices(exposure_codes, weights=probs)[0]
             break
-    
+
     return new_concepts
-
-

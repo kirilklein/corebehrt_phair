@@ -131,7 +131,9 @@ def main(config_path: str):
     data = Data.load_from_directory(cfg.paths.model_path, mode="")
 
     counterfactual_data = create_counterfactual_data(
-        data, cfg.data.counterfactual.exposure_regex, cfg.data.counterfactual.control_regex
+        data,
+        cfg.data.counterfactual.exposure_regex,
+        cfg.data.counterfactual.control_regex,
     )
     counterfactual_data.features = Truncator(cfg.data.truncation_len, data.vocabulary)(
         counterfactual_data.features
