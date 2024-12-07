@@ -1,38 +1,39 @@
+import logging
 import random
 from collections import Counter
 from typing import Dict, List, Set
 
 import numpy as np
 
-from ehr2vec.common.utils import Data, iter_patients
-from ehr2vec.data.utils import Utilities
+from ehr2vec.common.utils import (Data, iter_patients, match_pattern,
+                                  match_patterns)
+
+logger = logging.getLogger(__name__)
 
 
-def create_counterfactual_data(data: Data, exposure_regex_list: List[str]) -> Data:
+def create_counterfactual_data(
+    data: Data, exposure_regex: List[str], control_regex: str
+) -> Data:
     """
     Create counterfactual data by flipping the exposure variable.
     """
-    exposure_codes = set()
-    for exposure_regex in exposure_regex_list:
-        exposure_codes.update(
-            Utilities.get_codes_from_regex(data.vocabulary, exposure_regex)
-        )
+    exposure_codes = match_patterns(exposure_regex, data.vocabulary)
+    control_code = list(match_pattern(control_regex, data.vocabulary))[0] 
 
     code_frequencies = get_frequency_of_codes(data.features, exposure_codes)
-    code_probabilities = get_probability_of_codes(code_frequencies)
+    logger.info(f"exposure code frequencies: {code_frequencies}")
+    exposure_code_probabilities = get_probability_of_codes(code_frequencies)
 
-    counterfactual_features = {key: [] for key in data.features}
-
+    # Get counterfactual concepts by swapping codes for each patient
+    counterfactual_concepts = []
     for patient in iter_patients(data.features):
-        concepts = patient["concept"]
-        if any(code in exposure_codes for code in concepts):
-            patient = remove_codes(patient, exposure_codes)
-        else:
-            patient = insert_random_code_to_end(
-                patient, exposure_codes, code_probabilities
-            )
-        for key, value in patient.items():
-            counterfactual_features[key].append(value)
+        swapped_concepts = swap_codes(patient["concept"], exposure_code_probabilities, control_code)
+        counterfactual_concepts.append(swapped_concepts)
+
+    # Copy features and replace concept entry
+    counterfactual_features = data.features.copy()
+    counterfactual_features["concept"] = counterfactual_concepts
+
     return Data(
         features=counterfactual_features,
         pids=data.pids,
@@ -82,68 +83,33 @@ def get_frequency_of_codes(
     return {code: code_counts.get(code, 0) for code in exposure_codes}
 
 
-def remove_codes(patient: dict, codes: List[int]) -> dict:
+def swap_codes(concepts: List[int], exposure_code_probabilities: Dict[int, float], control_code: int) -> List[int]:
     """
-    Remove codes from patient sequences.
-    """
-    new_patient = {}
-    indices = set([i for i, code in enumerate(patient["concept"]) if code in codes])
-    for key, value in patient.items():
-        new_patient[key] = [value[i] for i in range(len(value)) if i not in indices]
-    return new_patient
-
-
-def insert_random_code_to_end(
-    patient: dict, exposure_codes: set, code_probabilities: Dict[int, float]
-) -> dict:
-    """
-    Insert random code from exposure codes to the end of patient sequences. T
-    """
-
-    # make sure we have the correct order of the codes
-    exposure_codes = list(exposure_codes)
-    code_probabilities = [code_probabilities[code] for code in exposure_codes]
-
-    new_patient = {}
-    for key, value in patient.items():
-        if key == "concept":
-            new_patient[key] = value + [
-                random.choices(exposure_codes, weights=code_probabilities)[0]
-            ]
-        else:
-            new_patient[key] = value + [value[-1]]
-    return new_patient
-
-def insert_control_codes(data: Data, control_patients: set, control_code: str) -> Data:
-    """Insert control codes for control patients at the closest event to the index date."""
-    control_code = data.vocabulary[control_code]
-    for i, patient in enumerate(iter_patients(data.features)):
-        if data.pids[i] in control_patients:
-            insert_control_code_for_patient(patient, data.index_dates[i], control_code)
-    return data
-
-def insert_control_code_for_patient(patient_data: dict, index_date: float, control_code: int) -> None:
-    """
-    Insert a control code and associated data into a patient's timeline at the event closest to their index date.
-
-    Args:
-        patient_data (dict): Dictionary containing patient timeline data with fields for concept codes,
-            absolute positions (abspos), age, and segments
-        index_date (float): The index date timestamp to insert the control code near
-        control_code (int): The control code to insert into the patient timeline
-
-    The function modifies the patient_data dictionary in-place by:
-    1. Finding the event closest in time to the index_date
-    2. Inserting the control_code at that position in the concept sequence
-    3. Inserting corresponding values for abspos (index_date), age and segment
-       (copied from closest event)
-    """
-    # Find event closest to index date
-    closest_event_idx = np.abs(index_date - np.array(patient_data["abspos"])).argmin()
+    Swap codes in concept field starting from the end of the sequence, stopping after first match.
+    If exposure code present, replace it with control code.
+    If control code present, draw exposure code with given probabilities.
     
-    # Insert control code and associated data at closest event position
-    for key in patient_data.keys():
-        value = (control_code if key == "concept" 
-                else index_date if key == "abspos"
-                else patient_data[key][closest_event_idx])
-        patient_data[key].insert(closest_event_idx, value)
+    Args:
+        concepts: List of concepts to swap
+        exposure_code_probabilities: Dictionary of probabilities for each exposure code
+        control_code: Control code to swap with
+    Returns:
+        List of new concepts
+    """
+    new_concepts = concepts.copy()
+    
+    exposure_codes = list(exposure_code_probabilities.keys())
+    probs = [exposure_code_probabilities[code] for code in exposure_codes]
+    # Process from end to start
+    for i in range(len(concepts) - 1, -1, -1):
+        code = concepts[i]
+        if code in exposure_codes:
+            new_concepts[i] = control_code
+            break
+        elif code == control_code:
+            new_concepts[i] = random.choices(exposure_codes, weights=probs)[0]
+            break
+    
+    return new_concepts
+
+
