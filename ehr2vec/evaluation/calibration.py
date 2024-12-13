@@ -1,6 +1,7 @@
 import os
 import pickle
 from os.path import join
+from typing import Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -26,7 +27,7 @@ def compute_and_save_calibration(
         )
         train_data, val_data = split_data(predictions_df, train_pids, val_pids)
 
-        calibrator: IsotonicRegression | LogisticRegression = train_calibrator(
+        calibrator: Union[IsotonicRegression, LogisticRegression] = train_calibrator(
             train_data, method
         )
         calibrated_val_data: pd.DataFrame = calibrate_data(calibrator, val_data)
@@ -87,7 +88,9 @@ def calibrate_and_save_counterfactual_predictions(
 
 
 def save_model(
-    calibrator: IsotonicRegression | LogisticRegression, fold_folder: str, method: str
+    calibrator: Union[IsotonicRegression, LogisticRegression],
+    fold_folder: str,
+    method: str,
 ) -> None:
     """
     Save the calibrator to a pickle file.
@@ -99,7 +102,7 @@ def save_model(
 
 def load_model(
     fold_folder: str, method: str
-) -> IsotonicRegression | LogisticRegression:
+) -> Union[IsotonicRegression, LogisticRegression]:
     """Load the calibrator from a pickle file."""
     with open(join(fold_folder, f"calibrator_{method}.pkl"), "rb") as f:
         return pickle.load(f)
@@ -117,7 +120,7 @@ def load_mode_pids(mode: str, fold_folder: str) -> torch.Tensor:
 
 def split_data(
     predictions_df: pd.DataFrame, train_pids: torch.Tensor, val_pids: torch.Tensor
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Split the predictions dataframe into train and val dataframes based on the given PIDs."""
     train_data: pd.DataFrame = predictions_df[predictions_df["pid"].isin(train_pids)]
     val_data: pd.DataFrame = predictions_df[predictions_df["pid"].isin(val_pids)]
@@ -126,7 +129,7 @@ def split_data(
 
 def train_calibrator(
     train_data: pd.DataFrame, method: str = "isotonic"
-) -> IsotonicRegression | LogisticRegression:
+) -> Union[IsotonicRegression, LogisticRegression]:
     """
     Train a calibrator for the given method.
     method{'isotonic', 'sigmoid'}, default='isotonic'
@@ -146,7 +149,7 @@ def train_calibrator(
 
 
 def calibrate_data(
-    calibrator: IsotonicRegression | LogisticRegression,
+    calibrator: Union[IsotonicRegression, LogisticRegression],
     val_data: pd.DataFrame,
     epsilon: float = 1e-8,
 ) -> pd.DataFrame:
