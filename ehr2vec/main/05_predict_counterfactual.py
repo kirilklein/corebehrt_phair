@@ -161,7 +161,7 @@ def main(config_path: str):
             local_path="",  # uses everything in 'outputs'
             remote_path=join(
                 cfg.get("project", DEFAULT_BLOBSTORE),
-                fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path),
+                fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path, azure_context),
             ),
         )
         mount_context.stop()
