@@ -6,6 +6,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 import torch
+from joblib import Parallel, delayed
 from ehr2vec.common.config import Config, load_config
 from ehr2vec.common.loader import (
     FeaturesLoader,
@@ -265,10 +266,9 @@ class DatasetPreparer:
             self.data_modifier.truncate,
             args_for_func={"truncation_len": data_cfg.truncation_len},
         )
-        data.features = convert_to_dict_of_lists(data.features)
         # 6. Normalize segments
         data = self.utils.process_data(data, self.data_modifier.normalize_segments)
-
+        data.features = convert_to_dict_of_lists(data.features)
         # Adjust max segment if needed
         self.utils.check_and_adjust_max_segment(data, model_cfg)
 
@@ -466,9 +466,16 @@ class DataModifier:
     def normalize_segments(data: Data) -> Data:
         """Normalize segments after truncation to start with 1 and increase by 1
         or if position_ids present (org. BEHRT version) then normalize those."""
-        segments_key = "segment" if "segment" in data.features else "position_ids"
-
-        for idx, segments in enumerate(data.features[segments_key]):
-            data.features[segments_key][idx] = Handler.normalize_segments(segments)
-
+        segments_key = "segment" if "segment" in data.features[0] else "position_ids"
+        
+        def _process_patient(patient):
+            patient[segments_key] = Handler.normalize_segments(patient[segments_key])
+            return patient
+            
+        # Process in parallel
+        data.features = Parallel(n_jobs=-1)(
+            delayed(_process_patient)(patient) for patient in data.features
+        )
+        
+        
         return data
