@@ -13,6 +13,7 @@ from ehr2vec.common.setup import (
     fix_tmp_prefixes_for_azure_paths,
     get_args,
     initialize_configuration_finetune,
+    remove_tmp_prefixes,
     setup_logger,
     update_test_cfg_with_pt_ft_cfgs,
 )
@@ -161,7 +162,7 @@ def main(config_path: str):
             local_path="",  # uses everything in 'outputs'
             remote_path=join(
                 cfg.get("project", DEFAULT_BLOBSTORE),
-                fix_tmp_prefixes_for_azure_paths(cfg.paths.model_path),
+                remove_tmp_prefixes(cfg.paths.model_path),
             ),
         )
         mount_context.stop()
