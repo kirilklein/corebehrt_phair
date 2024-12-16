@@ -15,7 +15,11 @@ from ehr2vec.common.loader import (
     load_exclude_pids,
 )
 from ehr2vec.common.saver import Saver
-from ehr2vec.common.utils import Data, iter_patients, convert_to_list_of_dicts, convert_to_dict_of_lists
+from ehr2vec.common.utils import (
+    Data,
+    convert_to_list_of_dicts,
+    convert_to_dict_of_lists,
+)
 from ehr2vec.data.dataset import MLMDataset
 from ehr2vec.data.filter import CodeTypeFilter, PatientFilter
 from ehr2vec.data.utils import Utilities
@@ -229,7 +233,6 @@ class DatasetPreparer:
         # 1. Load tokenized data
         data = self.loader.load_tokenized_data(mode="pretrain")
 
-
         if self.cfg.paths.get("exclude_pids", None) is not None:
             logger.info(f"Pids to exclude: {self.cfg.paths.exclude_pids}")
             exclude_pids = load_exclude_pids(self.cfg.paths)
@@ -256,7 +259,6 @@ class DatasetPreparer:
                     self.patient_filter.select_random_subset,
                     args_for_func={"num_patients": data_cfg.num_patients},
                 )
-
 
         data.features = convert_to_list_of_dicts(data.features)
         # 5. Truncation
@@ -467,15 +469,14 @@ class DataModifier:
         """Normalize segments after truncation to start with 1 and increase by 1
         or if position_ids present (org. BEHRT version) then normalize those."""
         segments_key = "segment" if "segment" in data.features[0] else "position_ids"
-        
+
         def _process_patient(patient):
             patient[segments_key] = Handler.normalize_segments(patient[segments_key])
             return patient
-            
+
         # Process in parallel
         data.features = Parallel(n_jobs=-1)(
             delayed(_process_patient)(patient) for patient in data.features
         )
-        
-        
+
         return data
