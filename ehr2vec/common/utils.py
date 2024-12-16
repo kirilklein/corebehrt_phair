@@ -32,6 +32,17 @@ def check_patient_counts(
                         {concepts.PID.nunique()} unique patients in concepts"
         )
 
+def convert_to_list_of_dicts(features: Dict[str, List[str]]) -> List[dict]:
+    """Convert features to list of dicts"""
+    return [
+        {key: values[i] for key, values in features.items()}
+        for i in range(len(features["concept"]))
+    ]
+
+def convert_to_dict_of_lists(features: List[dict]) -> Dict[str, List[str]]:
+    """Convert features to dict of lists"""
+    return {key: [patient[key] for patient in features] for key in features[0]}
+
 
 def check_existing_splits(data_dir: str) -> bool:
     """Check if train, val, and test splits already exist in data_dir."""

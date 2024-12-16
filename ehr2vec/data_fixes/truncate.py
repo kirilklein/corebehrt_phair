@@ -1,5 +1,7 @@
-from ehr2vec.common.utils import iter_patients
+from typing import Dict, List
 
+from ehr2vec.common.utils import iter_patients
+from joblib import Parallel, delayed
 
 class Truncator:
     def __init__(self, max_len: int, vocabulary: dict) -> None:
@@ -7,16 +9,20 @@ class Truncator:
         self.vocabulary = vocabulary
         self.sep_token = self.vocabulary.get("[SEP]")
 
-    def __call__(self, features: dict) -> dict:
+    def __call__(self, features: List[Dict[str, List[str]]]) -> List[Dict[str, List[str]]]:
         return self.truncate(features)
 
-    def truncate(self, features: dict) -> dict:
+    def truncate(self, features: List[Dict[str, List[str]]]) -> List[Dict[str, List[str]]]:
         background_length = self._get_background_length(features)
-        for index, patient in enumerate(iter_patients(features)):
-            truncated_patient = self._truncate_patient(patient, background_length)
-            for key, value in truncated_patient.items():
-                features[key][index] = value
-        return features
+
+
+        def _process_patient(patient, background_length, truncator):
+            return truncator._truncate_patient(patient, background_length)
+        truncated_patients = Parallel(n_jobs=-1)(
+            delayed(_process_patient)(patient, background_length, self) 
+            for patient in features
+        )
+        return truncated_patients
 
     def _truncate_patient(self, patient: dict, background_length: int) -> dict:
         """Truncate patient to max_len, keeping background if present and CLS if present."""
@@ -35,14 +41,12 @@ class Truncator:
             for key, value in patient.items()
         }
 
-    def _get_background_length(self, features: dict) -> int:
+    def _get_background_length(self, features: List[Dict[str, List[str]]]) -> int:
         """Get the length of the background sentence, first SEP token included."""
         background_tokens = set(
             [v for k, v in self.vocabulary.items() if k.startswith("BG_")]
         )
-        example_concepts = features["concept"][
-            0
-        ]  # Assume that all patients have the same background length
+        example_concepts = features[0]["concept"]
         cls_token_int = int(example_concepts[0] == self.vocabulary.get("[CLS]"))
         background_length = len(set(example_concepts) & background_tokens)
 

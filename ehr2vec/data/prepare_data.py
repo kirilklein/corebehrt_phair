@@ -6,7 +6,6 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 import torch
-
 from ehr2vec.common.config import Config, load_config
 from ehr2vec.common.loader import (
     FeaturesLoader,
@@ -15,7 +14,7 @@ from ehr2vec.common.loader import (
     load_exclude_pids,
 )
 from ehr2vec.common.saver import Saver
-from ehr2vec.common.utils import Data
+from ehr2vec.common.utils import Data, iter_patients, convert_to_list_of_dicts, convert_to_dict_of_lists
 from ehr2vec.data.dataset import MLMDataset
 from ehr2vec.data.filter import CodeTypeFilter, PatientFilter
 from ehr2vec.data.utils import Utilities
@@ -229,6 +228,7 @@ class DatasetPreparer:
         # 1. Load tokenized data
         data = self.loader.load_tokenized_data(mode="pretrain")
 
+
         if self.cfg.paths.get("exclude_pids", None) is not None:
             logger.info(f"Pids to exclude: {self.cfg.paths.exclude_pids}")
             exclude_pids = load_exclude_pids(self.cfg.paths)
@@ -256,6 +256,8 @@ class DatasetPreparer:
                     args_for_func={"num_patients": data_cfg.num_patients},
                 )
 
+
+        data.features = convert_to_list_of_dicts(data.features)
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         data = self.utils.process_data(
@@ -263,7 +265,7 @@ class DatasetPreparer:
             self.data_modifier.truncate,
             args_for_func={"truncation_len": data_cfg.truncation_len},
         )
-
+        data.features = convert_to_dict_of_lists(data.features)
         # 6. Normalize segments
         data = self.utils.process_data(data, self.data_modifier.normalize_segments)
 
