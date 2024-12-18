@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
+import pandas as pd
 from CausalEstimate.filter.propensity import filter_common_support
 from CausalEstimate.interface.estimator import Estimator
 from CausalEstimate.simulation.binary_simulation import (
@@ -115,6 +116,33 @@ def estimate_causal_effects_with_multiple_methods(
             method: ate_estimate[method]["std_err"] for method in methods
         }
     return true_effect, estimated_effect, std_effect
+
+
+def compute_ATE_from_data(data: pd.DataFrame):
+    """Compute the true average treatment effect (ATE) from the data using counterfactuals.
+
+    Args:
+        data: DataFrame containing Y (observed outcome), Y_cf (counterfactual outcome),
+              and A (treatment assignment)
+        beta: List of coefficients (unused, kept for API compatibility)
+
+    Returns:
+        float: Average treatment effect
+    """
+    # For treated (A=1): effect is Y - Y_cf
+    # For control (A=0): effect is Y_cf - Y
+    individual_effects = np.where(
+        data["A"] == 1, data["Y"] - data["Y_cf"], data["Y_cf"] - data["Y"]
+    )
+
+    return individual_effects.mean()
+
+
+def compute_ATT_from_data(data: pd.DataFrame):
+    """Compute the true average treatment effect on the treated (ATT) from the data using counterfactuals."""
+    treated_data = data[data["A"] == 1]
+    individual_effects = treated_data["Y"] - treated_data["Y_cf"]
+    return individual_effects.mean()
 
 
 def compare_treatment_effect_estimates_with_ground_truth_across_patient_numbers(
