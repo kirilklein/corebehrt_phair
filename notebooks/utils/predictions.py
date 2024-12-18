@@ -4,10 +4,10 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.isotonic import IsotonicRegression
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
 
 CLIP = 1e-3
+
 
 def treatment_and_outcome_predictions(
     data,
@@ -104,13 +104,15 @@ def _fit_and_predict_calibrated(
 
     train_probs = clf.predict_proba(X_train)[:, 1]
     # train_probs = _clip_predictions(train_probs)
-    
+
     val_probs = clf.predict_proba(X_val)[:, 1]
     val_probs = _clip_predictions(val_probs)
 
     calibrator = None
     if calibrate:
-        calibrator = IsotonicRegression(out_of_bounds="clip", y_min=1e-6, y_max=1-1e-6)
+        calibrator = IsotonicRegression(
+            out_of_bounds="clip", y_min=1e-6, y_max=1 - 1e-6
+        )
         calibrator.fit(train_probs, y_train)
         val_probs = calibrator.predict(val_probs)
         val_probs = _clip_predictions(val_probs)
@@ -215,4 +217,3 @@ def predict_outcome_cv(
 def _clip_predictions(predictions: np.ndarray) -> np.ndarray:
     """Clip predictions to avoid numerical instability"""
     return np.clip(predictions, CLIP, 1 - CLIP)
-
