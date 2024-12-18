@@ -9,7 +9,6 @@ from CausalEstimate.simulation.binary_simulation import (
     compute_ATT_theoretical_from_data,
     simulate_binary_data,
 )
-from sklearn.base import BaseEstimator
 from sklearn.linear_model import LogisticRegression
 from utils.predictions import treatment_and_outcome_predictions
 
@@ -20,15 +19,12 @@ def estimate_causal_effects_with_multiple_methods(
     effect_type: str = "ATE",
     n_samples: int = 3000,
     common_support_threshold: float = 0.05,
-    calibrate: bool = True,
     n_bootstraps: int = 30,
-    ps_model: BaseEstimator = LogisticRegression,
-    outcome_model: BaseEstimator = LogisticRegression,
-    ps_model_kwargs: dict = {"penalty": None, "solver": "lbfgs", "max_iter": 1000},
-    outcome_model_kwargs: dict = {"penalty": None, "solver": "lbfgs", "max_iter": 1000},
+    n_splits: int = 5,
+    ps_model_dict: Dict = None,
+    outcome_model_dict: Dict = None,
 ) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
     """Estimate causal effects using multiple methods and compare to true effects.
-
     For each model specification, this function:
     1. Simulates binary treatment-outcome data
     2. Fits propensity score and outcome models
@@ -41,18 +37,40 @@ def estimate_causal_effects_with_multiple_methods(
         effect_type: Type of causal effect to estimate ('ATE' or 'ATT')
         n_samples: Number of samples to simulate
         common_support_threshold: Threshold for common support filtering
-        calibrate: Whether to calibrate predicted probabilities
         n_bootstraps: Number of bootstrap iterations for CI estimation
-        ps_model: Model class for propensity score estimation
-        outcome_model: Model class for outcome prediction
-        ps_model_kwargs: Keyword args for propensity score model
-        outcome_model_kwargs: Keyword args for outcome model
+        n_splits: Number of cross-validation splits for model fitting
+        ps_model_dict: Dict containing propensity score model config with keys:
+            'model': Model class
+            'kwargs': Model parameters
+            'calibrate': Whether to calibrate predictions
+        outcome_model_dict: Dict containing outcome model config with same structure as ps_model_dict
 
     Returns:
         true_effect: Dict mapping model names to true causal effects
         estimated_effect: Dict mapping model names to dicts of estimated effects by method
         std_effect: Dict mapping model names to dicts of effect standard errors by method
     """
+    if ps_model_dict is None:
+        ps_model_dict = {
+            "model": LogisticRegression,
+            "kwargs": {
+                "penalty": None,
+                "solver": "lbfgs",
+                "max_iter": 1000,
+            },
+            "calibrate": True,
+        }
+    if outcome_model_dict is None:
+        outcome_model_dict = {
+            "model": LogisticRegression,
+            "kwargs": {
+                "penalty": None,
+                "solver": "lbfgs",
+                "max_iter": 1000,
+            },
+            "calibrate": True,
+        }
+
     true_effect = {}
     estimated_effect = {}
     std_effect = {}
@@ -62,11 +80,9 @@ def estimate_causal_effects_with_multiple_methods(
         )
         data = treatment_and_outcome_predictions(
             data,
-            ps_model=ps_model,
-            outcome_model=outcome_model,
-            ps_model_kwargs=ps_model_kwargs,
-            outcome_model_kwargs=outcome_model_kwargs,
-            calibrate=calibrate,
+            ps_model_dict=ps_model_dict,
+            outcome_model_dict=outcome_model_dict,
+            n_splits=n_splits,
         )
 
         ate_estimate = Estimator(
