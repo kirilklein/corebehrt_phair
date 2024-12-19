@@ -100,10 +100,9 @@ def main(config_path: str) -> None:
 
     if cfg.env == "azure":
         save_to_blobstore(
-            local_path=cfg.paths.run_name,
-            remote_path=join(
-                cfg.get("project", DEFAULT_BLOBSTORE), "outcomes", cfg.paths.run_name
-            ),
+            local_path="",
+            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), "outcomes"),
+            overwrite=False,
         )
         mount_context.stop()
     logger.info("Done")
