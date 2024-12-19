@@ -144,12 +144,34 @@ def update_test_cfg_with_pt_ft_cfgs(cfg: Config, finetune_folder: str) -> Config
 
 
 def remove_tmp_prefixes(path: str) -> Path:
-    """Remove 'tmp' prefixes from a path."""
-    path_parts = Path(path).parts
-    start_index = next(
-        (i for i, part in enumerate(path_parts) if not part.startswith("tmp")), 1
-    )
-    return Path(*path_parts[start_index:])
+    """
+    Remove leading path components that start with 'tmp' and return the remaining path.
+    For example:
+        remove_tmp_prefixes("/tmp/tmp212/dsa") -> Path("dsa")
+        remove_tmp_prefixes("tmp/foo/bar") -> Path("foo/bar")
+        remove_tmp_prefixes("/tmp/foo/bar") -> Path("foo/bar")
+    """
+    p = Path(path)
+    parts = p.parts
+
+    # If path is absolute, the first part will be '/' (an empty string in .parts)
+    # We'll ignore that empty root when checking tmp prefixes but restore it if needed.
+    start_index = 0
+    is_absolute = p.is_absolute()
+    if is_absolute and len(parts) > 0 and parts[0] == "/":
+        # Skip the root part when checking for tmp prefixes
+        start_index = 1
+
+    # Find the first directory part that does not start with 'tmp'
+    while start_index < len(parts) and parts[start_index].startswith("tmp"):
+        start_index += 1
+
+    # Extract the remaining parts (after removing tmp prefixes)
+    remaining_parts = parts[start_index:]
+
+    # If the original path was absolute but we removed the root and all leading tmp parts,
+    # we'll just return the remaining parts as-is (which may be a relative path now).
+    return Path(*remaining_parts)
 
 
 def remove_tmp_prefixes_from_path_cfg(path_cfg: Config) -> Config:

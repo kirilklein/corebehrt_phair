@@ -111,10 +111,9 @@ def main(config_path: str):
     cfg, run, mount_context, azure_context = initialize_configuration_finetune(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
-
-    counterfactual_folder = join(
-        cfg.paths.output_path, f"counterfactual_predictions_{cfg.paths.run_name}"
-    )
+    model_path = cfg.paths.model_path
+    output_folder_name = f"counterfactual_predictions_{cfg.paths.run_name}"
+    counterfactual_folder = join(cfg.paths.output_path, output_folder_name)
     os.makedirs(counterfactual_folder, exist_ok=True)
 
     finetune_folder = cfg.paths.get("model_path")
@@ -159,11 +158,13 @@ def main(config_path: str):
 
     if cfg.env == "azure":
         save_to_blobstore(
-            local_path="",  # uses everything in 'outputs'
+            local_path=output_folder_name,
             remote_path=join(
                 cfg.get("project", DEFAULT_BLOBSTORE),
-                remove_tmp_prefixes(cfg.paths.model_path),
+                remove_tmp_prefixes(model_path),
+                output_folder_name,
             ),
+            overwrite=False,
         )
         mount_context.stop()
     logger.info("Done")
