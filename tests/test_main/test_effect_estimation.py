@@ -1,3 +1,5 @@
+"""This script is used to test the estimate_causal_effect.py script with different data generation and estimation methods."""
+
 import os
 import shutil
 import subprocess
@@ -11,10 +13,8 @@ from CausalEstimate.filter.propensity import filter_common_support
 from CausalEstimate.simulation.binary_simulation import simulate_binary_data
 from sklearn.ensemble import RandomForestClassifier
 
-sys.path.append("../ehr2vec/")
-
-from notebooks.utils.plot_sim import plot_causal_effect_estimation_comparison
-from notebooks.utils.predictions import treatment_and_outcome_predictions
+from tests.common.plot_sim import plot_causal_effect_estimation_comparison
+from tests.common.predictions import treatment_and_outcome_predictions
 
 METHODS = ["IPW", "AIPW", "TMLE"]
 EFFECT_TYPE = "ATE"
@@ -130,10 +130,9 @@ if __name__ == "__main__":
     estimated_effect_dict = {}
     std_effect_dict = {}
     for i, (model, params) in enumerate(models.items()):
-        if i>1:
-            break
         generate_test_data(params)
-        
+        if i > 1:
+            break
         # Create minimal config file
         config = {
             "env": "local",

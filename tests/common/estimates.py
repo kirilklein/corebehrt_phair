@@ -11,7 +11,7 @@ from CausalEstimate.simulation.binary_simulation import (
     simulate_binary_data,
 )
 from sklearn.linear_model import LogisticRegression
-from utils.predictions import treatment_and_outcome_predictions
+from tests.common.predictions import treatment_and_outcome_predictions
 
 
 def estimate_causal_effects_with_multiple_methods(

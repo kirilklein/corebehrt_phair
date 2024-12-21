@@ -9,7 +9,7 @@ from CausalEstimate.vis.plotting import plot_propensity_score_dist
 from sklearn.base import BaseEstimator
 from sklearn.calibration import calibration_curve
 from sklearn.metrics import roc_auc_score
-from utils.predictions import predict_propensity_cv
+from tests.common.predictions import predict_propensity_cv
 
 
 def plot_causal_effect_estimation_comparison(
