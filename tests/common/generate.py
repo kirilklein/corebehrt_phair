@@ -70,7 +70,7 @@ def generate_test_data_with_predictions(
     outcomes_df = pd.DataFrame(
         {
             "PID": data_with_preds["pid"],
-            "TIMESTAMP": pd.date_range(start="2020-01-01", periods=n_samples, freq="D"),
+            "TIMESTAMP": pd.date_range(start="2015-01-01", end="2024-12-31", periods=n_samples),
         }
     )
     outcomes_df = outcomes_df[data_with_preds["Y"] == 1].reset_index(drop=True)
