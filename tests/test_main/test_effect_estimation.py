@@ -9,8 +9,9 @@ from os.path import join
 import matplotlib.pyplot as plt
 import pandas as pd
 import yaml
-from tests.common.generate import generate_test_data_with_predictions
+from CausalEstimate.simulation.binary_simulation import simulate_binary_data
 from tests.common.plot_sim import plot_causal_effect_estimation_comparison
+from tests.common.predictions import predict_and_save
 
 MAX_DEVIATION = 0.1
 
@@ -54,9 +55,11 @@ if __name__ == "__main__":
 
     for i, (model, params) in enumerate(MODELS.items()):
         os.makedirs(save_dir, exist_ok=True)
-        generate_test_data_with_predictions(
-            params, save_dir, n_samples=N_SAMPLES, seed=i
+        data = simulate_binary_data(
+            n=N_SAMPLES, alpha=params["alpha"], beta=params["beta"], seed=i
         )
+        data["pid"] = range(len(data))
+        predict_and_save(data, save_dir, seed=i)
         # Create minimal config file
         for effect_type, methods in ESTIMATION_METHODS.items():
             config = {
