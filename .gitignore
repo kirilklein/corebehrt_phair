@@ -19,3 +19,5 @@ notebooks/*.ipynb
 notebooks/figures/tmp*
 wandb/
 p1_cluster/
+tmp/
+notebooks/tmp/
