@@ -7,13 +7,10 @@ from collections import defaultdict
 from os.path import join
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import yaml
-from CausalEstimate.simulation.binary_simulation import simulate_binary_data
-from sklearn.ensemble import RandomForestClassifier
+from tests.common.generate import generate_test_data_with_predictions
 from tests.common.plot_sim import plot_causal_effect_estimation_comparison
-from tests.common.predictions import treatment_and_outcome_predictions
 
 MAX_DEVIATION = 0.1
 
@@ -46,86 +43,6 @@ MODELS = {
 }
 
 
-def generate_test_data(params, save_dir, n_samples=N_SAMPLES, seed=41):
-    """Generate synthetic data for testing effect estimation."""
-    save_dir = join(save_dir, "test_data")
-    os.makedirs(save_dir, exist_ok=True)
-    # Simulate data
-    data = simulate_binary_data(
-        n_samples, alpha=params["alpha"], beta=params["beta"], seed=seed
-    )
-    data["pid"] = range(n_samples)
-
-    # Configure models
-    model_config = {
-        "model": RandomForestClassifier,
-        "kwargs": {"n_estimators": 100, "max_depth": 5, "random_state": seed},
-        "calibrate": True,
-    }
-    # Generate predictions
-    data_with_preds = treatment_and_outcome_predictions(
-        data, ps_model_dict=model_config, outcome_model_dict=model_config, n_splits=5
-    )
-
-    # Combine Q1 and Q0 into counterfactual predictions based on treatment status
-    data_with_preds["Q*"] = np.where(
-        data_with_preds["A"] == 1, data_with_preds["Q0"], data_with_preds["Q1"]
-    )
-
-    data_with_preds["Y0"] = np.where(
-        data_with_preds["A"] == 0, data_with_preds["Y"], data_with_preds["Y_cf"]
-    )
-    data_with_preds["Y1"] = np.where(
-        data_with_preds["A"] == 1, data_with_preds["Y"], data_with_preds["Y_cf"]
-    )
-
-    # Prepare output files
-    ps_df = pd.DataFrame(
-        {
-            "pid": data_with_preds["pid"],
-            "target": data_with_preds["A"],
-            "proba": data_with_preds["ps"],
-        }
-    )
-
-    # Create outcomes dataframe with only positive cases and random timestamps
-    outcomes_df = pd.DataFrame(
-        {
-            "PID": data_with_preds["pid"],
-            "TIMESTAMP": pd.date_range(start="2020-01-01", periods=n_samples, freq="D"),
-        }
-    )
-    outcomes_df = outcomes_df[data_with_preds["Y"] == 1].reset_index(drop=True)
-
-    # Create counterfactual outcomes dataframe with true Y0/Y1 values
-    counterfactual_outcomes_df = pd.DataFrame(
-        {
-            "PID": data_with_preds["pid"],
-            "Y0": data_with_preds["Y0"],
-            "Y1": data_with_preds["Y1"],
-        }
-    )
-
-    outcome_predictions_df = pd.DataFrame(
-        {"pid": data_with_preds["pid"], "proba": data_with_preds["Q"]}
-    )
-
-    counterfactual_predictions_df = pd.DataFrame(
-        {"pid": data_with_preds["pid"], "proba": data_with_preds["Q*"]}
-    )
-
-    # Save files
-    ps_df.to_csv(f"{save_dir}/ps_scores.csv", index=False)
-    outcomes_df.to_csv(f"{save_dir}/outcomes.csv", index=False)
-    counterfactual_outcomes_df.to_csv(
-        f"{save_dir}/counterfactual_outcomes.csv", index=False
-    )
-    outcome_predictions_df.to_csv(f"{save_dir}/outcome_predictions.csv", index=False)
-    counterfactual_predictions_df.to_csv(
-        f"{save_dir}/counterfactual_predictions.csv", index=False
-    )
-
-
 if __name__ == "__main__":
     # get script directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -137,7 +54,9 @@ if __name__ == "__main__":
 
     for i, (model, params) in enumerate(MODELS.items()):
         os.makedirs(save_dir, exist_ok=True)
-        generate_test_data(params, save_dir)
+        generate_test_data_with_predictions(
+            params, save_dir, n_samples=N_SAMPLES, seed=i
+        )
         # Create minimal config file
         for effect_type, methods in ESTIMATION_METHODS.items():
             config = {
