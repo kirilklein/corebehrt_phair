@@ -29,7 +29,7 @@ def construct_data_for_effect_estimation(
     df = pd.merge(
         propensity_scores, outcomes, left_index=True, right_index=True, how="left"
     )
-    df["outcome"].fillna(0, inplace=True)
+    df.loc[:, "outcome"] = df["outcome"].fillna(0)
     df["outcome"] = df["outcome"].astype(int)
     if counterfactual_predictions is not None and outcome_predictions is not None:
         df = add_outcome_predictions(

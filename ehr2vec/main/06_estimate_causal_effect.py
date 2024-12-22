@@ -66,7 +66,7 @@ def main(config_path: str):
     cfg, run, mount_context, azure_context = initialize_configuration_effect_estimation(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
-    run = initialize_wandb(run, cfg, cfg.wandb_kwargs)
+    run = initialize_wandb(run, cfg, cfg.get("wandb_kwargs", {}))
     # create test folder
     path_cfg: Config = cfg.paths
     exp_folder = join(path_cfg.output_path, f"experiment_{path_cfg.run_name}")
