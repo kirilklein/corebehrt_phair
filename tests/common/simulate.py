@@ -27,7 +27,9 @@ def simulate_binary_data_complex(
     # Treatment model with nonlinear terms
     logit_p = (
         alpha[0]
-        + np.sum([alpha[i + 1] * X[:, i] for i in range(3)], axis=0)  # Only use 3 features
+        + np.sum(
+            [alpha[i + 1] * X[:, i] for i in range(3)], axis=0
+        )  # Only use 3 features
         + alpha[1] * X[:, 0] ** 2
         + alpha[2] * np.sin(X[:, 1])
         + alpha[3] * np.exp(X[:, 2] / 2)
