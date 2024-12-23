@@ -14,12 +14,8 @@ CLIP = 1e-3
 
 def treatment_and_outcome_predictions(
     data,
-    ps_model_dict: dict = {"model": BaseEstimator, "kwargs": {}, "calibrate": True},
-    outcome_model_dict: dict = {
-        "model": BaseEstimator,
-        "kwargs": {},
-        "calibrate": True,
-    },
+    ps_model_dict: dict = None,
+    outcome_model_dict: dict = None,
     n_splits: int = 5,
 ):
     """Generate propensity score and outcome predictions using cross-validation.
@@ -44,6 +40,10 @@ def treatment_and_outcome_predictions(
             - Q1: Predicted outcomes under treatment (A=1)
             - Q0: Predicted outcomes under control (A=0)
     """
+    if ps_model_dict is None:
+        ps_model_dict = {"model": BaseEstimator, "kwargs": {}, "calibrate": True}
+    if outcome_model_dict is None:
+        outcome_model_dict = {"model": BaseEstimator, "kwargs": {}, "calibrate": True}
     data["ps"] = predict_propensity_cv(
         data,
         X_cols=["X1", "X2"],
