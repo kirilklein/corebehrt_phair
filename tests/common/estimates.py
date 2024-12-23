@@ -182,7 +182,7 @@ def compare_treatment_effect_estimates_with_ground_truth_across_patient_numbers(
         ps_model_kwargs = {}
     if outcome_model_kwargs is None:
         outcome_model_kwargs = {}
-        
+
     diffs = defaultdict(lambda: defaultdict(list))
     stds = defaultdict(lambda: defaultdict(list))
 
