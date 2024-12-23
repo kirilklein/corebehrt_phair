@@ -350,7 +350,7 @@ class DirectoryPreparer:
         n_hours_start_follow_up = cfg.outcome.get("n_hours_start_follow_up", None)
         n_hours_start_follow_up_str = (
             DirectoryPreparer.handle_n_hours(n_hours_start_follow_up)
-            if n_hours_start_follow_up is not None
+            if n_hours_start_follow_up is not None and n_hours_start_follow_up != 0
             else "at"
         )
 
