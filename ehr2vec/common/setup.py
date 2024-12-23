@@ -347,14 +347,14 @@ class DirectoryPreparer:
 
         finetune_folder_name = f"{finetune_folder_name}{n_hours_str}_{censor_name}"
 
-        n_hours_start_follow_up = cfg.outcome.get("n_hours_follow_up", None)
-        n_hours_follow_up_str = (
+        n_hours_start_follow_up = cfg.outcome.get("n_hours_start_follow_up", None)
+        n_hours_start_follow_up_str = (
             DirectoryPreparer.handle_n_hours(n_hours_start_follow_up)
             if n_hours_start_follow_up is not None
             else "at"
         )
 
-        finetune_folder_name = f"{finetune_folder_name}_followup_start_{n_hours_follow_up_str}_index_date_{cfg.paths.run_name}"
+        finetune_folder_name = f"{finetune_folder_name}_followup_start_{n_hours_start_follow_up_str}_index_date_run_{cfg.paths.run_name}"
         return finetune_folder_name
 
     @staticmethod
