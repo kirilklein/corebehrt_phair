@@ -139,6 +139,9 @@ class DatasetPreparer:
                 time2event=self.cfg.outcome.get("time2event", False),
                 end_of_time=self.cfg.outcome.get("end_of_time", None),
                 death_is_event=self.cfg.outcome.get("death_is_event", False),
+                n_hours_start_followup=self.cfg.outcome.get(
+                    "n_hours_start_followup", 0
+                ),
             )
             data = outcomehandler.handle(
                 data=data,
