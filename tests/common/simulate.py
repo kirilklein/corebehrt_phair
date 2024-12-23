@@ -16,7 +16,7 @@ def simulate_binary_data_complex(
     """
     rng = np.random.default_rng(seed)
 
-    # Simulate covariates
+    # Simulate covariates - only 3 features needed based on usage
     X = rng.normal(0, 1, (n, 3))
 
     # Pad coefficients with zeros if needed
@@ -27,7 +27,7 @@ def simulate_binary_data_complex(
     # Treatment model with nonlinear terms
     logit_p = (
         alpha[0]
-        + np.sum([alpha[i + 1] * X[:, i] for i in range(5)], axis=0)
+        + np.sum([alpha[i + 1] * X[:, i] for i in range(3)], axis=0)  # Only use 3 features
         + alpha[1] * X[:, 0] ** 2
         + alpha[2] * np.sin(X[:, 1])
         + alpha[3] * np.exp(X[:, 2] / 2)
@@ -56,16 +56,16 @@ def simulate_binary_data_complex(
         + beta[1] * (1 - A)
         + beta[2] * X[:, 0] ** 3
         + beta[3] * np.cos(X[:, 1])
-        + beta[1] * (1 - A) * X[:, 0] * X[:, 1]
-        + beta[2] * np.exp(X[:, 2] / 3)
-        + beta[3] * np.log(np.abs(X[:, 1]) + 1)
+        + beta[4] * (1 - A) * X[:, 0] * X[:, 1]  # Fixed coefficient index
+        + beta[5] * np.exp(X[:, 2] / 3)
+        + beta[6] * np.log(np.abs(X[:, 1]) + 1)  # Fixed coefficient index
     )
     q_cf = 1 / (1 + np.exp(-logit_q_cf))
     Y_cf = rng.binomial(1, q_cf)
 
-    # Create dataframe
+    # Create dataframe - only create 3 X columns since that's what we generate
     data = pd.DataFrame(
-        {f"X{i+1}": X[:, i] for i in range(6)} | {"A": A, "Y": Y, "Y_cf": Y_cf}
+        {f"X{i+1}": X[:, i] for i in range(3)} | {"A": A, "Y": Y, "Y_cf": Y_cf}
     )
 
     return data
