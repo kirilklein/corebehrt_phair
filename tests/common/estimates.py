@@ -153,8 +153,8 @@ def compare_treatment_effect_estimates_with_ground_truth_across_patient_numbers(
     effect_type="ATE",
     ps_model=LogisticRegression,
     outcome_model=LogisticRegression,
-    ps_model_kwargs={},
-    outcome_model_kwargs={},
+    ps_model_kwargs=None,
+    outcome_model_kwargs=None,
     calibrate=True,
     common_support_threshold=0.01,
 ):
@@ -178,6 +178,11 @@ def compare_treatment_effect_estimates_with_ground_truth_across_patient_numbers(
         diffs: Dictionary of differences between estimated and true effects
         stds: Dictionary of standard errors
     """
+    if ps_model_kwargs is None:
+        ps_model_kwargs = {}
+    if outcome_model_kwargs is None:
+        outcome_model_kwargs = {}
+
     diffs = defaultdict(lambda: defaultdict(list))
     stds = defaultdict(lambda: defaultdict(list))
 
