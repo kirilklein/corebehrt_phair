@@ -1,7 +1,7 @@
 env: local
 project: "PHAIR"
 paths:
-  model_path: outputs/example_pretraining/example/finetune_SIMULATED_censored_1_hours_post_EXAMPLE_CENSOR_followup_start_at_index_date_run_test
+  model_path: outputs/example_pretraining/example/finetune_SIMULATED_censored_1_hours_post_EXAMPLE_CENSOR_followup_start_4_days_post_index_date_run_test
   run_name: "test"
 
 model:
