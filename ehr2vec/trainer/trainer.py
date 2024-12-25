@@ -104,6 +104,8 @@ class EHRTrainer:
         self.run = run
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
+        # L1 regularization strength, default to 0 (no regularization)
+        self.l1_lambda = self.cfg.trainer_args.get("l1_lambda", 0.0)
 
     def _log_basic_info(self):
         self.log(f"Run on {self.device}")
@@ -206,20 +208,35 @@ class EHRTrainer:
             with autocast():
                 self.batch_to_device(batch)
                 outputs = self.model(batch)
-                unscaled_loss = (
-                    outputs.loss
-                )  # This is the original, unscaled loss value
-                scaled_loss = self.scaler.scale(
-                    unscaled_loss
-                )  # Scale the loss for backward
+                unscaled_loss = outputs.loss
+
+                # Add L1 regularization if lambda > 0
+                l1_loss = self._compute_l1_loss()
+                unscaled_loss += l1_loss
+
+                scaled_loss = self.scaler.scale(unscaled_loss)
             scaled_loss.backward()
         else:
             self.batch_to_device(batch)
             outputs = self.model(batch)
             unscaled_loss = outputs.loss
+
+            # Add L1 regularization if lambda > 0
+            l1_loss = self._compute_l1_loss()
+            unscaled_loss += l1_loss
+
             unscaled_loss.backward()
 
         return unscaled_loss
+
+    def _compute_l1_loss(self):
+        if self.l1_lambda <= 0:
+            return 0
+        l1_loss = self.l1_lambda * sum(
+            torch.sum(torch.abs(p)) for p in self.model.parameters()
+        )
+        self.run_log("L1 loss", l1_loss.item())
+        return l1_loss
 
     def _update_and_log(self, step_loss, train_loop, epoch_loss):
         """Updates the model and logs the loss"""
