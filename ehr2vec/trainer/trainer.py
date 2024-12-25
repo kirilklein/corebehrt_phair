@@ -209,28 +209,28 @@ class EHRTrainer:
                 self.batch_to_device(batch)
                 outputs = self.model(batch)
                 unscaled_loss = outputs.loss
-                
+
                 # Add L1 regularization if lambda > 0
                 if self.l1_lambda > 0:
                     l1_loss = 0
                     for param in self.model.parameters():
                         l1_loss += torch.sum(torch.abs(param))
                     unscaled_loss += self.l1_lambda * l1_loss
-                    
+
                 scaled_loss = self.scaler.scale(unscaled_loss)
             scaled_loss.backward()
         else:
             self.batch_to_device(batch)
             outputs = self.model(batch)
             unscaled_loss = outputs.loss
-            
+
             # Add L1 regularization if lambda > 0
             if self.l1_lambda > 0:
                 l1_loss = 0
                 for param in self.model.parameters():
                     l1_loss += torch.sum(torch.abs(param))
                 unscaled_loss += self.l1_lambda * l1_loss
-                
+
             unscaled_loss.backward()
 
         return unscaled_loss
