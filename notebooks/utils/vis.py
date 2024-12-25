@@ -107,7 +107,7 @@ def plot_propensity_scores(
 
     fig.savefig(os.path.join(save_path, filename), dpi=300, bbox_inches="tight")
     plt.close(fig)
-    return fig
+    return fig, ax
 
 
 def plot_expit_surface(
