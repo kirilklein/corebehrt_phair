@@ -212,7 +212,6 @@ class EHRTrainer:
 
                 # Add L1 regularization if lambda > 0
                 l1_loss = self._compute_l1_loss()
-                self.run_log("L1 loss", l1_loss.item())
                 unscaled_loss += l1_loss
 
                 scaled_loss = self.scaler.scale(unscaled_loss)
@@ -224,7 +223,6 @@ class EHRTrainer:
 
             # Add L1 regularization if lambda > 0
             l1_loss = self._compute_l1_loss()
-            self.run_log("L1 loss", l1_loss.item())
             unscaled_loss += l1_loss
 
             unscaled_loss.backward()
@@ -234,9 +232,11 @@ class EHRTrainer:
     def _compute_l1_loss(self):
         if self.l1_lambda <= 0:
             return 0
-        return self.l1_lambda * sum(
+        l1_loss = self.l1_lambda * sum(
             torch.sum(torch.abs(p)) for p in self.model.parameters()
         )
+        self.run_log("L1 loss", l1_loss.item())
+        return l1_loss
 
     def _update_and_log(self, step_loss, train_loop, epoch_loss):
         """Updates the model and logs the loss"""
