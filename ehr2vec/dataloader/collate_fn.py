@@ -10,8 +10,10 @@ def static(data: list) -> dict:
     return padded_data
 
 
-def get_bucket_length(length, buckets=[64, 128, 256, 512, 1024, 2048]):
+def get_bucket_length(length, buckets=None):
     """Return the smallest bucket size that fits the sequence length"""
+    if buckets is None:
+        buckets = [64, 128, 256, 512, 1024, 2048]
     for bucket in buckets:
         if length <= bucket:
             return bucket
