@@ -42,7 +42,7 @@ class EHRTrainer:
         run_folder: str = None,
         last_epoch: int = None,
     ):
-
+        self.logger = logger
         self._initialize_basic_attributes(
             model,
             train_dataset,
@@ -58,7 +58,6 @@ class EHRTrainer:
             last_epoch,
         )
         self._set_default_args(args)
-        self.logger = logger
         self.run_folder = run_folder or os.path.join(
             self.cfg.paths.output_path, self.cfg.paths.run_name
         )
@@ -90,7 +89,10 @@ class EHRTrainer:
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
+        self.cfg = cfg
         self.model = model.to(self.device)
+        if self.cfg.trainer_args.get("compile", True):
+            self._compile_model()
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
         self.val_dataset = val_dataset
@@ -100,18 +102,24 @@ class EHRTrainer:
             {k: instantiate(v) for k, v in metrics.items()} if metrics else {}
         )
         self.sampler = sampler
-        self.cfg = cfg
         self.run = run
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
         # L1 regularization strength, default to 0 (no regularization)
         self.l1_lambda = self.cfg.trainer_args.get("l1_lambda", 0.0)
 
+    def _compile_model(self):
+        if torch.cuda.is_available() and hasattr(torch, 'compile'):
+            try:
+                # Use a more conservative backend
+                self.model = torch.compile(self.model, backend='inductor', mode='reduce-overhead')
+                self.log("Model successfully compiled")
+            except Exception as e:
+                self.log(f"Failed to compile model: {e}. Continuing with uncompiled model.")
+
     def _log_basic_info(self):
         self.log(f"Run on {self.device}")
         self.log(f"Run folder: {self.run_folder}")
-        self.log("Send model to device")
-        self.log("Initialize metrics")
         if torch.cuda.is_available():
             self.log(
                 f"Memory on GPU: {torch.cuda.get_device_properties(0).total_memory/1e9} GB"
@@ -208,7 +216,7 @@ class EHRTrainer:
             with autocast():
                 self.batch_to_device(batch)
                 outputs = self.model(batch)
-                unscaled_loss = outputs.loss
+                unscaled_loss = outputs["loss"]
 
                 # Add L1 regularization if lambda > 0
                 unscaled_loss += self._compute_l1_loss()
@@ -218,7 +226,7 @@ class EHRTrainer:
         else:
             self.batch_to_device(batch)
             outputs = self.model(batch)
-            unscaled_loss = outputs.loss
+            unscaled_loss = outputs["loss"]
 
             # Add L1 regularization if lambda > 0
             unscaled_loss += self._compute_l1_loss()
@@ -409,10 +417,10 @@ class EHRTrainer:
             for batch in loop:
                 self.batch_to_device(batch)
                 outputs = self.model(batch)
-                loss += outputs.loss.item()
+                loss += outputs["loss"].item()
 
                 if self.accumulate_logits:
-                    logits_list.append(outputs.logits.cpu())
+                    logits_list.append(outputs["logits"].cpu())
                     targets_list.append(batch["target"].cpu())
                 else:
                     for name, func in self.metrics.items():

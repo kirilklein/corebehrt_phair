@@ -25,7 +25,7 @@ class PrecisionAtK:
         self.topk = topk
 
     def __call__(self, outputs, batch):
-        logits = outputs.logits
+        logits = outputs["logits"]
         target = batch["target"]
 
         ind = torch.where((target != -100) & (target != 0))
@@ -47,7 +47,7 @@ class LossAccessor:
         self.loss_name = loss_name
 
     def __call__(self, outputs, batch):
-        return outputs.__getattribute__(self.loss_name)
+        return outputs[self.loss_name]
 
 
 def binary_hit(outputs, batch, threshold=0.5, average=True):
@@ -63,23 +63,22 @@ def binary_hit(outputs, batch, threshold=0.5, average=True):
     else:
         return (predictions == target).float().mean().item()
 
-
 class BaseMetric:
     def __init__(self, threshold=0.5) -> None:
         self.threshold = threshold
 
     def _return_probas_and_targrets(self, outputs, batch):
         probas = torch.sigmoid(outputs.logits)
-        return probas.cpu(), batch["target"].cpu()
+        return to_numpy(probas), to_numpy(batch["target"])
 
     def _return_predictions_and_targrets(self, outputs, batch):
         probas, targets = self._return_probas_and_targrets(outputs, batch)
-        predictions = (probas > self.threshold).long().view(-1)
+        predictions = (probas > self.threshold).astype(int).reshape(-1)
         return predictions, targets
 
     def _return_confusion_matrix(self, outputs, batch):
         predictions, targets = self._return_predictions_and_targrets(outputs, batch)
-        return confusion_matrix(targets, predictions, labels=[True, False]).ravel()
+        return confusion_matrix(targets, predictions, labels=[1, 0]).ravel()
 
     def __call__(self, outputs, batch):
         raise NotImplementedError
@@ -200,3 +199,53 @@ class False_Negatives(BaseMetric):
 def specificity(y, y_scores):
     tn, fp, fn, tp = confusion_matrix(y, y_scores).ravel()
     return tn / (tn + fp)
+
+
+def to_numpy(tensor_or_array):
+    """Safely convert a PyTorch tensor or numpy array to a numpy array."""
+    if isinstance(tensor_or_array, torch.Tensor):
+        return tensor_or_array.detach().cpu().numpy()
+    return tensor_or_array
+
+
+class PrecisionScore:
+    def __init__(self):
+        self.name = "precision"
+
+    def __call__(self, outputs, batch):
+        predictions = (torch.sigmoid(outputs["logits"]) > 0.5).float()
+        predictions = to_numpy(predictions)
+        targets = to_numpy(batch["target"])
+        return precision_score(targets, predictions, zero_division=0)
+
+
+class RecallScore:
+    def __init__(self):
+        self.name = "recall"
+
+    def __call__(self, outputs, batch):
+        predictions = (torch.sigmoid(outputs["logits"]) > 0.5).float()
+        predictions = to_numpy(predictions)
+        targets = to_numpy(batch["target"])
+        return recall_score(targets, predictions, zero_division=0)
+
+
+class F1Score:
+    def __init__(self):
+        self.name = "f1"
+
+    def __call__(self, outputs, batch):
+        predictions = (torch.sigmoid(outputs["logits"]) > 0.5).float()
+        predictions = to_numpy(predictions)
+        targets = to_numpy(batch["target"])
+        return f1_score(targets, predictions, zero_division=0)
+
+
+class AUROC:
+    def __init__(self):
+        self.name = "auroc"
+
+    def __call__(self, outputs, batch):
+        logits = to_numpy(outputs["logits"])
+        targets = to_numpy(batch["target"])
+        return roc_auc_score(targets, logits)
