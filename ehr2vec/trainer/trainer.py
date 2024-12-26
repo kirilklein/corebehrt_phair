@@ -7,7 +7,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, Dataset
 
 from ehr2vec.common.config import Config, get_function, instantiate
-from ehr2vec.dataloader.collate_fn import dynamic_padding
+from ehr2vec.dataloader.collate_fn import bucketed_dynamic_padding
 from ehr2vec.trainer.utils import (
     compute_avg_metrics,
     get_nvidia_smi_output,
@@ -123,7 +123,7 @@ class EHRTrainer:
         collate_fn = (
             get_function(args["collate_fn"])
             if "collate_fn" in args
-            else dynamic_padding
+            else bucketed_dynamic_padding
         )
         default_args = {"save_every_k_steps": float("inf"), "collate_fn": collate_fn}
         self.args = {**default_args, **args}

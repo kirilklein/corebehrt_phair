@@ -10,10 +10,22 @@ def static(data: list) -> dict:
     return padded_data
 
 
-def dynamic_padding(data: list) -> dict:
+def get_bucket_length(length, buckets=[64, 128, 256, 512, 1024, 2048]):
+    """Return the smallest bucket size that fits the sequence length"""
+    for bucket in buckets:
+        if length <= bucket:
+            return bucket
+    return buckets[-1]  # Use largest bucket if sequence is longer
+
+
+def bucketed_dynamic_padding(data: list) -> dict:
+    # Find max length in batch
     max_len = max([len(patient["concept"]) for patient in data])
+    # Get appropriate bucket size
+    bucket_len = get_bucket_length(max_len)
+
     for patient in data:
-        difference = max_len - len(patient["concept"])
+        difference = bucket_len - len(patient["concept"])
         for key, values in patient.items():
             if key in ["target", "time2event"]:
                 if isinstance(values, float):  # 0D: For finetuning
