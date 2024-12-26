@@ -346,7 +346,7 @@ class EHRTester:
         collate_fn = (
             get_function(args["collate_fn"])
             if "collate_fn" in args
-            else dynamic_padding
+            else bucketed_dynamic_padding
         )
         default_args = {"save_every_k_steps": float("inf"), "collate_fn": collate_fn}
         self.args = {**default_args, **args}

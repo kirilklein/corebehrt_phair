@@ -27,7 +27,7 @@ from ehr2vec.common.setup import (
 )
 from ehr2vec.common.utils import Data
 from ehr2vec.data.dataset import BinaryOutcomeDataset
-from ehr2vec.dataloader.collate_fn import dynamic_padding
+from ehr2vec.dataloader.collate_fn import bucketed_dynamic_padding
 from ehr2vec.feature_importance.shap import DeepSHAP_BEHRTWrapper
 from ehr2vec.feature_importance.shap_utils import (
     insert_shap_values,
@@ -68,7 +68,7 @@ def compute_fold(
 
     batch_size = cfg.dataloader.get("batch_size", 512)
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=True, collate_fn=dynamic_padding
+        dataset, batch_size=batch_size, shuffle=True, collate_fn=bucketed_dynamic_padding
     )  # SHAP will create n_permutations copies of the input
 
     # load BEHRT model
