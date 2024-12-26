@@ -68,7 +68,10 @@ def compute_fold(
 
     batch_size = cfg.dataloader.get("batch_size", 512)
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=True, collate_fn=bucketed_dynamic_padding
+        dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=bucketed_dynamic_padding,
     )  # SHAP will create n_permutations copies of the input
 
     # load BEHRT model
