@@ -76,8 +76,8 @@ class PerturbationModel(torch.nn.Module):
             perturbed_output: Model output with perturbation
             batch: Input batch, needed to access the correct sigmas
         """
-        logits = original_output.logits
-        perturbed_logits = perturbed_output.logits
+        logits = original_output["logits"]
+        perturbed_logits = perturbed_output["logits"]
 
         squared_diff = (logits - perturbed_logits) ** 2
 
