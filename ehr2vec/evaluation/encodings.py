@@ -368,10 +368,10 @@ class EHRTester:
             for batch in loop:
                 self.batch_to_device(batch)
                 outputs = self.model(batch)
-                loss += outputs.loss.item()
+                loss += outputs["loss"].item()
 
                 if self.accumulate_logits:
-                    logits_list.append(outputs.logits.cpu())
+                    logits_list.append(outputs["logits"].cpu())
                     targets_list.append(batch["target"].cpu())
                 else:
                     for name, func in self.metrics.items():
