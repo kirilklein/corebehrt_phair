@@ -50,13 +50,13 @@ class PerturbationModel(torch.nn.Module):
             batch, perturbed_embeddings, output_hidden_states=True
         )
         loss = self.perturbation_loss(original_output, perturbed_output, batch)
-        outputs = ModelOutputs(
-            logits=original_output["logits"],
-            perturbed_logits=perturbed_output["logits"],
-            loss=loss,
-            hidden_states=original_output["hidden_states"],
-            perturbed_hidden_states=perturbed_output["hidden_states"],
-        )
+        outputs = {
+            "logits": original_output["logits"],
+            "perturbed_logits": perturbed_output["logits"], 
+            "loss": loss,
+            "hidden_states": original_output["hidden_states"],
+            "perturbed_hidden_states": perturbed_output["hidden_states"]
+        }
         return outputs
 
     def freeze_bert(self):
