@@ -211,8 +211,7 @@ class EHRTrainer:
                 unscaled_loss = outputs.loss
 
                 # Add L1 regularization if lambda > 0
-                l1_loss = self._compute_l1_loss()
-                unscaled_loss += self.l1_lambda * l1_loss
+                unscaled_loss += self._compute_l1_loss()
 
                 scaled_loss = self.scaler.scale(unscaled_loss)
             scaled_loss.backward()
@@ -222,8 +221,7 @@ class EHRTrainer:
             unscaled_loss = outputs.loss
 
             # Add L1 regularization if lambda > 0
-            l1_loss = self._compute_l1_loss()
-            unscaled_loss += self.l1_lambda * l1_loss
+            unscaled_loss += self._compute_l1_loss()
 
             unscaled_loss.backward()
 
