@@ -88,7 +88,7 @@ class EHRTrainer:
     ):
         # Enable TF32 for better performance
         torch.backends.cuda.matmul.allow_tf32 = True
-        torch.set_float32_matmul_precision('high')
+        torch.set_float32_matmul_precision("high")
 
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -113,13 +113,17 @@ class EHRTrainer:
         self.l1_lambda = self.cfg.trainer_args.get("l1_lambda", 0.0)
 
     def _compile_model(self):
-        if torch.cuda.is_available() and hasattr(torch, 'compile'):
+        if torch.cuda.is_available() and hasattr(torch, "compile"):
             try:
                 # Use a more conservative backend
-                self.model = torch.compile(self.model, backend='inductor', mode='reduce-overhead')
+                self.model = torch.compile(
+                    self.model, backend="inductor", mode="reduce-overhead"
+                )
                 self.log("Model successfully compiled")
             except Exception as e:
-                self.log(f"Failed to compile model: {e}. Continuing with uncompiled model.")
+                self.log(
+                    f"Failed to compile model: {e}. Continuing with uncompiled model."
+                )
 
     def _log_basic_info(self):
         self.log(f"Run on {self.device}")

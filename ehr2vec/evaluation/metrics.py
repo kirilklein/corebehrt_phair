@@ -63,6 +63,7 @@ def binary_hit(outputs, batch, threshold=0.5, average=True):
     else:
         return (predictions == target).float().mean().item()
 
+
 class BaseMetric:
     def __init__(self, threshold=0.5) -> None:
         self.threshold = threshold

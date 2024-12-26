@@ -172,34 +172,34 @@ class ModelLoader:
         """Load state dict into model. If embeddings are not loaded, raise an error."""
         # Load the state dict
         model_dict = model.state_dict()
-        pretrained_dict = checkpoint['model_state_dict']
-        
+        pretrained_dict = checkpoint["model_state_dict"]
+
         # Remove _orig_mod prefix from keys if present
         cleaned_dict = {}
         for k, v in pretrained_dict.items():
-            if k.startswith('_orig_mod.'):
-                new_key = k.replace('_orig_mod.', '')
+            if k.startswith("_orig_mod."):
+                new_key = k.replace("_orig_mod.", "")
                 cleaned_dict[new_key] = v
             else:
                 cleaned_dict[k] = v
-        
+
         # Check if embeddings were loaded correctly
         embedding_loaded = False
         for key in cleaned_dict.keys():
-            if 'embeddings.' in key:
+            if "embeddings." in key:
                 embedding_loaded = True
                 break
-        
+
         if not embedding_loaded:
             raise ValueError(
                 "Embeddings not loaded. Ensure that model.embeddings is compatible with "
                 "pretrained model embeddings EhrEmbeddings."
             )
-        
+
         # Update model state dict and load it with strict=False
         model_dict.update(cleaned_dict)
         model.load_state_dict(model_dict, strict=False)
-        
+
         return model
 
     def load_checkpoint(self) -> dict:

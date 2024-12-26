@@ -75,7 +75,7 @@ class BertEHRModel(BertEHREncoder):
             else torch.ones(inputs_embeds.shape[:2], device=inputs_embeds.device).int()
         )
         logits = self.cls(sequence_output, attention_mask=attention_mask)
-        
+
         # Calculate loss if target is provided
         loss = None
         if batch is not None and batch.get("target", None) is not None:
@@ -88,7 +88,7 @@ class BertEHRModel(BertEHREncoder):
             "hidden_states": outputs.hidden_states,
             "attentions": outputs.attentions,
             "logits": logits,
-            "loss": loss
+            "loss": loss,
         }
 
     def get_loss(self, logits, labels):
@@ -112,7 +112,7 @@ class BertForFineTuning(BertEHRModel):
         outputs = super().forward(batch=batch, inputs_embeds=inputs_embeds, **kwargs)
         sequence_output = outputs["last_hidden_state"]
         logits = self.cls(sequence_output, batch["attention_mask"])
-        
+
         loss = None
         if batch.get("target", None) is not None:
             loss = self.get_loss(logits, batch["target"])
@@ -123,7 +123,7 @@ class BertForFineTuning(BertEHRModel):
             "hidden_states": outputs["hidden_states"],
             "attentions": outputs["attentions"],
             "logits": logits,
-            "loss": loss
+            "loss": loss,
         }
 
     def get_loss(self, hidden_states, labels, labels_mask=None):
@@ -141,9 +141,11 @@ class BertForTime2Event(BertEHREncoder):
         outputs = super().forward(batch=batch, inputs_embeds=inputs_embeds)
         sequence_output = outputs["last_hidden_state"]
         logits = self.cls(sequence_output, batch["attention_mask"])
-        
+
         loss = None
-        if (batch.get("target", None) is not None) and (batch.get("time2event", None) is not None):
+        if (batch.get("target", None) is not None) and (
+            batch.get("time2event", None) is not None
+        ):
             loss = self.get_loss(logits, batch["target"], batch["time2event"])
 
         return {
@@ -152,7 +154,7 @@ class BertForTime2Event(BertEHREncoder):
             "hidden_states": outputs["hidden_states"],
             "attentions": outputs["attentions"],
             "logits": logits,
-            "loss": loss
+            "loss": loss,
         }
 
     def get_loss(self, hidden_states, labels, time2event):
