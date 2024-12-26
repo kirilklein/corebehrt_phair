@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from ehr2vec.common.config import get_function, instantiate
 from ehr2vec.common.logger import TqdmToLogger
-from ehr2vec.dataloader.collate_fn import dynamic_padding
+from ehr2vec.dataloader.collate_fn import bucketed_dynamic_padding
 from ehr2vec.trainer.trainer import EHRTrainer
 from ehr2vec.trainer.utils import compute_avg_metrics, get_tqdm
 
@@ -44,7 +44,7 @@ class Forwarder(EHRTrainer):
             self.dataset,
             batch_size=self.batch_size,
             shuffle=False,
-            collate_fn=dynamic_padding,
+            collate_fn=bucketed_dynamic_padding,
         )
         if writer:
             self.writer = writer
