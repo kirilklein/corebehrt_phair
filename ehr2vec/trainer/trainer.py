@@ -86,6 +86,10 @@ class EHRTrainer:
         accumulate_logits,
         last_epoch,
     ):
+        # Enable TF32 for better performance
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.set_float32_matmul_precision('high')
+
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
