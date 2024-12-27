@@ -10,10 +10,44 @@ def static(data: list) -> dict:
     return padded_data
 
 
-def dynamic_padding(data: list) -> dict:
+def get_bucket_length(length, buckets=None):
+    """Return the smallest bucket size that fits the sequence length"""
+    if buckets is None:
+        buckets = [64, 128, 256, 512, 1024, 2048]
+    for bucket in buckets:
+        if length <= bucket:
+            return bucket
+    return buckets[-1]  # Use largest bucket if sequence is longer
+
+
+def bucketed_dynamic_padding(data: list) -> dict:
+    """Pad batch data to the nearest bucket size.
+
+    Args:
+        data: List of patient dictionaries containing:
+            - concept: Tensor of variable length sequences
+            - target: Tensor (1D) or float (0D) for predictions
+            - time2event: Tensor (1D) or float (0D) for time information
+            - other fields: Tensor of same length as concept
+
+    Returns:
+        dict: Padded data with all sequences in batch padded to same bucket size
+
+    Raises:
+        ValueError: If data is empty or missing required fields
+    """
+    if not data:
+        raise ValueError("Empty batch data provided")
+    if "concept" not in data[0]:
+        raise ValueError("Data must contain 'concept' field")
+
+    # Find max length in batch
     max_len = max([len(patient["concept"]) for patient in data])
+    # Get appropriate bucket size
+    bucket_len = get_bucket_length(max_len)
+
     for patient in data:
-        difference = max_len - len(patient["concept"])
+        difference = bucket_len - len(patient["concept"])
         for key, values in patient.items():
             if key in ["target", "time2event"]:
                 if isinstance(values, float):  # 0D: For finetuning

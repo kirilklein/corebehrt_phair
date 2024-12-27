@@ -75,11 +75,21 @@ class BertEHRModel(BertEHREncoder):
             else torch.ones(inputs_embeds.shape[:2], device=inputs_embeds.device).int()
         )
         logits = self.cls(sequence_output, attention_mask=attention_mask)
-        outputs.logits = logits
-        if batch is not None:
-            if batch.get("target", None) is not None:
-                outputs.loss = self.get_loss(logits, batch["target"])
-        return outputs
+
+        # Calculate loss if target is provided
+        loss = None
+        if batch is not None and batch.get("target", None) is not None:
+            loss = self.get_loss(logits, batch["target"])
+
+        # Return a dictionary instead of modifying outputs
+        return {
+            "last_hidden_state": outputs.last_hidden_state,
+            "pooler_output": outputs.pooler_output,
+            "hidden_states": outputs.hidden_states,
+            "attentions": outputs.attentions,
+            "logits": logits,
+            "loss": loss,
+        }
 
     def get_loss(self, logits, labels):
         """Calculate loss for masked language model."""
@@ -98,6 +108,24 @@ class BertForFineTuning(BertEHRModel):
         self.cls = FineTuneHead(config)
         logger.info(f"Using {self.cls.__class__.__name__} as classifier.")
 
+    def forward(self, batch: dict = None, inputs_embeds: torch.tensor = None, **kwargs):
+        outputs = super().forward(batch=batch, inputs_embeds=inputs_embeds, **kwargs)
+        sequence_output = outputs["last_hidden_state"]
+        logits = self.cls(sequence_output, batch["attention_mask"])
+
+        loss = None
+        if batch.get("target", None) is not None:
+            loss = self.get_loss(logits, batch["target"])
+
+        return {
+            "last_hidden_state": outputs["last_hidden_state"],
+            "pooler_output": outputs["pooler_output"],
+            "hidden_states": outputs["hidden_states"],
+            "attentions": outputs["attentions"],
+            "logits": logits,
+            "loss": loss,
+        }
+
     def get_loss(self, hidden_states, labels, labels_mask=None):
         return self.loss_fct(hidden_states.view(-1), labels.view(-1))
 
@@ -111,15 +139,23 @@ class BertForTime2Event(BertEHREncoder):
 
     def forward(self, batch: dict, inputs_embeds: torch.tensor = None):
         outputs = super().forward(batch=batch, inputs_embeds=inputs_embeds)
-        sequence_output = outputs[0]  # Last hidden state
+        sequence_output = outputs["last_hidden_state"]
         logits = self.cls(sequence_output, batch["attention_mask"])
-        outputs.logits = logits
+
+        loss = None
         if (batch.get("target", None) is not None) and (
             batch.get("time2event", None) is not None
         ):
-            outputs.loss = self.get_loss(logits, batch["target"], batch["time2event"])
+            loss = self.get_loss(logits, batch["target"], batch["time2event"])
 
-        return outputs
+        return {
+            "last_hidden_state": outputs["last_hidden_state"],
+            "pooler_output": outputs["pooler_output"],
+            "hidden_states": outputs["hidden_states"],
+            "attentions": outputs["attentions"],
+            "logits": logits,
+            "loss": loss,
+        }
 
     def get_loss(self, hidden_states, labels, time2event):
         return self.loss_fct(

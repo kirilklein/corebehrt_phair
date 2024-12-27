@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from ehr2vec.common.config import get_function, instantiate
 from ehr2vec.common.logger import TqdmToLogger
-from ehr2vec.dataloader.collate_fn import dynamic_padding
+from ehr2vec.dataloader.collate_fn import bucketed_dynamic_padding
 from ehr2vec.trainer.trainer import EHRTrainer
 from ehr2vec.trainer.utils import compute_avg_metrics, get_tqdm
 
@@ -44,7 +44,7 @@ class Forwarder(EHRTrainer):
             self.dataset,
             batch_size=self.batch_size,
             shuffle=False,
-            collate_fn=dynamic_padding,
+            collate_fn=bucketed_dynamic_padding,
         )
         if writer:
             self.writer = writer
@@ -346,7 +346,7 @@ class EHRTester:
         collate_fn = (
             get_function(args["collate_fn"])
             if "collate_fn" in args
-            else dynamic_padding
+            else bucketed_dynamic_padding
         )
         default_args = {"save_every_k_steps": float("inf"), "collate_fn": collate_fn}
         self.args = {**default_args, **args}
@@ -368,10 +368,10 @@ class EHRTester:
             for batch in loop:
                 self.batch_to_device(batch)
                 outputs = self.model(batch)
-                loss += outputs.loss.item()
+                loss += outputs["loss"].item()
 
                 if self.accumulate_logits:
-                    logits_list.append(outputs.logits.cpu())
+                    logits_list.append(outputs["logits"].cpu())
                     targets_list.append(batch["target"].cpu())
                 else:
                     for name, func in self.metrics.items():
