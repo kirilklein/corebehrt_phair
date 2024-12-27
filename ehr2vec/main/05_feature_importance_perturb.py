@@ -9,7 +9,7 @@ from datetime import datetime
 from os.path import abspath, dirname, join, split
 
 import torch
-
+import pandas as pd
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
@@ -158,9 +158,13 @@ def finetune_fold(
         trainer._evaluate(checkpoint["epoch"], mode="test")
     # save sigmas from the model
     perturbation_model.save_sigmas(join(fi_folder, f"sigmas_fold_{fold}.pt"))
-    log_most_important_features_for_perturbation_model(
+    feature_importance = log_most_important_features_for_perturbation_model(
         perturbation_model, train_data.vocabulary
     )
+    pd.DataFrame(feature_importance, columns=["feature", "importance"]).to_csv(
+        join(fi_folder, f"feature_importance_fold_{fold}.csv"), index=False
+    )
+
     finish_wandb()
 
 

@@ -1,5 +1,7 @@
 import numpy as np
 from typing import Dict, List, Tuple
+import pandas as pd
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,16 +18,23 @@ def get_concept_feature_importance(
 
 def log_most_important_features(
     feature_importance: np.ndarray, vocabulary: Dict[str, int], num_features: int = 20
-) -> None:
-    """Log the most important features based on the feature importance."""
+) -> List[Tuple[str, float]]:
+    """
+    Log the most important features based on the feature importance.
+    Also writes features and importance scores to a CSV file.
+    """
     feature_importance_dic = get_concept_feature_importance(
         feature_importance, vocabulary
     )
-    sorted_features = sort_dictionary(feature_importance_dic)
-    sorted_features = sorted_features[:num_features]
+    sorted_features_all = sort_dictionary(feature_importance_dic)
+    sorted_features = sorted_features_all[:num_features]
+
+    # Log to console
     logger.info("Features with largest importance")
     for feature, importance in sorted_features:
         logger.info(f"{feature}: {importance}")
+
+    return sorted_features
 
 
 def log_most_important_features_deep(
