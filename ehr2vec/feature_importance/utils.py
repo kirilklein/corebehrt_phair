@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Dict, List, Tuple
-import pandas as pd
 
 import logging
 
