@@ -1,8 +1,8 @@
 env: local
 project: "PHAIR"
 paths:
-  model_path: outputs/example_pretraining/example/finetune_EXAMPLE_OUTCOME_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_test # adjust model
-  run_name: "test"
+  model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_SIMULATED_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_04
+  run_name: calibrated_run_04
 
 model:
   pool_type: "gru"
@@ -18,10 +18,11 @@ data:
     - M617320
     - M259255
       
+calibration: isotonic
 
 tester_args:
-  batch_size: 256
-  val_batch_size: 256
+  batch_size: 512
+  val_batch_size: 512
   info: true
   shuffle: true
 

@@ -3,18 +3,18 @@ project: "PHAIR"
 paths:
   run_name: exposure
 outcomes_name: "EXPOSURE"
-features_dir: /dtu/p1/kirkle/corebehrt_phair/features/synthea/100k
+features_dir: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k
 loader:
-  data_dir: /dtu/p1/kirkle/formatted_data/synthea/100k
+  data_dir: /dtu/p1/kirkle/PHAIR_project/formatted_data/synthea/100k
   concepts: [
     medication
   ]
   batch_size: 20000
   chunksize: 50000
 outcomes:
-  EXPOSURE:
+  amlodipine:
     type: [CONCEPT]
-    match: [[M617312, M617311, M617310, M617320, M259255]]
+    match: [[M898353, M898350, M898356, M898342, M898359, M308136]]
     match_how: startswith
     case_sensitive: false
     

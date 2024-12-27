@@ -1,0 +1,20 @@
+env: local
+project: "PHAIR"
+paths:
+  ps_model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_EXPOSURE_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_calibration/
+  
+  outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/features/synthea/100k/outcomes/EXPOSURE_simulated_outcome/SIMULATED.csv
+  counterfactual_outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE_simulated_outcome/COUNTERFACTUAL.csv
+  
+  outcome_predictions: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_SIMULATED_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_01/predictions_and_targets.csv
+  outcome_predictions_counterfactual: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_SIMULATED_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_01/counterfactual_predictions_test/counterfactual_predictions.csv
+  
+  output_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/effect_estimation
+  run_name: estimate_effect_simple
+ps_file: predictions_and_targets_calibrated.csv
+
+estimator:
+  methods: ["MATCHING", "IPW"]
+  effect_type: "ATE"
+  n_bootstrap: 10
+

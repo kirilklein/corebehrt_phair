@@ -1,12 +1,12 @@
 env: local
 project: "PHAIR"
-output_dir: /dtu/p1/kirkle/corebehrt_phair/features/synthea/100k
+output_dir: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k
 tokenized_dir_name: "tokenized"
 paths:
   run_name: "synthea_100k"
 loader:
   # can provide formatted data or features
-  data_dir: /dtu/p1/kirkle/formatted_data/synthea/100k 
+  data_dir: /dtu/p1/kirkle/PHAIR_project/formatted_data/synthea/100k 
   concepts: [
     diagnose,
     medication

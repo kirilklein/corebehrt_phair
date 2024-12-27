@@ -1,20 +1,32 @@
 env: local
-run_name: &default_run_name run_01
+run_name: &default_run_name run_04
 project: &default_project "PHAIR"
 
+wandb_kwargs:
+  project: *default_project
+  group: finetuning_simulated_outcome_11-1e-1_run_04
+  job_type: full
+  # name: *default_run_name
+  tags:
+    - 40_to_80
+    - synthea
+    - 100k
+    - simulated_outcome
+
 paths:
-  pretrain_model_path: /dtu/p1/kirkle/corebehrt_phair/pretrain/run_01
+  pretrain_model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue
   # model_path: # can provide ft model path
   # checkpoint_epoch: 1
-  outcome: /dtu/p1/kirkle/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE_simulated_outcome/SIMULATED.csv
-  exposure: /dtu/p1/kirkle/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE/EXPOSURE.csv
+  outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE_simulated_outcome_11-1e-1/SIMULATED.csv
+  exposure: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE/EXPOSURE.csv
   # output_path: "outputs/finetuning"
-  run_name: ft_simulated_outcome_test
+  run_name: *default_run_name
   # tokenized_dir:"tokenized"
   tokenized_file: "tokenized_finetune.pt" # can also be a list
   tokenized_pids: "pids_finetune.pt" # can also be a list
-  # predefined_splits: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test
+  predefined_splits: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_EXPOSURE_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_04
   # exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
+
 model:
   pool_type: "gru"
   bidirectional: true
@@ -32,18 +44,15 @@ data:
   # min_len: null
   # code_types:
    # - D
-  min_len: 2
+  min_len: 5
   # remove_features: ['abspos']
 
+calibration: "isotonic"
 
 outcome: 
-  n_hours_censoring: -1 # censor time after index date (negative means before)
-  n_hours_start_follow_up: 168 # one week after index date
+  n_hours_censoring: -100 # censor time after index date (negative means before)
+  n_hours_start_follow_up: 0 # At index date
   first_time_outcomes_only: false # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
-  # index_date: # if all patients should have the same censor date
-    # year: 2015
-    # month: 01
-    # day: 01
 
 trainer_args:
   sampler: true
@@ -51,49 +60,37 @@ trainer_args:
     _target_: ehr2vec.evaluation.utils.inverse_sqrt # function to calculate sample weights
   sample_weight_multiplier: 1 # adjust the sampling weight of the positive class (1 is balanced)
   pos_weight: null # weight for positive class in the loss
-  batch_size: 256
-  val_batch_size: 256
-  effective_batch_size: 256
-  epochs: 5
+  batch_size: 512
+  val_batch_size: 512
+  effective_batch_size: 512
+  epochs: 100
   info: true
   gradient_clip: 
     clip_value: 1.0
   mixed_precision: false
   shuffle: true
   checkpoint_frequency: 1
-  early_stopping: 10
+  early_stopping: 15
   stopping_criterion: roc_auc
   
 optimizer:
-  lr: 2e-5
+  lr: 1e-5
   eps: 1e-6
 
 scheduler:
   _target_: transformers.get_constant_schedule_with_warmup
-  num_warmup_epochs: 2
+  num_warmup_epochs: 5  
 
 metrics:
-  accuracy:
-    _target_: ehr2vec.evaluation.metrics.Accuracy
-    threshold: 0.6
+  roc_auc:
+    _target_: ehr2vec.evaluation.metrics.ROC_AUC
+  pr_auc:
+    _target_: ehr2vec.evaluation.metrics.PR_AUC
   balanced_accuracy:
     _target_: ehr2vec.evaluation.metrics.Balanced_Accuracy
   precision:
     _target_: ehr2vec.evaluation.metrics.Precision
   recall:
     _target_: ehr2vec.evaluation.metrics.Recall
-  roc_auc:
-    _target_: ehr2vec.evaluation.metrics.ROC_AUC
-  pr_auc:
-    _target_: ehr2vec.evaluation.metrics.PR_AUC
+  
 
-  
-wandb_kwargs:
-  project: *default_project
-  name: *default_run_name
-  group: finetuning_simulated
-  job_type: test
-  # tags:
-    # - baseline
-  
- 

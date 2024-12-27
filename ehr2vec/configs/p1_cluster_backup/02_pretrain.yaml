@@ -1,14 +1,14 @@
 env: local
-run_name: &default_run_name run_02
+run_name: &default_run_name run_01_continue_02
 project: &default_project "PHAIR"
 paths:
-  model_path: /dtu/p1/kirkle/corebehrt_phair/pretrain/run_01
-  data_path: /dtu/p1/kirkle/corebehrt_phair/features/synthea/100k
-  output_path: /dtu/p1/kirkle/corebehrt_phair/pretrain
+  model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue
+  data_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k
+  output_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain
   type: synthea_100k
   run_name: *default_run_name
   tokenized_dir: tokenized
-  predefined_splits: /dtu/p1/kirkle/corebehrt_phair/pretrain/run_01
+  predefined_splits: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue
   
 data:
   dataset:
@@ -26,7 +26,7 @@ data:
 trainer_args:
   batch_size: 512
   effective_batch_size: 512
-  epochs: 150
+  epochs: 200
   info: true
   sampler: null
   gradient_clip:
@@ -71,6 +71,6 @@ wandb_kwargs:
   project: *default_project
   group: pretrain_00
   name: *default_run_name
-  job_type: full
+  job_type: continue
   tags:
     - continue
