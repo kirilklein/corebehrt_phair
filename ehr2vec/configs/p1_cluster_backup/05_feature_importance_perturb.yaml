@@ -1,0 +1,57 @@
+env: local
+run_name: &default_run_name perturb_feature_importance_amlodipine
+project: &default_project "PHAIR"
+
+paths:
+  model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_amlodipine_censored_10_hours_pre_amlodipine_followup_start_at_index_date_run_05
+  run_name: *default_run_name
+
+metrics:
+  roc_auc:
+    _target_: ehr2vec.evaluation.metrics.ROC_AUC
+  pr_auc:
+    _target_: ehr2vec.evaluation.metrics.PR_AUC
+model:
+  lambda: .001
+  scale_with_frequency: true
+data:
+  min_len: 1
+  # preprocess: True
+
+trainer_args:
+  sampler: true
+  sample_weight_function:
+    _target_: ehr2vec.evaluation.utils.inverse_sqrt # function to calculate sample weights
+  sample_weight_multiplier: 1 # adjust the sampling weight of the positive class (1 is balanced)
+  pos_weight: null # weight for positive class in the loss
+  batch_size: 512
+  val_batch_size: 512
+  effective_batch_size: 512
+  epochs: 100
+  info: true
+  gradient_clip: 
+    clip_value: 1.0
+  mixed_precision: false
+  shuffle: true
+  checkpoint_frequency: 1
+  early_stopping: 15
+  stopping_criterion: roc_auc
+
+scheduler:
+  _target_: transformers.get_constant_schedule_with_warmup
+  num_warmup_epochs: 10
+
+optimizer:
+  lr: 1e-3
+  eps: 1e-6
+
+wandb_kwargs:
+  project: *default_project
+  name: *default_run_name
+  group: feature_importance_perturb
+  job_type: full
+  tags:
+    - synthea
+    - 100k
+    - amlodipine
+
