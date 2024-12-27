@@ -1,7 +1,7 @@
 import torch
 from os.path import join
 import logging
-from typing import Dict
+from typing import Dict, List, Tuple
 from ehr2vec.feature_importance.perturb import PerturbationModel
 from ehr2vec.data.batch import Batches
 from ehr2vec.feature_importance.utils import log_most_important_features
@@ -26,12 +26,12 @@ def log_most_important_features_for_perturbation_model(
     perturbation_model: PerturbationModel,
     vocabulary: Dict[str, int],
     num_features: int = 20,
-) -> None:
+) -> List[Tuple[str, float]]:
     """Log the most important features based on the sigmas from the perturbation model."""
     sigmas = perturbation_model.get_sigmas_weights()
     sigmas = sigmas.flatten().cpu().detach().numpy()
     feature_importance = 1 / (sigmas + 1e-9)
-    log_most_important_features(feature_importance, vocabulary, num_features)
+    return log_most_important_features(feature_importance, vocabulary, num_features)
 
 
 def compute_concept_frequency(features: Dict, vocabulary: Dict) -> torch.Tensor:
