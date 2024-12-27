@@ -1,6 +1,6 @@
 env: local
 project: "PHAIR"
-output_dir: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k
+output_dir: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea_0712/100k
 tokenized_dir_name: "tokenized"
 paths:
   run_name: "synthea_100k"
@@ -35,6 +35,12 @@ tokenizer:
     - M617310
     - M617320
     - M259255
+    - CONTROL
+    - PLACEHOLDER_1
+    - PLACEHOLDER_2
+    - PLACEHOLDER_3
+    - PLACEHOLDER_4
+    - PLACEHOLDER_5
 
   # cutoffs:
    # D: 3 # diagnosis

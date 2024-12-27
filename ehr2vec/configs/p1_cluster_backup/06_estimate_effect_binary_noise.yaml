@@ -2,15 +2,15 @@ env: local
 project: &default_project "PHAIR"
 run_name: &default_run_name noise
 paths:
-  ps_model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_EXPOSURE_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_04
-  outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE_simulated_outcome_11-1e-1/SIMULATED.csv
-  counterfactual_outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE_simulated_outcome_11-1e-1/COUNTERFACTUAL.csv
+  ps_model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_amlodipine_censored_10_hours_pre_amlodipine_followup_start_at_index_date_run_05
+  outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/amlodipine_simulated_outcome_a_neg1p0/SIMULATED.csv
+  counterfactual_outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/amlodipine_simulated_outcome_a_neg1p0/COUNTERFACTUAL.csv
 
-  outcome_predictions: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_SIMULATED_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_04/predictions_and_targets_calibrated_isotonic.csv
-  outcome_predictions_counterfactual: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_SIMULATED_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_04/counterfactual_predictions_calibrated_run_04/counterfactual_predictions_calibrated_isotonic.csv
+  outcome_predictions: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_SIMULATED_censored_1_hours_post_amlodipine_followup_start_at_index_date_neg1p0/predictions_and_targets.csv
+  outcome_predictions_counterfactual: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_SIMULATED_censored_1_hours_post_amlodipine_followup_start_at_index_date_neg1p0/predictions_and_targets.csv
   
-  output_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/effect_estimation/synthea/100k/simulated_outcome/noise_03
-  run_name: *default_run_nam
+  output_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/effect_estimation/synthea/100k/simulated_outcome/noise_amlodipine_a_neg1p0
+  run_name: *default_run_name
 ps_file: predictions_and_targets_calibrated_isotonic.csv
 
 #   num_patients: 10000
@@ -24,11 +24,12 @@ estimator:
 wandb_kwargs:
   project: *default_project
   name: *default_run_name
-  group: estimate_effect_binary_noise_11-1e-1_noise_13
+  group: estimate_effect_binary_noise_amlodipine_a_neg1p0
   job_type: full
   tags:
     - synthea 
     - 100k
     - ATE
     - noise
+    - amlodipine_a_2p0
     - simulated_outcome

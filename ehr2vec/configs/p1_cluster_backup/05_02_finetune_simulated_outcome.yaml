@@ -1,10 +1,10 @@
 env: local
-run_name: &default_run_name run_04
+run_name: &default_run_name run_00
 project: &default_project "PHAIR"
 
 wandb_kwargs:
   project: *default_project
-  group: finetuning_simulated_outcome_11-1e-1_run_04
+  group: finetuning_simulated_outcome_amlodipine_a_4_b_0
   job_type: full
   # name: *default_run_name
   tags:
@@ -14,17 +14,17 @@ wandb_kwargs:
     - simulated_outcome
 
 paths:
-  pretrain_model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue
+  pretrain_model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_02
   # model_path: # can provide ft model path
   # checkpoint_epoch: 1
-  outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE_simulated_outcome_11-1e-1/SIMULATED.csv
-  exposure: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE/EXPOSURE.csv
+  outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea_0712/100k/outcomes/amlodipine_random_80/simulated_outcome_a_4p0_b_0p0/SIMULATED.csv
+  exposure: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea_0712/100k/outcomes/EXPOSURE/amlodipine_80.csv
   # output_path: "outputs/finetuning"
   run_name: *default_run_name
   # tokenized_dir:"tokenized"
   tokenized_file: "tokenized_finetune.pt" # can also be a list
   tokenized_pids: "pids_finetune.pt" # can also be a list
-  predefined_splits: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_EXPOSURE_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_04
+  predefined_splits: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_02/finetune_amlodipine_80_censored_30_days_pre_amlodipine_80_followup_start_at_index_date_run_00
   # exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
 
 model:
@@ -50,10 +50,11 @@ data:
 calibration: "isotonic"
 
 outcome: 
-  n_hours_censoring: -100 # censor time after index date (negative means before)
-  n_hours_start_follow_up: 0 # At index date
+  n_hours_censoring: -720 # censor time after index date (negative means before)
+  n_hours_start_follow_up: 1 # At index date
   first_time_outcomes_only: false # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
-
+  control_code: PLACEHOLDER_1 # code to be used for "no exposure"
+  keep_codes: [M898353, M898350, M898356, M898342, M898359, M308136, PLACEHOLDER_1] # list of regex to not censor (first occurence is kept) # use ^exactmatch$ for exact matches
 trainer_args:
   sampler: true
   sample_weight_function:

@@ -1,26 +1,28 @@
 env: local
-run_name: &default_run_name run_04
+run_name: &default_run_name run_00
 project: &default_project "PHAIR"
 
 wandb_kwargs:
   project: *default_project
-  group: finetune_exposure_04
+  group: finetune_exposure_amlodipine_random_80_test_compile
   job_type: full
   # name: *default_run_name
   tags:
     - 40_to_80
-    - 100h_pre_censoring
+    - 1mo_pre_censoring
     - synthea
     - 100k
     - calibration
     - full
+    - random_80
 
 paths:
-  pretrain_model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue
+  #pretrain_model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_02
+  pretrain_model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain_compile_00/run_02
   # model_path: # can provide ft model path
   # checkpoint_epoch: 1
-  outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE/EXPOSURE.csv
-  exposure: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE/EXPOSURE.csv
+  outcome: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea_0712/100k/outcomes/EXPOSURE/amlodipine_80.csv
+  exposure: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea_0712/100k/outcomes/EXPOSURE/amlodipine_80.csv
   # output_path: "outputs/finetuning"
   run_name: *default_run_name
   # tokenized_dir:"tokenized"
@@ -28,6 +30,7 @@ paths:
   tokenized_pids: "pids_finetune.pt" # can also be a list
   # predefined_splits: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test
   # exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
+
 model:
   pool_type: "gru"
   bidirectional: true
@@ -48,11 +51,12 @@ data:
   # code_types:
    # - D
   min_len: 5
+  cv_folds: 5
   # remove_features: ['abspos']
 
 
 outcome: 
-  n_hours_censoring: -100 # censor time after index date (negative means before)
+  n_hours_censoring: -720 # censor time after index date (negative means before)
   n_hours_start_follow_up: -1
   first_time_outcomes_only: true # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
   # index_date: # if all patients should have the same censor date
@@ -69,7 +73,7 @@ trainer_args:
   batch_size: 512
   val_batch_size: 512
   effective_batch_size: 512
-  epochs: 100
+  epochs: 150
   info: true
   gradient_clip: 
     clip_value: 1.0
@@ -78,6 +82,7 @@ trainer_args:
   checkpoint_frequency: 1
   early_stopping: 15
   stopping_criterion: roc_auc
+  compile: false
   
 optimizer:
   lr: 1e-5

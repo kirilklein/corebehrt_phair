@@ -1,8 +1,8 @@
 env: local
 project: "PHAIR"
 paths:
-  model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_SIMULATED_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_04
-  run_name: calibrated_run_04
+  model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_02/finetune_SIMULATED_censored_30_days_pre_amlodipine_80_followup_start_at_index_date_a_4p0_b_0p0_c0p0
+  run_name: predict_counterfactual_amlodipine_a_4_b_0
 
 model:
   pool_type: "gru"
@@ -11,13 +11,9 @@ model:
 data:
   truncation_len: 512
   counterfactual: # can be a list of regexes
-    exposure_regex:
-    - M617312 
-    - M617311
-    - M617310
-    - M617320
-    - M259255
-      
+    exposure_regex: [^M898353$, ^M898350$, ^M898356$, ^M898342$, ^M898359$, ^M308136$]
+    control_regex: PLACEHOLDER_1
+
 calibration: isotonic
 
 tester_args:

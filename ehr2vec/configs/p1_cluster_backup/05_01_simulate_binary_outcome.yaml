@@ -1,16 +1,16 @@
 env: local
 project: "PHAIR"
 paths:
-  model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_01_continue/finetune_EXPOSURE_censored_4_days_pre_EXPOSURE_followup_start_at_index_date_run_04
+  model_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/pretrain/run_02/finetune_amlodipine_80_censored_30_days_pre_amlodipine_80_followup_start_at_index_date_run_00
   run_name: simulate_binary_outcome
-  output: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea/100k/outcomes/EXPOSURE_simulated_outcome_11-1e-1/
+  output_path: /dtu/p1/kirkle/PHAIR_project/corebehrt_phair/features/synthea_0712/100k/outcomes/amlodipine_random_80/simulated_outcome_a_4p0_b_0p0/
 predictions_file: predictions_and_targets_calibrated_isotonic.csv
 simulation:
   _target_: ehr2vec.simulation.binary_outcome.tbehrt # a * exposure + b * (ps + c)
   params: 
-    a: 1
-    b: 1
-    c: -.1
+    a: 4
+    b: 0 #2
+    c: -2
 max_years: 10 # max time after index date to simulate outcome
 days_offset: 1 # earliest time of outcome after index date
   
