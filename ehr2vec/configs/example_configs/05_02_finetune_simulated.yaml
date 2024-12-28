@@ -9,7 +9,7 @@ paths:
   run_name: *default_run_name
   tokenized_file: "tokenized_finetune.pt" # can also be a list
   tokenized_pids: "pids_finetune.pt" # can also be a list
-  predefined_splits: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_at_index_date_run_test"
+  predefined_splits: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"
 
 model:
   pool_type: "gru"
@@ -30,7 +30,7 @@ data:
 
 
 outcome: 
-  n_hours_censoring: 1 # censor time after index date (negative means before)
+  n_hours_censoring: -1 # censor time after index date (negative means before)
   n_hours_start_follow_up: 100
   first_time_outcomes_only: False # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
 
