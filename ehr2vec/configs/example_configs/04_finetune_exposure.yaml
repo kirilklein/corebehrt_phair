@@ -24,7 +24,7 @@ model:
 data:
   # num_patients: 300 #300
   val_split: 0.1
-  test_split: 0.0
+  test_split: 0.05
   truncation_len: 30
   # gender: M
   min_age: 0

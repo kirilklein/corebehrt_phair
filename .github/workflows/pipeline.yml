@@ -79,6 +79,11 @@ jobs:
                 source .venv/bin/activate  
                 python -m ehr2vec.main.06_estimate_causal_effect --config_path example_configs/06_estimate_effect_binary_double_robust_true_outcome_probas.yaml
 
+            - name: finetune
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.04_finetune_cv 
+
             - name: feature_importance_perturb
               run: |
                 source .venv/bin/activate  

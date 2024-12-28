@@ -24,20 +24,20 @@ model:
   # hidden_size: null
 
 data:
-  num_patients: 300 #300
+  num_patients: 300 
   val_split: 0.1
-  test_split: 0.1
+  test_split: 0.05
   truncation_len: 30
-  # gender: M
+  gender: M
   min_age: 0
   max_age: 70
-  # min_len: null
-  # code_types:
-   # - D
   min_len: 2
-  # remove_features: ['abspos']
-  number_of_train_patients: 10
+  code_types:
+    - D
+  remove_features: ['abspos']
+  number_of_train_patients: 50
   cv_folds: 2
+
 
 
 outcome: 
