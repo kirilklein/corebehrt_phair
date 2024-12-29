@@ -33,6 +33,8 @@ outcome:
   n_hours_censoring: -1 # censor time after index date (negative means before)
   n_hours_start_follow_up: 100
   first_time_outcomes_only: False # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
+  control_code: PLACEHOLDER_1 # code to be used for "no exposure"
+  keep_codes: [M314076, PLACEHOLDER_1] # list of regex to not censor (first occurence is kept) # use ^exactmatch$ for exact matches
 
 trainer_args:
   sampler: true
