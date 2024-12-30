@@ -115,6 +115,8 @@ class Saver:
             torch.save(data.outcomes, join(self.run_folder, "outcomes.pt"))
         if data.index_dates is not None:
             torch.save(data.index_dates, join(self.run_folder, "index_dates.pt"))
+        if data.exposures is not None:
+            torch.save(data.exposures, join(self.run_folder, "exposures.pt"))
 
     def save_list(self, list_: list, name: str) -> None:
         """Save a list to a file"""
