@@ -167,7 +167,7 @@ class Data:
             vocabulary=vocabulary,
             mode=mode,
             exposed_patients=exposed_patients,
-            exposures=exposures
+            exposures=exposures,
         )
 
     def check_lengths(self):

@@ -62,10 +62,16 @@ def finetune_fold(
 
     logger.info("Initializing datasets")
 
-    train_dataset = BinaryOutcomeDataset(train_data.features, train_data.outcomes, train_data.exposures)
-    val_dataset = BinaryOutcomeDataset(val_data.features, val_data.outcomes, val_data.exposures)
+    train_dataset = BinaryOutcomeDataset(
+        train_data.features, train_data.outcomes, train_data.exposures
+    )
+    val_dataset = BinaryOutcomeDataset(
+        val_data.features, val_data.outcomes, val_data.exposures
+    )
     test_dataset = (
-        BinaryOutcomeDataset(test_data.features, test_data.outcomes, test_data.exposures)
+        BinaryOutcomeDataset(
+            test_data.features, test_data.outcomes, test_data.exposures
+        )
         if len(test_data) > 0
         else None
     )

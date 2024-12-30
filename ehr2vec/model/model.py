@@ -105,7 +105,7 @@ class BertForFineTuning(BertEHRModel):
             pos_weight = None
 
         self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-        
+
         # Choose head based on config
         if config.to_dict().get("use_exposure", False):
             self.cls = ExtendedFineTuneHead(config)
@@ -116,7 +116,7 @@ class BertForFineTuning(BertEHRModel):
     def forward(self, batch: dict = None, inputs_embeds: torch.tensor = None, **kwargs):
         outputs = super().forward(batch=batch, inputs_embeds=inputs_embeds, **kwargs)
         sequence_output = outputs["last_hidden_state"]
-        
+
         # Pass exposure to the head if it exists in the batch
         exposure = batch.get("exposure", None)
         logits = self.cls(sequence_output, batch["attention_mask"], exposure=exposure)
