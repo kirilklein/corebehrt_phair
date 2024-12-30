@@ -38,7 +38,6 @@ from ehr2vec.common.loader import (
 )
 from ehr2vec.common.logger import log_config
 from ehr2vec.common.setup import (
-    fix_tmp_prefixes_for_azure_paths,
     get_args,
     initialize_configuration_effect_estimation,
     setup_logger,
