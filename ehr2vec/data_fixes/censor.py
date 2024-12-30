@@ -75,6 +75,7 @@ class Censorer:
             desc="Censoring",
             file=TqdmToLogger(logger),
             total=len(features["concept"]),
+            mininterval=10,
         )
         for i, patient in enumerate(censor_loop):
             index_timestamp = index_dates[i]
