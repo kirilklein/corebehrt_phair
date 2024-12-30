@@ -21,9 +21,12 @@ def get_nvidia_smi_output() -> str:
         return str(e)
 
 
-def get_tqdm(dataloader: DataLoader) -> tqdm:
+def get_tqdm(dataloader: DataLoader, mininterval: int = 10) -> tqdm:
     return tqdm(
-        dataloader, total=len(dataloader), file=TqdmToLogger(logger) if logger else None
+        dataloader,
+        total=len(dataloader),
+        file=TqdmToLogger(logger) if logger else None,
+        mininterval=mininterval,
     )
 
 
