@@ -7,7 +7,7 @@ from transformers.models.roformer.modeling_roformer import RoFormerEncoder
 
 from ehr2vec.embeddings.ehr import EhrEmbeddings
 from ehr2vec.model.activations import SwiGLU
-from ehr2vec.model.heads import FineTuneHead, MLMHead
+from ehr2vec.model.heads import FineTuneHead, MLMHead, ExtendedFineTuneHead
 from ehr2vec.model.loss import neg_partial_log_likelihood
 
 logger = logging.getLogger(__name__)
@@ -105,13 +105,21 @@ class BertForFineTuning(BertEHRModel):
             pos_weight = None
 
         self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-        self.cls = FineTuneHead(config)
+        
+        # Choose head based on config
+        if config.to_dict().get("use_exposure", False):
+            self.cls = ExtendedFineTuneHead(config)
+        else:
+            self.cls = FineTuneHead(config)
         logger.info(f"Using {self.cls.__class__.__name__} as classifier.")
 
     def forward(self, batch: dict = None, inputs_embeds: torch.tensor = None, **kwargs):
         outputs = super().forward(batch=batch, inputs_embeds=inputs_embeds, **kwargs)
         sequence_output = outputs["last_hidden_state"]
-        logits = self.cls(sequence_output, batch["attention_mask"])
+        
+        # Pass exposure to the head if it exists in the batch
+        exposure = batch.get("exposure", None)
+        logits = self.cls(sequence_output, batch["attention_mask"], exposure=exposure)
 
         loss = None
         if batch.get("target", None) is not None:
