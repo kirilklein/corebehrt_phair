@@ -34,13 +34,13 @@ def create_counterfactual_data(
     # Copy features and replace concept entry
     counterfactual_features = data.features.copy()
     counterfactual_features["concept"] = counterfactual_concepts
-    data.exposures = [1-exp for exp in data.exposures]
+    data.exposures = [1 - exp for exp in data.exposures]
     return Data(
         features=counterfactual_features,
         pids=data.pids,
         outcomes=data.outcomes,
         vocabulary=data.vocabulary,
-        exposures=data.exposures
+        exposures=data.exposures,
     )
 
 

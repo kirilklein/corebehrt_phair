@@ -1,8 +1,11 @@
 from typing import List
 
-def check_codes(feats: dict, control_code: str, exposed_codes: List[str], vocabulary: dict):
+
+def check_codes(
+    feats: dict, control_code: str, exposed_codes: List[str], vocabulary: dict
+):
     """Check for presence of control and exposure codes in patient sequences.
-    
+
     This function checks each patient sequence for the presence of control codes and exposure codes,
     validating that they are mutually exclusive (a sequence should not have both).
 
@@ -19,12 +22,18 @@ def check_codes(feats: dict, control_code: str, exposed_codes: List[str], vocabu
             - none: True if sequence has neither control NOR exposure codes (invalid)
     """
     import re
+
     control_code = vocabulary[control_code]
-    exposed_codes = [idx for code_pattern in exposed_codes for code, idx in vocabulary.items() if re.match(code_pattern, code)]
+    exposed_codes = [
+        idx
+        for code_pattern in exposed_codes
+        for code, idx in vocabulary.items()
+        if re.match(code_pattern, code)
+    ]
     results = []
     both = []
     none = []
-    for concepts in feats['concept']:
+    for concepts in feats["concept"]:
         has_control = control_code in concepts
         has_exposed = any(code in concepts for code in exposed_codes)
         results.append(has_control != has_exposed)
