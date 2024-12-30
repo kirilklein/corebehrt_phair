@@ -194,7 +194,9 @@ class EHRTrainer:
             step_loss += self._train_step(batch).item()
             if (i + 1) % self.accumulation_steps == 0:
                 self._clip_gradients()
-                self._update_and_log(step_loss, train_loop, epoch_loss)
+                scaled_loss = self._update_model(step_loss, train_loop, epoch_loss)
+                if i % 100 == 0:
+                    self.log_training_info(scaled_loss)
                 step_loss = 0
             if i % 100 == 0:
                 self.run_log_gpu()
@@ -252,7 +254,7 @@ class EHRTrainer:
         self.run_log("L1 loss", l1_loss.item())
         return l1_loss
 
-    def _update_and_log(self, step_loss, train_loop, epoch_loss):
+    def _update_model(self, step_loss, train_loop, epoch_loss):
         """Updates the model and logs the loss"""
         if self.scaler is not None:
             self.scaler.step(self.optimizer)
@@ -264,13 +266,15 @@ class EHRTrainer:
             self.scheduler.step()
         train_loop.set_postfix(loss=step_loss / self.accumulation_steps)
         epoch_loss.append(step_loss / self.accumulation_steps)
+        return step_loss / self.accumulation_steps
 
+    def log_training_info(self, scaled_loss):
         if self.args["info"]:
             for param_group in self.optimizer.param_groups:
                 current_lr = param_group["lr"]
                 self.run_log("Learning Rate", current_lr)
                 break
-        self.run_log("Train loss", step_loss / self.accumulation_steps)
+        self.run_log("Train loss", scaled_loss)
 
     def validate_and_log(
         self, epoch: int, epoch_loss: float, train_loop: DataLoader
