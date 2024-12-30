@@ -158,8 +158,8 @@ def main(config_path: str):
         apply_common_support=common_support,
         common_support_threshold=common_support_threshold,
     )
-    if run is not None:
-        run.log({"causal_effect": effect})
+
+    print({"causal_effect": effect})
     effect_df = convert_effect_to_dataframe(effect)
 
     logger.info(f"Causal effect: {effect}")
@@ -186,18 +186,17 @@ def main(config_path: str):
         )
         effect_df["effect_counterfactual"] = effect_counterfactual
         logger.info(f"Causal effect from counterfactuals: {effect_counterfactual}")
-        if run is not None:
-            run.log({"causal_effect_counterfactual (true)": effect_counterfactual})
+
+        print({"causal_effect_counterfactual (true)": effect_counterfactual})
     log_dataframe(effect_df, "effect_df")
     effect_df.to_csv(join(exp_folder, "effect.csv"), index=False)
 
     finish_wandb()
     if cfg.env == "azure":
         save_to_blobstore(
-            local_path="",  # uses everything in 'outputs'
+            local_path="",
             remote_path=join(
-                cfg.get("project", DEFAULT_BLOBSTORE),
-                fix_tmp_prefixes_for_azure_paths(path_cfg.model_path),
+                cfg.get("project", DEFAULT_BLOBSTORE), "effect", cfg.paths.run_name
             ),
         )
         mount_context.stop()
