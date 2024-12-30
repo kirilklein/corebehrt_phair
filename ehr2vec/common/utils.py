@@ -121,6 +121,7 @@ class Data:
     vocabulary: Optional[Dict] = field(default=None)
     mode: Optional[str] = field(default=None)
     exposed_patients: Optional[set] = field(default=None)
+    exposures: Optional[List[int]] = field(default=None)
 
     def __len__(self):
         return len(self.pids)

@@ -61,10 +61,11 @@ def finetune_fold(
     dataset_preparer.saver.save_patient_nums(train_data, val_data, folder=fold_folder)
 
     logger.info("Initializing datasets")
-    train_dataset = BinaryOutcomeDataset(train_data.features, train_data.outcomes)
-    val_dataset = BinaryOutcomeDataset(val_data.features, val_data.outcomes)
+
+    train_dataset = BinaryOutcomeDataset(train_data.features, train_data.outcomes, train_data.exposures)
+    val_dataset = BinaryOutcomeDataset(val_data.features, val_data.outcomes, val_data.exposures)
     test_dataset = (
-        BinaryOutcomeDataset(test_data.features, test_data.outcomes)
+        BinaryOutcomeDataset(test_data.features, test_data.outcomes, test_data.exposures)
         if len(test_data) > 0
         else None
     )
