@@ -58,14 +58,17 @@ class BinaryOutcomeDataset(BaseEHRDataset):
     outcomes is a list of the outcome timestamps to predict
     """
 
-    def __init__(self, features: dict, outcomes: list):
+    def __init__(self, features: dict, outcomes: list, exposures: list = None):
         super().__init__(features)
-        self.outcomes = outcomes
+        # Convert outcomes to binary targets once during initialization
+        self.outcomes = [float(pd.notna(outcome)) for outcome in outcomes]
+        self.exposures = exposures if exposures is not None else None
 
     def __getitem__(self, index: int) -> dict:
         patient = super().__getitem__(index)
-        patient["target"] = float(pd.notna(self.outcomes[index]))
-
+        patient["target"] = self.outcomes[index]
+        if self.exposures is not None:
+            patient["exposure"] = self.exposures[index]
         return patient
 
 

@@ -58,7 +58,9 @@ class FineTuneHead(torch.nn.Module):
             self.pool = self.pool_cls
         logger.info(f"Using {self.pool_type} pooling for classification.")
 
-    def forward(self, hidden_states: torch.Tensor, attention_mask=None) -> torch.Tensor:
+    def forward(
+        self, hidden_states: torch.Tensor, attention_mask=None, exposure=None
+    ) -> torch.Tensor:
         x = self.pool(hidden_states, attention_mask=attention_mask)
         if self.pool_type != "gru" and self.pool_type != "lstm":
             x = self.classifier(x)
@@ -83,6 +85,21 @@ class FineTuneHead(torch.nn.Module):
         self.classifier = torch.nn.Sequential(
             self.hidden_layer, self.activation, self.cls_layer
         )
+
+
+class ExtendedFineTuneHead(FineTuneHead):
+    def __init__(self, config):
+        super().__init__(config)
+        self.classifier = torch.nn.Linear(config.hidden_size + 1, 1)
+
+    def forward(
+        self, hidden_states: torch.Tensor, attention_mask=None, exposure=None
+    ) -> torch.Tensor:
+        x = self.pool(hidden_states, attention_mask=attention_mask)
+        if self.pool_type != "gru" and self.pool_type != "lstm":
+            x = torch.cat([x, exposure], dim=1)
+            x = self.classifier(x)
+        return x
 
 
 class BaseRNN(torch.nn.Module):

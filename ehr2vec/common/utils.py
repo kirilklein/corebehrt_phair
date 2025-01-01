@@ -121,6 +121,7 @@ class Data:
     vocabulary: Optional[Dict] = field(default=None)
     mode: Optional[str] = field(default=None)
     exposed_patients: Optional[set] = field(default=None)
+    exposures: Optional[List[int]] = field(default=None)
 
     def __len__(self):
         return len(self.pids)
@@ -156,6 +157,7 @@ class Data:
         times2event = load_tensor(f"{prepend}times2event.pt")
         vocabulary = load_tensor("vocabulary.pt")
         exposed_patients = load_tensor(f"{prepend}exposed_patients.pt")
+        exposures = load_tensor(f"{prepend}exposures.pt")
         return cls(
             features,
             pids,
@@ -165,6 +167,7 @@ class Data:
             vocabulary=vocabulary,
             mode=mode,
             exposed_patients=exposed_patients,
+            exposures=exposures,
         )
 
     def check_lengths(self):

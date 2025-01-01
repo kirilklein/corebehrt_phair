@@ -73,8 +73,10 @@ class DatasetPreparer:
         # 1. Loading tokenized data
         data = self.loader.load_tokenized_data(mode="finetune")
         self._log_features(data)
-        logger.info("vocabulary")
-        logger.info(data.vocabulary)
+        logger.info("First 100 vocabulary entries:")
+        logger.info(
+            {k: v for i, (k, v) in enumerate(data.vocabulary.items()) if i < 100}
+        )
 
         initial_pids = data.pids
         if self.cfg.paths.get("exclude_pids", None) is not None:
@@ -115,6 +117,9 @@ class DatasetPreparer:
                 data = insert_control_codes(
                     data, control_pids, self.cfg.outcome.control_code
                 )
+                data.exposures = [
+                    1 if pid in data.exposed_patients else 0 for pid in data.pids
+                ]
             data.check_lengths()
 
         if not predefined_pids:
@@ -326,8 +331,10 @@ class DatasetPreparer:
     def _log_features(self, data: Data) -> None:
         logger.info(f"Features: {data.features.keys()}")
         logger.info("Example features: ")
-        for k, v in data.features.items():
-            logger.info(f"{k}: {v[0]}")
+        for i in range(3):
+            logger.info(f"Example patient{i}:")
+            for k, v in data.features.items():
+                logger.info(f"{k}: {v[i]}")
 
     def _adjust_predefined_index_dates(self, data: Data) -> Data:
         """
