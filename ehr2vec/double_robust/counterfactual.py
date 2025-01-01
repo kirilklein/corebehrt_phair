@@ -49,10 +49,9 @@ def get_probability_of_codes(
 ) -> Dict[int, float]:
     """
     Get the probability of codes according to their frequency.
-    We add 1 to the denominator to avoid division by zero.
     """
     return {
-        code: frequency / (sum(code_frequencies.values()) + 1)
+        code: frequency / sum(code_frequencies.values())
         for code, frequency in code_frequencies.items()
     }
 
