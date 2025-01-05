@@ -104,7 +104,7 @@ class BaseRNN(nn.Module):
 class FineTuneHead(nn.Module):
     """
     A unified FineTuneHead that:
-     - Can perform CLS or mean pooling directly
+     - Can perform CLS pooling
      - Or wrap an RNN-based pooling (GRU or LSTM) using BaseRNN
      - Optionally extends the classifier with an extra hidden layer (if config.extend_head is defined)
      - Optionally incorporates an exposure value (if provided) before the final classification
