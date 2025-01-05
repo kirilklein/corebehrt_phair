@@ -291,5 +291,7 @@ def save_data(data: Data, folder: str) -> None:
             torch.save(
                 data.exposed_patients, join(folder, f"{data.mode}_exposed_pids.pt")
             )
+        if data.exposures is not None:
+            torch.save(data.exposures, join(folder, f"{data.mode}_exposures.pt"))
     else:
         logger.warning(f"No data to save in {data.mode}")
