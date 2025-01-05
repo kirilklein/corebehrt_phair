@@ -55,7 +55,13 @@ class BaseRNN(nn.Module):
         base_rnn_output_size = self.hidden_size * (2 if self.bidirectional else 1)
         classifier_input_size = base_rnn_output_size + self.exposure_dim
 
-        self.classifier = nn.Linear(classifier_input_size, 1)
+        classifier_hidden = 128
+        self.classifier = nn.Sequential(
+            nn.Linear(classifier_input_size, classifier_hidden),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(classifier_hidden, 1),
+        )
 
     def forward(
         self,
@@ -136,9 +142,13 @@ class FineTuneHead(nn.Module):
             )
             self.pool_type = "cls"
             self.pool = self.pool_cls
-
-            self.classifier = nn.Linear(config.hidden_size + self.exposure_dim, 1)
-
+            classifier_hidden = 128
+            self.classifier = nn.Sequential(
+                nn.Linear(config.hidden_size + self.exposure_dim, classifier_hidden),
+                nn.ReLU(),
+                nn.Dropout(0.1),
+                nn.Linear(classifier_hidden, 1),
+            )
         logger.info(f"Using {self.pool_type} pooling for classification.")
 
     def forward(
