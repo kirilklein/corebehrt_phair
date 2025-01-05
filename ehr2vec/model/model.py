@@ -112,7 +112,11 @@ class BertForFineTuning(BertEHREncoder):
     def forward(self, batch: dict = None, inputs_embeds: torch.tensor = None, **kwargs):
         outputs = super().forward(batch=batch, inputs_embeds=inputs_embeds, **kwargs)
         sequence_output = outputs["last_hidden_state"]
-        logits = self.cls(sequence_output, batch["attention_mask"], exposure=batch.get("exposure", None))
+        logits = self.cls(
+            sequence_output,
+            batch["attention_mask"],
+            exposure=batch.get("exposure", None),
+        )
 
         loss = None
         if batch.get("target", None) is not None:
@@ -158,6 +162,4 @@ class BertForTime2Event(BertEHREncoder):
         }
 
     def get_loss(self, logits, labels, time2event):
-        return self.loss_fct(
-            logits.view(-1), labels.view(-1), time2event.view(-1)
-        )
+        return self.loss_fct(logits.view(-1), labels.view(-1), time2event.view(-1))

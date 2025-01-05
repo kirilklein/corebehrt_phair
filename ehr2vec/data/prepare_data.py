@@ -118,9 +118,7 @@ class DatasetPreparer:
                     data, control_pids, self.cfg.outcome.control_code
                 )
             exposed_pids = set(data.exposed_patients)
-            data.exposures = [
-                1 if pid in exposed_pids else 0 for pid in data.pids
-            ]
+            data.exposures = [1 if pid in exposed_pids else 0 for pid in data.pids]
             data.check_lengths()
 
         if not predefined_pids:
