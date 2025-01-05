@@ -222,7 +222,7 @@ class Data:
             vocabulary=self.vocabulary,
             mode=mode,
             exposed_patients=self.exposed_patients,
-            exposures=self.exposures,
+            exposures=[self.exposures[i] for i in indices] if self.exposures else None,
         )
 
     def select_data_subset_by_pids(self, pids: list, mode: str = "") -> "Data":
