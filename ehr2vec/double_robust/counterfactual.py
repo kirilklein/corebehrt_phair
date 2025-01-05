@@ -44,6 +44,9 @@ def create_counterfactual_data(
         pids=data.pids,
         outcomes=data.outcomes,
         vocabulary=data.vocabulary,
+        exposed_patients=[
+            pid for pid in data.pids if data.exposures[data.pids.index(pid)] == 1
+        ],
         exposures=data.exposures,
     )
 
