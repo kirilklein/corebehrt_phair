@@ -1,7 +1,7 @@
 import logging
 import os
 from os.path import join
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 from torch.optim import AdamW
@@ -111,9 +111,11 @@ class Initializer:
         scheduler.load_state_dict(self.checkpoint["scheduler_state_dict"])
         return scheduler
 
-    def initialize_sampler(self, train_dataset) -> Tuple[Optional[Sampler], Config]:
+    def initialize_sampler(
+        self, outcomes: List[float]
+    ) -> Tuple[Optional[Sampler], Config]:
         """Initialize sampler and modify cfg."""
-        sampler = get_sampler(self.cfg, train_dataset, train_dataset.outcomes)
+        sampler = get_sampler(self.cfg, outcomes)
         if sampler:
             self.cfg.trainer_args.shuffle = False
         return sampler, self.cfg
@@ -183,13 +185,13 @@ class ModelManager:
         model = self.initializer.initialize_finetune_model(train_dataset)
         return model
 
-    def initialize_training_components(self, model, train_dataset):
+    def initialize_training_components(self, model, outcomes: List[float]):
         """Initialize training components. If no model_path provided, optimizer and scheduler are initialized from scratch."""
         if self.model_path is None:
             logger.info("Initializing optimizer and scheduler from scratch")
             self.initializer.checkpoint = None
         optimizer = self.initializer.initialize_optimizer(model)
-        sampler, cfg = self.initializer.initialize_sampler(train_dataset)
+        sampler, cfg = self.initializer.initialize_sampler(outcomes)
         scheduler = self.initializer.initialize_scheduler(optimizer)
         return optimizer, sampler, scheduler, cfg
 

@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 from os.path import join
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -95,23 +95,26 @@ def validate_outcomes(all_outcomes, cfg):
             ), f"Censor type {cfg.outcome.censor_type} not found in outcomes."
 
 
-def get_sampler(cfg, train_dataset, outcomes):
+def get_sampler(cfg, outcomes: List[float]):
     """Get sampler for training data.
     sample_weight: float. Adjusts the number of samples in the positive class.
     """
     if cfg.trainer_args["sampler"]:
-        labels = pd.Series(outcomes).notna().astype(int)
-        if labels.nunique() == 1:  # only one class, sampler is not needed
+        labels = np.array(outcomes)
+        if len(np.unique(labels)) == 1:  # only one class, sampler is not needed
             logger.warning("Only one class in outcomes. No sampler is used.")
             return None
-        value_counts = labels.value_counts()
-        label_weight = get_function(cfg.trainer_args["sample_weight_function"])(
-            value_counts
-        )
+        unique_labels, counts = np.unique(labels, return_counts=True)
+        value_counts = {label: count for label, count in zip(unique_labels, counts)}
+        weight_func = get_function(cfg.trainer_args["sample_weight_function"])
+        label_weight = {
+            label: weight_func(count) for label, count in value_counts.items()
+        }
+        logger.info(f"label_weights: {label_weight}")
         label_weight[1] *= cfg.trainer_args.get("sample_weight_multiplier", 1.0)
-        weights = labels.map(label_weight).values
+        weights = np.array([label_weight[label] for label in labels])
         sampler = WeightedRandomSampler(
-            weights=weights, num_samples=len(train_dataset), replacement=True
+            weights=weights, num_samples=len(outcomes), replacement=True
         )
         return sampler
     else:

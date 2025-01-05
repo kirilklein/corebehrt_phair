@@ -76,7 +76,7 @@ def finetune_fold(
     model = modelmanager.initialize_finetune_model(checkpoint, train_dataset)
 
     optimizer, sampler, scheduler, cfg = modelmanager.initialize_training_components(
-        model, train_dataset
+        model, train_dataset.outcomes
     )
     epoch = modelmanager.get_epoch()
     run = initialize_wandb(run, cfg, cfg.get("wandb_kwargs", {}))
