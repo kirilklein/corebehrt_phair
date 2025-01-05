@@ -2,10 +2,10 @@ import unittest
 from typing import Set
 
 from ehr2vec.double_robust.counterfactual import (
-    get_frequency_of_codes,
     get_probability_of_codes,
     create_counterfactual_data,
     swap_codes,
+    count_first_exposure_code_occurrence,
 )
 from ehr2vec.common.utils import Data
 
@@ -65,21 +65,40 @@ class TestCounterfactuals(unittest.TestCase):
         self.assertEqual(new_seqs[3][1], self.control_code)
         self.assertEqual(new_seqs[3][2], orig_seqs[3][2])
 
-    def test_get_frequency_of_codes(self):
-        """Test the get_frequency_of_codes function with various scenarios."""
+    def test_count_first_exposure_code_occurrences(self):
+        """Test counting only first occurrences of exposure codes in each sequence."""
         # Test normal case
-        result = get_frequency_of_codes(self.sample_features, self.exposure_codes)
+        result = count_first_exposure_code_occurrence(
+            self.sample_features, self.exposure_codes
+        )
+        # Code 5 appears in sequences [0] and [3], code 6 doesn't appear
         expected = {6: 0, 5: 2}
+        self.assertEqual(result, expected)
+
+        # Test case with repeated codes in same sequence
+        features_with_repeats = {
+            "concept": [
+                [5, 2, 5, 5],  # 5 appears multiple times, should count once
+                [1, 6, 6, 5],  # both 5 and 6 appear, count only 6 since it occurs first
+                [1, 2, 3, 4],  # no exposure codes
+            ]
+        }
+        result = count_first_exposure_code_occurrence(
+            features_with_repeats, self.exposure_codes
+        )
+        expected = {5: 1, 6: 1}  # 5 counted twice (two sequences), 6 counted once
         self.assertEqual(result, expected)
 
         # Test empty features
         empty_features = {"concept": []}
-        result = get_frequency_of_codes(empty_features, self.exposure_codes)
+        result = count_first_exposure_code_occurrence(
+            empty_features, self.exposure_codes
+        )
         expected = {5: 0, 6: 0}
         self.assertEqual(result, expected)
 
         # Test empty exposure codes
-        result = get_frequency_of_codes(self.sample_features, set())
+        result = count_first_exposure_code_occurrence(self.sample_features, set())
         self.assertEqual(result, {})
 
     def test_get_probability_of_codes(self):
@@ -87,7 +106,7 @@ class TestCounterfactuals(unittest.TestCase):
         code_frequencies = {1: 2, 2: 2, 6: 0, 5: 2}
         result = get_probability_of_codes(code_frequencies)
 
-        total = sum(code_frequencies.values()) + 1  # +1 for smoothing
+        total = sum(code_frequencies.values())
         expected = {1: 2 / total, 2: 2 / total, 6: 0 / total, 5: 2 / total}
 
         self.assertEqual(result, expected)

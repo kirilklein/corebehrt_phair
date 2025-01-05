@@ -19,8 +19,11 @@ def create_counterfactual_data(
     exposure_codes = match_patterns(exposure_regex, data.vocabulary)
     control_code = list(match_pattern(control_regex, data.vocabulary))[0]
 
-    code_frequencies = get_frequency_of_codes(data.features, exposure_codes)
+    code_frequencies = count_first_exposure_code_occurrence(
+        data.features, exposure_codes
+    )
     logger.info(f"exposure code frequencies: {code_frequencies}")
+    logger.info(f"sum of exposure code frequencies: {sum(code_frequencies.values())}")
     exposure_code_probabilities = get_probability_of_codes(code_frequencies)
 
     # Get counterfactual concepts by swapping codes for each patient
@@ -34,12 +37,16 @@ def create_counterfactual_data(
     # Copy features and replace concept entry
     counterfactual_features = data.features.copy()
     counterfactual_features["concept"] = counterfactual_concepts
-    data.exposures = [1 - exp for exp in data.exposures]
+    if data.exposures is not None:
+        data.exposures = [1 - exp for exp in data.exposures]
     return Data(
         features=counterfactual_features,
         pids=data.pids,
         outcomes=data.outcomes,
         vocabulary=data.vocabulary,
+        exposed_patients=[
+            pid for pid in data.pids if data.exposures[data.pids.index(pid)] == 1
+        ],
         exposures=data.exposures,
     )
 
@@ -49,40 +56,46 @@ def get_probability_of_codes(
 ) -> Dict[int, float]:
     """
     Get the probability of codes according to their frequency.
-    We add 1 to the denominator to avoid division by zero.
     """
     return {
-        code: frequency / (sum(code_frequencies.values()) + 1)
+        code: frequency / sum(code_frequencies.values())
         for code, frequency in code_frequencies.items()
     }
 
 
-def get_frequency_of_codes(
+def count_first_exposure_code_occurrence(
     features: Dict[str, List[List[int]]], exposure_codes: Set[int]
 ) -> Dict[int, int]:
     """
-    Get the frequency of codes in the features.
+    Get the frequency of exposure codes in the features, counting only the first
+    occurrence of *any* exposure code in each concept_list.
 
     Args:
-        features: Dictionary containing feature lists, including 'concept' key with lists of concept codes
-        exposure_codes: Set of codes to count frequencies for
+        features: Dictionary containing feature lists, including 'concept' key
+                  with lists of concept codes.
+        exposure_codes: Set of codes to count frequencies for.
 
     Returns:
-        Dictionary mapping codes to their frequencies
+        Dictionary mapping codes to their frequencies, where each concept_list
+        contributes at most 1 count to exactly one code (the first code in the
+        list that appears in exposure_codes).
     """
-    # Flatten the list of concept lists and count only relevant codes
-    all_concepts = [
-        code
-        for concept_list in features["concept"]
-        for code in concept_list
-        if code in exposure_codes
-    ]
+    code_counts = Counter()
 
-    # Use Counter for efficient counting
-    code_counts = Counter(all_concepts)
+    # Iterate over each concept_list
+    for concept_list in features["concept"]:
+        for code in concept_list:
+            # If this code is an exposure code, increment and break
+            if code in exposure_codes:
+                code_counts[code] += 1
+                break  # Only count the *first* exposure code in this list
 
-    # Ensure all exposure codes are in the result, even if count is 0
-    return {code: code_counts.get(code, 0) for code in exposure_codes}
+    # Make sure every exposure_code is in the output, even if 0
+    for code in exposure_codes:
+        if code not in code_counts:
+            code_counts[code] = 0
+
+    return dict(code_counts)
 
 
 def swap_codes(

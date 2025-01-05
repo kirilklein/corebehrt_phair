@@ -222,6 +222,7 @@ class Data:
             vocabulary=self.vocabulary,
             mode=mode,
             exposed_patients=self.exposed_patients,
+            exposures=[self.exposures[i] for i in indices] if self.exposures else None,
         )
 
     def select_data_subset_by_pids(self, pids: list, mode: str = "") -> "Data":
@@ -284,15 +285,25 @@ class Data:
         self.times2event = self._outcome_helper(times2event)
 
 
-def match_patterns(patterns: List[str], vocabulary: Dict) -> Set[int]:
+def match_patterns(patterns: Union[str, List[str]], vocabulary: Dict) -> Set[int]:
     """
-    Match a list of patterns to a vocabulary and return the corresponding codes
-    For exact matches use ^exactmatch$
+    Match a list of patterns to a vocabulary and return the corresponding codes.
+
+    Args:
+        patterns: Single pattern string or list of pattern strings. For exact matches use ^exactmatch$
+        vocabulary: Dictionary containing the vocabulary to match against
+
+    Returns:
+        Set of matched integer codes
+
+    Examples:
+        >>> match_patterns(["^diabetes$", "heart"], vocabulary)
+        {1234, 5678, 9012}
     """
-    matched_codes = set()
-    for pattern in patterns:
-        matched_codes.update(match_pattern(pattern, vocabulary))
-    return matched_codes
+    if isinstance(patterns, str):
+        patterns = [patterns]
+
+    return set().union(*(match_pattern(pattern, vocabulary) for pattern in patterns))
 
 
 def match_pattern(pattern: str, vocabulary: Dict) -> Set[int]:

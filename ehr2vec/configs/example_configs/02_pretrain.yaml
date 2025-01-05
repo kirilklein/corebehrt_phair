@@ -25,7 +25,7 @@ data:
 trainer_args:
   batch_size: 32
   effective_batch_size: 64
-  epochs: 1
+  epochs: 3
   info: true
   sampler: null
   gradient_clip: 

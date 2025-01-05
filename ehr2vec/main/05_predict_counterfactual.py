@@ -51,7 +51,9 @@ def predict_fold(
     logger.info(f"Predicting for fold {fold}")
 
     counterfactual_val_dataset = BinaryOutcomeDataset(
-        counterfactual_val_data.features, counterfactual_val_data.outcomes
+        counterfactual_val_data.features,
+        counterfactual_val_data.outcomes,
+        counterfactual_val_data.exposures,
     )
 
     modelmanager = ModelManager(cfg, model_path=fold_folder)
