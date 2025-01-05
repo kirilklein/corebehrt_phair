@@ -79,9 +79,8 @@ def finetune_fold(
     checkpoint = modelmanager.load_checkpoint()
     modelmanager.load_model_config()
     model = modelmanager.initialize_finetune_model(checkpoint, train_dataset)
-
     optimizer, sampler, scheduler, cfg = modelmanager.initialize_training_components(
-        model, train_dataset
+        model, train_dataset.outcomes
     )
     epoch = modelmanager.get_epoch()
 

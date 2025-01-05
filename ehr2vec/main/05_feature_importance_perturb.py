@@ -127,7 +127,7 @@ def finetune_fold(
     modelmanager.model_path = None  # to initialize training components form scratch
 
     optimizer, sampler, scheduler, cfg = modelmanager.initialize_training_components(
-        perturbation_model, train_dataset
+        perturbation_model, train_dataset.outcomes
     )
 
     logger.info("Optimizer parameters")
