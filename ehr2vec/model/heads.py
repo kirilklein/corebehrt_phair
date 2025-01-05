@@ -94,7 +94,7 @@ class BaseRNN(nn.Module):
             x = forward_output
 
         # Optionally concatenate exposure
-        if exposure is not None:
+        if self.exposure_dim > 0:
             x = torch.cat([x, exposure.unsqueeze(-1)], dim=-1)
 
         logits = self.classifier(x)
