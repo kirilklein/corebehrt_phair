@@ -1,26 +1,23 @@
-import torch
 import logging
-from torch import nn
+
+import torch
 import torch.nn.utils.rnn as rnn_utils
+from torch import nn
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 
-class MLMHead(torch.nn.Module):
+class MLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
         # BertPredictionHeadTransform
-        self.dense = torch.nn.Linear(config.hidden_size, config.hidden_size)
-        self.activation = torch.nn.GELU()
-        self.LayerNorm = torch.nn.LayerNorm(
-            config.hidden_size, eps=config.layer_norm_eps
-        )
+        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
+        self.activation = nn.GELU()
+        self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
         # BertLMPredictionHead
-        self.decoder = torch.nn.Linear(
-            config.hidden_size, config.vocab_size, bias=False
-        )
-        self.bias = torch.nn.Parameter(torch.zeros(config.vocab_size))
+        self.decoder = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.bias = nn.Parameter(torch.zeros(config.vocab_size))
         self.decoder.bias = self.bias
 
     def forward(self, hidden_states: torch.Tensor, attention_mask=None) -> torch.Tensor:
@@ -53,18 +50,18 @@ class BaseRNN(nn.Module):
             batch_first=True,
             bidirectional=self.bidirectional,
         )
-        
+
         # Adjust the input size of the classifier based on the bidirectionality + exposure
         base_rnn_output_size = self.hidden_size * (2 if self.bidirectional else 1)
         classifier_input_size = base_rnn_output_size + self.exposure_dim
-        
+
         self.classifier = nn.Linear(classifier_input_size, 1)
 
     def forward(
-        self, 
-        hidden_states: torch.Tensor, 
-        attention_mask: torch.Tensor = None, 
-        exposure: torch.Tensor = None
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor = None,
+        exposure: torch.Tensor = None,
     ) -> torch.Tensor:
         """
         Runs the hidden_states through the RNN and returns a single logit.
@@ -75,23 +72,18 @@ class BaseRNN(nn.Module):
                 raise ValueError("Exposure is required for this model.")
         lengths = attention_mask.sum(dim=1).cpu()
         packed = rnn_utils.pack_padded_sequence(
-            hidden_states, 
-            lengths, 
-            batch_first=True, 
-            enforce_sorted=False
+            hidden_states, lengths, batch_first=True, enforce_sorted=False
         )
 
         output, _ = self.rnn(packed)
         output, _ = rnn_utils.pad_packed_sequence(output, batch_first=True)
-        
+
         # Index of the last valid (non-padded) token per sequence
         last_sequence_idx = lengths - 1
-        
+
         # Forward pass last hidden output
         forward_output = output[
-            torch.arange(output.shape[0]), 
-            last_sequence_idx, 
-            : self.hidden_size
+            torch.arange(output.shape[0]), last_sequence_idx, : self.hidden_size
         ]
 
         # If bidirectional, also get the backward pass (first hidden output from the backward direction)
@@ -100,11 +92,11 @@ class BaseRNN(nn.Module):
             x = torch.cat((forward_output, backward_output), dim=-1)
         else:
             x = forward_output
-        
+
         # Optionally concatenate exposure
         if exposure is not None:
             x = torch.cat([x, exposure.unsqueeze(-1)], dim=-1)
-        
+
         logits = self.classifier(x)
         return logits
 
@@ -120,16 +112,16 @@ class FineTuneHead(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        
+
         # Decide if we will handle exposure dimension
         # (e.g., if your dataset always has a single floating number for exposure)
         # Set `exposure_dim=1` if you plan on always passing exposure to forward.
         # Otherwise, keep it at 0 (and handle None-checks in forward).
         self.exposure_dim = 1 if config.to_dict().get("use_exposure", False) else 0
-        
+
         # Pool type
         self.pool_type = config.pool_type.lower()
-        
+
         # Set up the pooling layer
         if self.pool_type in ["gru", "lstm"]:
             rnn_type = nn.GRU if self.pool_type == "gru" else nn.LSTM
@@ -148,13 +140,12 @@ class FineTuneHead(nn.Module):
             self.classifier = nn.Linear(config.hidden_size + self.exposure_dim, 1)
 
         logger.info(f"Using {self.pool_type} pooling for classification.")
-        
 
     def forward(
-        self, 
-        hidden_states: torch.Tensor, 
-        attention_mask: torch.Tensor = None, 
-        exposure: torch.Tensor = None
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor = None,
+        exposure: torch.Tensor = None,
     ) -> torch.Tensor:
         """
         - Pools the hidden_states depending on self.pool_type.
@@ -164,17 +155,21 @@ class FineTuneHead(nn.Module):
         if self.exposure_dim > 0:
             if exposure is None:
                 raise ValueError("Exposure is required for this model.")
-        
+
         if self.pool_type in ["gru", "lstm"]:
             # BaseRNN handles everything
-            return self.pool(hidden_states, attention_mask=attention_mask, exposure=exposure)
+            return self.pool(
+                hidden_states, attention_mask=attention_mask, exposure=exposure
+            )
         else:
             # CLS or MEAN
             pooled = self.pool(hidden_states, attention_mask=attention_mask)
 
             # If exposure is used, concatenate it
             if exposure is not None:
-                pooled = torch.cat([pooled, exposure], dim=-1)  # shape: [batch, hidden_size + exposure_dim]
+                pooled = torch.cat(
+                    [pooled, exposure], dim=-1
+                )  # shape: [batch, hidden_size + exposure_dim]
 
             logits = self.classifier(pooled)
             return logits
