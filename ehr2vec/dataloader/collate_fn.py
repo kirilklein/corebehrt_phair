@@ -49,7 +49,7 @@ def bucketed_dynamic_padding(data: list) -> dict:
     for patient in data:
         difference = bucket_len - len(patient["concept"])
         for key, values in patient.items():
-            if key in ["target", "time2event"]:
+            if key in ["target", "time2event", "exposure"]:
                 if isinstance(values, float):  # 0D: For finetuning
                     patient[key] = torch.tensor(values)
                     continue

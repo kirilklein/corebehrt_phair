@@ -62,7 +62,7 @@ class BinaryOutcomeDataset(BaseEHRDataset):
         super().__init__(features)
         # Convert outcomes to binary targets once during initialization
         self.outcomes = [float(pd.notna(outcome)) for outcome in outcomes]
-        self.exposures = exposures if exposures is not None else None
+        self.exposures = [float(exp) for exp in exposures] if exposures is not None else None
 
     def __getitem__(self, index: int) -> dict:
         patient = super().__getitem__(index)
