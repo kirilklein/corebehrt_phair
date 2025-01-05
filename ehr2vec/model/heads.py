@@ -150,7 +150,7 @@ class FineTuneHead(nn.Module):
         """
         - Pools the hidden_states depending on self.pool_type.
         - If RNN-based, relies on BaseRNN to handle classification (and exposure).
-        - Otherwise, concatenates exposure (if provided) before the final linear layer.
+        - Otherwise, concatenates exposure (if use_exposure is True) before the final linear layer.
         """
         if self.exposure_dim > 0:
             if exposure is None:
@@ -166,7 +166,7 @@ class FineTuneHead(nn.Module):
             pooled = self.pool(hidden_states, attention_mask=attention_mask)
 
             # If exposure is used, concatenate it
-            if exposure is not None:
+            if self.exposure_dim > 0:
                 pooled = torch.cat(
                     [pooled, exposure], dim=-1
                 )  # shape: [batch, hidden_size + exposure_dim]
