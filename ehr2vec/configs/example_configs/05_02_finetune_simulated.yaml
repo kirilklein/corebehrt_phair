@@ -15,6 +15,7 @@ model:
   pool_type: "gru"
   bidirectional: true
   use_exposure: true
+  classifier: "big"
 
 calibration: isotonic
 
