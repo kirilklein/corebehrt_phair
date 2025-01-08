@@ -22,7 +22,9 @@ def construct_data_for_effect_estimation(
     Constructs the data for effect estimation from propensity scores and outcomes.
     Returns a DataFrame with PID as index and the required columns.
     """
-    df = merge_dataframes(propensity_scores, outcomes, fillna_col="outcome", fill_value=0)
+    df = merge_dataframes(
+        propensity_scores, outcomes, fillna_col="outcome", fill_value=0
+    )
     df["outcome"] = df["outcome"].astype(int)
 
     if outcome_predictions is not None and counterfactual_predictions is not None:
@@ -32,10 +34,15 @@ def construct_data_for_effect_estimation(
 
 
 def merge_dataframes(
-    left_df: pd.DataFrame, right_df: pd.DataFrame, fillna_col: str = None, fill_value=None
+    left_df: pd.DataFrame,
+    right_df: pd.DataFrame,
+    fillna_col: str = None,
+    fill_value=None,
 ) -> pd.DataFrame:
     """Merges two DataFrames on their indices, optionally filling missing values."""
-    merged_df = pd.merge(left_df, right_df, left_index=True, right_index=True, how="left")
+    merged_df = pd.merge(
+        left_df, right_df, left_index=True, right_index=True, how="left"
+    )
     if fillna_col and fill_value is not None:
         merged_df[fillna_col] = merged_df[fillna_col].fillna(fill_value)
     return merged_df
@@ -54,14 +61,18 @@ def process_predictions(
     counterfactual_predictions = remove_duplicate_indices(counterfactual_predictions)
 
     initial_pids = df.index.nunique()
-    df = merge_with_predictions(df, outcome_predictions, OUTCOME_PREDICTIONS_COL, OUTCOME_PREDICTIONS_COL)
+    df = merge_with_predictions(
+        df, outcome_predictions, OUTCOME_PREDICTIONS_COL, OUTCOME_PREDICTIONS_COL
+    )
 
     if df.index.nunique() != initial_pids:
         logger.warning(
             f"Unique PIDs reduced from {initial_pids} to {df.index.nunique()} during merge with predictions."
         )
 
-    df = merge_with_predictions(df, counterfactual_predictions, OUTCOME_PREDICTIONS_COL, "Y_hat_counterfactual")
+    df = merge_with_predictions(
+        df, counterfactual_predictions, OUTCOME_PREDICTIONS_COL, "Y_hat_counterfactual"
+    )
     df = assign_counterfactuals(df)
     df.drop(columns=["Y_hat_counterfactual"], inplace=True)
 
@@ -74,7 +85,9 @@ def merge_with_predictions(
 ) -> pd.DataFrame:
     """Merges the DataFrame with predictions, renaming the specified column."""
     predictions = predictions.rename(columns={predictions_col: new_col_name})
-    return df.merge(predictions[[new_col_name]], left_index=True, right_index=True, how="inner")
+    return df.merge(
+        predictions[[new_col_name]], left_index=True, right_index=True, how="inner"
+    )
 
 
 def assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
