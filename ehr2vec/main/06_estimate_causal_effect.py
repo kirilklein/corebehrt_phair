@@ -93,7 +93,7 @@ def main(config_path: str):
     else:
         outcome_predictions = None
     propensity_scores = (
-        pd.read_csv(join(path_cfg.ps_model_path, cfg.ps_file))
+        pd.read_csv(path_cfg.propensity_scores)
         .rename(columns={"pid": "PID", "target": TREATMENT_COL, "proba": PS_COL})
         .set_index("PID")
     )

@@ -11,11 +11,21 @@ logger = logging.getLogger(__name__)
 
 
 def create_counterfactual_data(
-    data: Data, exposure_regex: List[str], control_regex: str
+    data: Data, exposure_regex: List[str] = None, control_regex: str = None
 ) -> Data:
     """
     Create counterfactual data by flipping the exposure variable.
     """
+    if exposure_regex is None:
+        logger.info(
+            "No exposure regex provided, flipping all exposures. Leave sequence unchanged."
+        )
+        data.exposures = [1 - exp for exp in data.exposures]
+        data.exposed_patients = [
+            pid for pid in data.pids if data.exposures[data.pids.index(pid)] == 1
+        ]
+        return data
+
     exposure_codes = match_patterns(exposure_regex, data.vocabulary)
     control_code = list(match_pattern(control_regex, data.vocabulary))[0]
 
@@ -37,17 +47,27 @@ def create_counterfactual_data(
     # Copy features and replace concept entry
     counterfactual_features = data.features.copy()
     counterfactual_features["concept"] = counterfactual_concepts
+
+    # Create new exposures list instead of modifying the original
+    counterfactual_exposures = None
     if data.exposures is not None:
-        data.exposures = [1 - exp for exp in data.exposures]
+        counterfactual_exposures = [1 - exp for exp in data.exposures]
+
     return Data(
         features=counterfactual_features,
         pids=data.pids,
         outcomes=data.outcomes,
         vocabulary=data.vocabulary,
-        exposed_patients=[
-            pid for pid in data.pids if data.exposures[data.pids.index(pid)] == 1
-        ],
-        exposures=data.exposures,
+        exposed_patients=(
+            [
+                pid
+                for pid in data.pids
+                if counterfactual_exposures[data.pids.index(pid)] == 1
+            ]
+            if counterfactual_exposures is not None
+            else []
+        ),
+        exposures=counterfactual_exposures,
     )
 
 

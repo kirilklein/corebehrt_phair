@@ -195,7 +195,7 @@ def cv_loop_predefined_splits(
         if len(val_pids) < len(val_data.pids):
             val_data = data.select_data_subset_by_pids(val_pids, mode="val")
         check_data_for_overlap(train_data, val_data, test_data)
-        finetune_fold(cfg, train_data, val_data, fold, test_data)
+        finetune_fold(cfg, train_data, val_data, fold, test_data, run=run)
     n_splits = len(fold_dirs)
     return n_splits
 

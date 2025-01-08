@@ -4,6 +4,7 @@ import torch
 import torch.nn.utils.rnn as rnn_utils
 from torch import nn
 
+
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 
@@ -54,8 +55,7 @@ class BaseRNN(nn.Module):
         # Adjust the input size of the classifier based on the bidirectionality + exposure
         base_rnn_output_size = self.hidden_size * (2 if self.bidirectional else 1)
         classifier_input_size = base_rnn_output_size + self.exposure_dim
-
-        self.classifier = nn.Linear(classifier_input_size, 1)
+        self.classifier = create_classifier(config, classifier_input_size)
 
     def forward(
         self,
@@ -137,7 +137,8 @@ class FineTuneHead(nn.Module):
             self.pool_type = "cls"
             self.pool = self.pool_cls
 
-            self.classifier = nn.Linear(config.hidden_size + self.exposure_dim, 1)
+            classifier_input_size = config.hidden_size + self.exposure_dim
+            self.classifier = create_classifier(config, classifier_input_size)
 
         logger.info(f"Using {self.pool_type} pooling for classification.")
 
@@ -180,3 +181,35 @@ class FineTuneHead(nn.Module):
         x shape: [batch, seq_len, hidden_size]
         """
         return x[:, 0]
+
+
+def create_classifier(config, input_size):
+    """Create classifier based on config."""
+    if config.to_dict().get("classifier", None) is not None:
+        if config.classifier == "big":
+            return BigHead(input_size)
+    return StandardHead(input_size)
+
+
+class BigHead(nn.Module):
+    def __init__(self, input_size):
+        super().__init__()
+        self.classifier_hidden = 128
+        self.classifier = nn.Sequential(
+            nn.Linear(input_size, self.classifier_hidden),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(self.classifier_hidden, 1),
+        )
+
+    def forward(self, x):
+        return self.classifier(x)
+
+
+class StandardHead(nn.Module):
+    def __init__(self, input_size):
+        super().__init__()
+        self.classifier = nn.Linear(input_size, 1)
+
+    def forward(self, x):
+        return self.classifier(x)

@@ -33,7 +33,7 @@ def construct_data_for_effect_estimation(
     df["outcome"] = df["outcome"].astype(int)
     if counterfactual_predictions is not None and outcome_predictions is not None:
         df = add_outcome_predictions(
-            df, counterfactual_predictions, outcome_predictions
+            df, outcome_predictions, counterfactual_predictions
         )
 
     return df
@@ -120,6 +120,7 @@ def construct_data_to_estimate_effect_from_counterfactuals(
     """
     Constructs the data for effect estimation from the propensity scores and counterfactual outcomes dataframes.
     Returns a DataFrame with additional columns for Y1 and Y0.
+    Only keeps PIDs that are present in propensity_scores.
     """
     counterfactual_outcomes = counterfactual_outcomes.set_index("PID")
     df = pd.merge(
@@ -127,7 +128,7 @@ def construct_data_to_estimate_effect_from_counterfactuals(
         counterfactual_outcomes,
         left_index=True,
         right_index=True,
-        how="inner",
+        how="left",
         validate="one_to_one",
     )
     return df
