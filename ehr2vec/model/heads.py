@@ -55,13 +55,7 @@ class BaseRNN(nn.Module):
         # Adjust the input size of the classifier based on the bidirectionality + exposure
         base_rnn_output_size = self.hidden_size * (2 if self.bidirectional else 1)
         classifier_input_size = base_rnn_output_size + self.exposure_dim
-        if config.to_dict().get("classifier", None) is not None:
-            if config.classifier == "big":
-                self.classifier = BigHead(classifier_input_size)
-            else:
-                self.classifier = StandardHead(classifier_input_size)
-        else:
-            self.classifier = StandardHead(classifier_input_size)
+        self.classifier = create_classifier(config, classifier_input_size)
 
     def forward(
         self,
@@ -144,13 +138,7 @@ class FineTuneHead(nn.Module):
             self.pool = self.pool_cls
 
             classifier_input_size = config.hidden_size + self.exposure_dim
-            if config.to_dict().get("classifier", None) is not None:
-                if config.classifier == "big":
-                    self.classifier = BigHead(classifier_input_size)
-                else:
-                    self.classifier = StandardHead(classifier_input_size)
-            else:
-                self.classifier = StandardHead(classifier_input_size)
+            self.classifier = create_classifier(config, classifier_input_size)
 
         logger.info(f"Using {self.pool_type} pooling for classification.")
 
@@ -193,6 +181,14 @@ class FineTuneHead(nn.Module):
         x shape: [batch, seq_len, hidden_size]
         """
         return x[:, 0]
+
+
+def create_classifier(config, input_size):
+    """Create classifier based on config."""
+    if config.to_dict().get("classifier", None) is not None:
+        if config.classifier == "big":
+            return BigHead(input_size)
+    return StandardHead(input_size)
 
 
 class BigHead(nn.Module):
