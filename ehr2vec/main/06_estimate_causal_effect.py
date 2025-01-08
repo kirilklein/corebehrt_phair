@@ -47,15 +47,12 @@ class EffectEstimator:
 
     def run(self):
         df = self._load_data()
-        df_noisy = self._add_noise(df)
+        df = self._add_noise(df)
 
-        stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
-        stats_table.index.name = "Treatment"
-        stats_table.reset_index(inplace=True)
-        log_dataframe(stats_table, "stats_table")
+        self._log_stats_table(df)
 
         self.logger.info("Estimating causal effect")
-        effect_df, common_support, threshold = self._compute_causal_effect(df_noisy)
+        effect_df, common_support, threshold = self._compute_causal_effect(df)
 
         counterfactual_effect = self._compute_counterfactual_effect(
             df, common_support, threshold
@@ -70,6 +67,12 @@ class EffectEstimator:
         effect_df.to_csv(join(self.exp_folder, "effect.csv"), index=False)
 
         self._cleanup()
+
+    def _log_stats_table(self, df: pd.DataFrame):
+        stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
+        stats_table.index.name = "Treatment"
+        stats_table.reset_index(inplace=True)
+        log_dataframe(stats_table, "stats_table")
 
     @classmethod
     def from_config(cls, config_path: str) -> "EffectEstimator":
