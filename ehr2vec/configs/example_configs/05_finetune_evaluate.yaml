@@ -19,8 +19,8 @@ data:
   min_len: 2
 
 tester_args:
-  batch_size: 16
-  val_batch_size: 16
+  batch_size: 256
+  val_batch_size: 256
   info: true
   shuffle: true
 

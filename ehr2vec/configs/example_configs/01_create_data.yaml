@@ -6,13 +6,13 @@ paths:
   run_name: "_test"
 loader:
   # can provide formatted data or features
-  data_dir:  example_data/synthea500 
+  data_dir:  example_data
   concepts: [
     diagnose,
     medication
   ]
-  batch_size: 64
-  chunksize: 300
+  batch_size: 3000 # number of patients to process at a time
+  chunksize: 100000 # chunks of data to load at a time
 
 features:
   age: 
@@ -25,7 +25,7 @@ features:
   background: ['GENDER']
 
 tokenizer:
-  sep_tokens: false
+  sep_tokens: true
   cls_token: true
   padding: false
   truncation: null
@@ -39,14 +39,14 @@ excluder:
 
 split_ratios:
   pretrain: 0.72 # 80% of 90%
-  finetune: 0.18 # 20% of 90%
-  test: 0.1
+  finetune: 0.23 # 20% of 90%
+  test: 0.05
 handler:
   min_age: -1
   max_age: 120
 
-exposure_patterns:
-  - "M308136"  # Add more patterns as needed. Patients with these codes are put into the finetune set
+# exposure_patterns:
+  # - "M308136"  # Add more patterns as needed. Patients with these codes are put into the finetune set
 
 # can be a list
 # exclude_pids: 
