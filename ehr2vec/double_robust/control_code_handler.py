@@ -53,7 +53,7 @@ def insert_control_code_for_patient(
         insert_idx += 1
 
     # Insert control code and associated data at determined position
-    for key in patient_data.keys():
+    for key in patient_data:
         value = (
             control_code
             if key == "concept"
