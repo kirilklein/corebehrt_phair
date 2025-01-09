@@ -211,7 +211,7 @@ class ModelLoader:
             checkpoints_dir, f"checkpoint_epoch{checkpoint_epoch}_end.pt"
         )
         logger.info("Loading checkpoint from %s", checkpoint_path)
-        return torch.load(checkpoint_path, map_location=device)
+        return torch.load(checkpoint_path, map_location=device, weights_only=False)
 
     def get_checkpoint_epoch(self) -> int:
         """Get checkpoint epoch from config or return the last checkpoint_epoch for this model."""
