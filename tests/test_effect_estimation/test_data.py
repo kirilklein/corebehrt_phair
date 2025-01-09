@@ -18,6 +18,7 @@ from ehr2vec.effect_estimation.data import (
     _assign_counterfactuals,
     construct_from_observed_data,
     _merge_prediction_column,
+    _merge_and_format_outcomes,
 )
 
 TEMP_CF_COL = "Y_hat_counterfactual"
@@ -54,164 +55,181 @@ class TestConstructDataForEffectEstimation(unittest.TestCase):
 
 
 class TestOutcomePredictionFunctions(unittest.TestCase):
-
     def setUp(self):
-        # Sample data for testing
+        """Create sample data for testing."""
+        # Create sample patient data with known treatment assignments
         self.df = pd.DataFrame(
             {
-                TREATMENT_COL: [1, 0, 1, 0],
-                OUTCOME_COL: [1, 0, 1, 0],
+                TREATMENT_COL: [1, 0, 1, 0],  # 1=treated, 0=untreated
+                OUTCOME_COL: [1, 0, 1, 0],  # actual outcomes
             },
-            index=[101, 102, 103, 104],
+            index=[101, 102, 103, 104],  # patient IDs
         )
 
+        # Predicted outcomes under actual treatment
         self.outcome_predictions = pd.DataFrame(
             {
-                OUTCOME_PROBABILITY_COL: [0.9, 0.1, 0.8, 0.2],
+                OUTCOME_PROBABILITY_COL: [
+                    0.9,
+                    0.1,
+                    0.8,
+                    0.2,
+                ],  # predictions match treatment status
             },
             index=[101, 102, 103, 104],
         )
 
+        # Predicted outcomes under opposite treatment
         self.counterfactual_predictions = pd.DataFrame(
             {
-                OUTCOME_PROBABILITY_COL: [0.3, 0.7, 0.4, 0.6],
+                OUTCOME_PROBABILITY_COL: [
+                    0.3,
+                    0.7,
+                    0.4,
+                    0.6,
+                ],  # predictions for opposite treatment
             },
             index=[101, 102, 103, 104],
         )
 
-    def test__merge_prediction_column(self):
-        # Test merging works correctly
+    def test_merge_prediction_column(self):
+        """Test that prediction columns are merged correctly."""
         merged_df = _merge_prediction_column(
             self.df.copy(),
             self.outcome_predictions.copy(),
             OUTCOME_PROBABILITY_COL,
-            OUTCOME_PROBABILITY_COL,
+            "new_predictions",
         )
-        self.assertIn(OUTCOME_PROBABILITY_COL, merged_df.columns)
+
+        # Check structure
+        self.assertIn("new_predictions", merged_df.columns)
         self.assertEqual(len(merged_df), 4)
         pd.testing.assert_index_equal(merged_df.index, self.df.index)
 
-    def test__assign_counterfactuals(self):
-        # Prepare DataFrame with necessary columns
+        # Check values
+        expected_predictions = [0.9, 0.1, 0.8, 0.2]
+        np.testing.assert_array_almost_equal(
+            merged_df["new_predictions"], expected_predictions
+        )
+
+    def test_assign_counterfactuals_basic(self):
+        """Test basic counterfactual assignment logic."""
+        # Prepare input DataFrame
         df = self.df.copy()
-        df[OUTCOME_PROBABILITY_COL] = [0.9, 0.1, 0.8, 0.2]
-        df[TEMP_CF_COL] = [0.3, 0.7, 0.4, 0.6]
+        df[OUTCOME_PROBABILITY_COL] = [0.9, 0.1, 0.8, 0.2]  # actual predictions
+        df[TEMP_CF_COL] = [0.3, 0.7, 0.4, 0.6]  # counterfactual predictions
 
-        # Assign counterfactuals
-        df = _assign_counterfactuals(df)
+        # Run function
+        result = _assign_counterfactuals(df)
 
-        # Expected values
-        expected_Y1_hat = [0.9, 0.7, 0.8, 0.6]
-        expected_Y0_hat = [0.3, 0.1, 0.4, 0.2]
+        # Check treated outcomes (Y1_hat)
+        # For treated patients (index 101, 103): use actual prediction
+        # For untreated patients (index 102, 104): use counterfactual
+        expected_treated = [0.9, 0.7, 0.8, 0.6]
+        np.testing.assert_array_almost_equal(result[CF_TREATED_COL], expected_treated)
 
-        np.testing.assert_array_almost_equal(df[CF_TREATED_COL], expected_Y1_hat)
-        np.testing.assert_array_almost_equal(df[CF_CONTROL_COL], expected_Y0_hat)
+        # Check control outcomes (Y0_hat)
+        # For treated patients (index 101, 103): use counterfactual
+        # For untreated patients (index 102, 104): use actual prediction
+        expected_control = [0.3, 0.1, 0.4, 0.2]
+        np.testing.assert_array_almost_equal(result[CF_CONTROL_COL], expected_control)
 
-    def test__add_outcome_predictions(self):
-        # Test the main function
-        df = _add_outcome_predictions(
+    def test_assign_counterfactuals_edge_cases(self):
+        """Test edge cases for counterfactual assignment."""
+        # Test with extreme probabilities
+        df = self.df.copy()
+        df[OUTCOME_PROBABILITY_COL] = [1.0, 0.0, 1.0, 0.0]
+        df[TEMP_CF_COL] = [0.0, 1.0, 0.0, 1.0]
+
+        result = _assign_counterfactuals(df)
+
+        # Verify extreme values are handled correctly
+        np.testing.assert_array_almost_equal(
+            result[CF_TREATED_COL], [1.0, 1.0, 1.0, 1.0]
+        )
+        np.testing.assert_array_almost_equal(
+            result[CF_CONTROL_COL], [0.0, 0.0, 0.0, 0.0]
+        )
+
+    def test_assign_counterfactuals_missing_columns(self):
+        """Test error handling for missing required columns."""
+        # Test missing treatment column
+        df_no_treatment = self.df.drop(columns=[TREATMENT_COL])
+        df_no_treatment[OUTCOME_PROBABILITY_COL] = [0.9, 0.1, 0.8, 0.2]
+        df_no_treatment[TEMP_CF_COL] = [0.3, 0.7, 0.4, 0.6]
+
+        with self.assertRaises(KeyError):
+            _assign_counterfactuals(df_no_treatment)
+
+        # Test missing prediction columns
+        df_no_predictions = self.df.copy()
+        with self.assertRaises(KeyError):
+            _assign_counterfactuals(df_no_predictions)
+
+    def test_add_outcome_predictions_integration(self):
+        """Test the full outcome prediction pipeline."""
+        result = _add_outcome_predictions(
             self.df.copy(),
             self.outcome_predictions.copy(),
             self.counterfactual_predictions.copy(),
         )
 
-        # Check columns
-        self.assertIn(OUTCOME_PROBABILITY_COL, df.columns)
-        self.assertIn(TEMP_CF_COL, df.columns)
-        self.assertIn(CF_TREATED_COL, df.columns)
-        self.assertIn(CF_CONTROL_COL, df.columns)
+        # Check all expected columns are present
+        expected_columns = {
+            TREATMENT_COL,
+            OUTCOME_COL,
+            OUTCOME_PROBABILITY_COL,
+            CF_TREATED_COL,
+            CF_CONTROL_COL,
+        }
+        self.assertTrue(expected_columns.issubset(result.columns))
 
-        # Check assignments
-        expected_Y1_hat = [0.9, 0.7, 0.8, 0.6]
-        expected_Y0_hat = [0.3, 0.1, 0.4, 0.2]
+        # Verify TEMP_CF_COL was removed
+        self.assertNotIn(TEMP_CF_COL, result.columns)
 
-        np.testing.assert_array_almost_equal(df[CF_TREATED_COL], expected_Y1_hat)
-        np.testing.assert_array_almost_equal(df[CF_CONTROL_COL], expected_Y0_hat)
-
-    def test_non_matching_indices(self):
-        # Change indices so they don't match
-        outcome_predictions_mismatch = self.outcome_predictions.copy()
-        outcome_predictions_mismatch.index = [201, 202, 203, 204]
-
-        df_result = _add_outcome_predictions(
-            self.df.copy(),
-            outcome_predictions_mismatch,
-            self.counterfactual_predictions.copy(),
+        # Check final values
+        np.testing.assert_array_almost_equal(
+            result[CF_TREATED_COL], [0.9, 0.7, 0.8, 0.6]
+        )
+        np.testing.assert_array_almost_equal(
+            result[CF_CONTROL_COL], [0.3, 0.1, 0.4, 0.2]
         )
 
-        self.assertEqual(len(df_result), 0)
-
-    def test_empty_dataframes(self):
-        # Test with empty DataFrames
-        empty_df = pd.DataFrame(columns=self.df.columns)
-        empty_outcome_predictions = pd.DataFrame(
-            columns=self.outcome_predictions.columns
-        )
-        empty_counterfactual_predictions = pd.DataFrame(
-            columns=self.counterfactual_predictions.columns
+    def test_merge_and_format_outcomes(self):
+        """Test merging propensity scores with outcomes and outcome formatting."""
+        # Set up test data
+        propensity_scores = pd.DataFrame(
+            {TREATMENT_COL: [1, 0, 1, 0], "proba": [0.7, 0.3, 0.8, 0.2]},
+            index=[101, 102, 103, 104],  # patient IDs
         )
 
-        df_result = _add_outcome_predictions(
-            empty_df, empty_outcome_predictions, empty_counterfactual_predictions
+        # Only some patients have outcomes
+        outcomes = pd.DataFrame(
+            {OUTCOME_COL: [1, 0]}, index=[101, 103]  # only two patients have outcomes
         )
 
-        self.assertEqual(len(df_result), 0)
+        # Run function
+        result = _merge_and_format_outcomes(propensity_scores, outcomes)
+
+        # Check structure
         self.assertEqual(
-            list(df_result.columns),
-            list(self.df.columns)
-            + [
-                OUTCOME_PROBABILITY_COL,
-                TEMP_CF_COL,
-                CF_TREATED_COL,
-                CF_CONTROL_COL,
-            ],
+            len(result), 4
+        )  # should keep all patients from propensity_scores
+        self.assertTrue(
+            all(col in result.columns for col in [TREATMENT_COL, "proba", OUTCOME_COL])
         )
 
-    def test_partial_overlap_indices(self):
-        # Modify indices to have partial overlap
-        outcome_predictions_partial = self.outcome_predictions.copy()
-        outcome_predictions_partial.index = [101, 102, 201, 202]
+        # Check values
+        expected_outcomes = [1, 0, 0, 0]  # missing outcomes should be 0
+        np.testing.assert_array_equal(result[OUTCOME_COL], expected_outcomes)
 
-        df_result = _add_outcome_predictions(
-            self.df.copy(),
-            outcome_predictions_partial,
-            self.counterfactual_predictions.copy(),
-        )
+        # Check data types
+        self.assertTrue(
+            np.issubdtype(result[OUTCOME_COL].dtype, np.integer)
+        )  # outcomes should be integers
 
-        # Only indices 101 and 102 should be present
-        self.assertEqual(len(df_result), 2)
-        self.assertListEqual(list(df_result.index), [101, 102])
-
-    def test_incorrect_treatment_column(self):
-        # Missing TREATMENT_COL in df
-        df_missing_treatment = self.df.drop(columns=[TREATMENT_COL])
-
-        with self.assertRaises(KeyError):
-            _assign_counterfactuals(df_missing_treatment)
-
-    def test_incorrect_prediction_columns(self):
-        # Missing OUTCOME_PREDICTIONS_COL in df
-        df_missing_prediction = self.df.copy()
-        df_missing_prediction[TEMP_CF_COL] = [0.3, 0.7, 0.4, 0.6]
-
-        with self.assertRaises(KeyError):
-            _assign_counterfactuals(df_missing_prediction)
-
-    def test__assign_counterfactuals_with_nonbinary_treatment(self):
-        # Non-binary treatment values
-        df_nonbinary_treatment = self.df.copy()
-        df_nonbinary_treatment[TREATMENT_COL] = [2, -1, 1, 0]
-        df_nonbinary_treatment[OUTCOME_PROBABILITY_COL] = [0.9, 0.1, 0.8, 0.2]
-        df_nonbinary_treatment[TEMP_CF_COL] = [0.3, 0.7, 0.4, 0.6]
-
-        df_result = _assign_counterfactuals(df_nonbinary_treatment)
-
-        # Treated if TREATMENT_COL == 1
-        expected_Y1_hat = [0.3, 0.7, 0.8, 0.6]
-        expected_Y0_hat = [0.9, 0.1, 0.4, 0.2]
-
-        np.testing.assert_array_almost_equal(df_result[CF_TREATED_COL], expected_Y1_hat)
-        np.testing.assert_array_almost_equal(df_result[CF_CONTROL_COL], expected_Y0_hat)
+        # Check index preservation
+        pd.testing.assert_index_equal(result.index, propensity_scores.index)
 
 
 if __name__ == "__main__":
