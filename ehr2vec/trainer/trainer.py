@@ -90,9 +90,14 @@ class EHRTrainer:
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.set_float32_matmul_precision("high")
 
-        self.device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        )
+        # Check for available devices
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        # elif hasattr(torch, 'xpu') and torch.xpu.is_available():
+        #   self.device = torch.device("xpu") # uncomment for intel
+        else:
+            self.device = torch.device("cpu")
+
         self.cfg = cfg
         self.model = model.to(self.device)
         if self.cfg.trainer_args.get("compile", True):
