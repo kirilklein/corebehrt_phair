@@ -44,15 +44,13 @@ class EffectEstimator:
     cfg: Config
     logger: Any
     exp_folder: str
+    mount_context: Any
 
     def run(self):
         df = self._load_data()
-        df_noisy = self._add_noise(df)
+        self._log_basic_stats(df)
 
-        stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
-        stats_table.index.name = "Treatment"
-        stats_table.reset_index(inplace=True)
-        log_dataframe(stats_table, "stats_table")
+        df_noisy = self._add_noise(df)  # optional
 
         self.logger.info("Estimating causal effect")
         effect_df, common_support, threshold = self._compute_causal_effect(df_noisy)
@@ -79,10 +77,8 @@ class EffectEstimator:
         if "wandb_kwargs" in cfg:
             cfg.wandb_kwargs.name = cfg.paths.run_name
 
-        cfg, run, mount_context, azure_context = (
-            initialize_configuration_effect_estimation(
-                cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
-            )
+        cfg, run, mount_context, _ = initialize_configuration_effect_estimation(
+            cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
         )
         run = initialize_wandb(run, cfg, cfg.get("wandb_kwargs", {}))
 
@@ -92,7 +88,12 @@ class EffectEstimator:
         logger = setup_logger(exp_folder, "info.log")
         cfg.save_to_yaml(join(exp_folder, "config.yaml"))
 
-        return cls(cfg=cfg, logger=logger, exp_folder=exp_folder)
+        return cls(
+            cfg=cfg,
+            logger=logger,
+            exp_folder=exp_folder,
+            mount_context=mount_context,
+        )
 
     def _load_data(self) -> pd.DataFrame:
         path_cfg = self.cfg.paths
@@ -131,17 +132,6 @@ class EffectEstimator:
             df = df.sample(n=num_patients, replace=False)
 
         return df
-
-    def _add_noise(self, df: pd.DataFrame) -> pd.DataFrame:
-        df_copy = df.copy(deep=True)
-        noise = self.cfg.get("ps_noise", 0)
-
-        if noise > 0:
-            self.logger.info(f"Adding {noise} noise to propensity scores")
-            df_copy[PS_COL] *= 1 + np.random.uniform(-noise, noise, len(df_copy))
-            df_copy[PS_COL] = df_copy[PS_COL].clip(lower=1e-6, upper=1 - 1e-6)
-
-        return df_copy
 
     def _compute_causal_effect(self, df: pd.DataFrame) -> pd.DataFrame:
         estimator_cfg = self.cfg.get("estimator")
@@ -186,6 +176,25 @@ class EffectEstimator:
     def _compute_counterfactual_effect(
         self, df: pd.DataFrame, common_support: bool, threshold: Optional[float]
     ) -> Optional[float]:
+        """Compute causal effect using counterfactual outcomes if available.
+
+        This method loads pre-computed counterfactual outcomes and uses them to estimate
+        the causal effect. It optionally applies common support filtering to ensure
+        comparable treatment and control groups.
+
+        Args:
+            df: DataFrame containing the original data with treatment assignments and outcomes
+            common_support: Whether to apply common support filtering based on propensity scores
+            threshold: Threshold value for common support filtering. Only used if common_support=True
+
+        Returns:
+            float: Estimated causal effect computed from counterfactuals if counterfactual
+                  outcomes are available, None otherwise
+
+        Note:
+            The counterfactual outcomes must be pre-computed and specified in the config
+            under paths.counterfactual_outcome
+        """
         if not self.cfg.paths.get("counterfactual_outcome"):
             return None
 
@@ -209,6 +218,27 @@ class EffectEstimator:
             df_counterfactual, self.cfg.get("estimator").effect_type
         )
 
+    def _log_basic_stats(self, df: pd.DataFrame) -> None:
+        stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
+        stats_table.index.name = "Treatment"
+        stats_table.reset_index(inplace=True)
+        log_dataframe(stats_table, "stats_table")
+
+    def _add_noise(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        This function is intended to test the robustness of the causal effect estimation.
+        This adds noise to the propensity scores.
+        """
+        df_copy = df.copy(deep=True)
+        noise = self.cfg.get("ps_noise", 0)
+
+        if noise > 0:
+            self.logger.info(f"Adding {noise} noise to propensity scores")
+            df_copy[PS_COL] *= 1 + np.random.uniform(-noise, noise, len(df_copy))
+            df_copy[PS_COL] = df_copy[PS_COL].clip(lower=1e-6, upper=1 - 1e-6)
+
+        return df_copy
+
     def _cleanup(self):
         finish_wandb()
         if self.cfg.env == "azure":
@@ -220,6 +250,7 @@ class EffectEstimator:
                     self.cfg.paths.run_name,
                 ),
             )
+        self.mount_context.stop()
 
 
 def main(config_path: str):
