@@ -20,7 +20,7 @@ from ehr2vec.common.setup import (
 from ehr2vec.common.utils import Data
 from ehr2vec.data.dataset import BinaryOutcomeDataset
 from ehr2vec.data_fixes.truncate import Truncator
-from ehr2vec.double_robust.counterfactual import create_counterfactual_data
+from ehr2vec.double_robust.counterfactual import CounterfactualGenerator
 from ehr2vec.double_robust.save import save_combined_predictions_evaluation
 from ehr2vec.evaluation.calibration import calibrate_and_save_counterfactual_predictions
 from ehr2vec.evaluation.encodings import EHRTester
@@ -132,11 +132,11 @@ def main(config_path: str):
     logger.info(f"Load processed data from {cfg.paths.model_path}")
     data = Data.load_from_directory(cfg.paths.model_path, mode="")
 
-    counterfactual_data = create_counterfactual_data(
+    counterfactual_data = CounterfactualGenerator(
         data,
         cfg.data.counterfactual.exposure_regex,
         cfg.data.counterfactual.control_regex,
-    )
+    ).generate()
     counterfactual_data.features = Truncator(cfg.data.truncation_len, data.vocabulary)(
         counterfactual_data.features
     )
