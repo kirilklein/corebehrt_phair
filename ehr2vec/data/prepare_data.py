@@ -22,7 +22,7 @@ from ehr2vec.data.utils import Utilities
 from ehr2vec.data_fixes.censor import Censorer
 from ehr2vec.data_fixes.handle import Handler
 from ehr2vec.data_fixes.truncate import Truncator
-from ehr2vec.double_robust.counterfactual import insert_control_codes
+from ehr2vec.double_robust.control_code_handler import insert_control_codes
 from ehr2vec.downstream_tasks.outcomes import OutcomeHandler
 
 logger = logging.getLogger(__name__)  # Get the logger for this module

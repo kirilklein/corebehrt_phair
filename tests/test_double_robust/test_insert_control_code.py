@@ -1,6 +1,6 @@
 import unittest
 from ehr2vec.common.utils import Data
-from ehr2vec.double_robust.counterfactual import (
+from ehr2vec.double_robust.control_code_handler import (
     insert_control_codes,
     insert_control_code_for_patient,
 )
