@@ -21,9 +21,29 @@ def construct_data_for_effect_estimation(
     counterfactual_predictions: pd.DataFrame = None,
 ) -> pd.DataFrame:
     """
-    Constructs the data for effect estimation from the propensity scores and outcomes dataframes.
-    Returns a DataFrame with PID as index and the columns:
-    proba (propensity scores), treatment status, and binary outcome.
+    Constructs the data for causal effect estimation by merging propensity scores and outcomes.
+
+    Args:
+        propensity_scores: DataFrame with patient IDs as index and columns for propensity scores
+            and treatment status
+        outcomes: DataFrame with patient IDs as index containing outcome timestamps. If a patient
+            is not present in this DataFrame, their outcome is set to 0
+        outcome_predictions: Optional DataFrame with patient IDs as index containing predicted
+            outcomes under observed treatment
+        counterfactual_predictions: Optional DataFrame with patient IDs as index containing predicted
+            outcomes under counterfactual treatment
+
+    Returns:
+        DataFrame with patient IDs as index and columns for:
+            - Propensity scores ('proba')
+            - Treatment status ('treatment')
+            - Binary outcome ('outcome')
+            - Predicted outcomes if outcome_predictions provided
+            - Counterfactual predictions if counterfactual_predictions provided
+
+    Note:
+        The returned DataFrame will only contain patients present in the propensity_scores DataFrame.
+        Missing outcomes are filled with 0 and cast to integer type.
     """
     # Perform an outer merge but only keep PIDs in propensities
     df = pd.merge(
@@ -93,7 +113,22 @@ def add_outcome_predictions(
 def merge_with_predictions(
     df: pd.DataFrame, predictions: pd.DataFrame, predictions_col: str, new_col_name: str
 ) -> pd.DataFrame:
-    """Merge df with predictions DataFrame on index."""
+    """Merge a DataFrame with predictions on their indices.
+
+    Args:
+        df: Input DataFrame to merge predictions into
+        predictions: DataFrame containing the predictions to merge
+        predictions_col: Name of column in predictions DataFrame containing the prediction values
+        new_col_name: New name to give the predictions column in the merged DataFrame
+
+    Returns:
+        pd.DataFrame: DataFrame with predictions merged in under new_col_name
+
+    Note:
+        - Performs an inner merge on index, only keeping rows present in both DataFrames
+        - Renames the predictions column to new_col_name before merging
+        - Only merges the predictions column, discarding any other columns in predictions DataFrame
+    """
     predictions = predictions.rename(columns={predictions_col: new_col_name})
     return df.merge(
         predictions[[new_col_name]], left_index=True, right_index=True, how="inner"
@@ -101,7 +136,21 @@ def merge_with_predictions(
 
 
 def assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
-    """Assign Y1_hat and Y0_hat based on treatment status."""
+    """Assign counterfactual outcome predictions based on treatment status.
+
+    For each patient, assigns their predicted outcomes under treatment (Y1_hat) and
+    control (Y0_hat) conditions. For treated patients, Y1_hat is their actual predicted
+    outcome and Y0_hat is their counterfactual prediction. For untreated patients,
+    Y0_hat is their actual predicted outcome and Y1_hat is their counterfactual prediction.
+
+    Args:
+        df: DataFrame containing treatment status (TREATMENT_COL), predicted outcomes
+            (OUTCOME_PREDICTIONS_COL), and counterfactual predictions (Y_hat_counterfactual)
+
+    Returns:
+        DataFrame with additional columns for predicted outcomes under treatment
+        (COUNTERFACTUAL_TREATED_COL) and control (COUNTERFACTUAL_CONTROL_COL)
+    """
     treated_mask = df[TREATMENT_COL] == 1
     untreated_mask = ~treated_mask
 
@@ -117,10 +166,24 @@ def assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
 def construct_data_to_estimate_effect_from_counterfactuals(
     propensity_scores: pd.DataFrame, counterfactual_outcomes: pd.DataFrame
 ) -> pd.DataFrame:
-    """
-    Constructs the data for effect estimation from the propensity scores and counterfactual outcomes dataframes.
-    Returns a DataFrame with additional columns for Y1 and Y0.
-    Only keeps PIDs that are present in propensity_scores.
+    """Constructs data for causal effect estimation by merging propensity scores with counterfactual outcomes.
+
+    Takes propensity scores and counterfactual outcomes and merges them into a single DataFrame
+    for causal effect estimation. The counterfactual outcomes contain the potential outcomes
+    under treatment (Y1) and control (Y0) for each patient.
+
+    Args:
+        propensity_scores: DataFrame containing propensity scores indexed by patient ID
+        counterfactual_outcomes: DataFrame containing Y1 and Y0 columns with patient ID in 'PID' column
+
+    Returns:
+        pd.DataFrame: Merged DataFrame containing propensity scores and counterfactual outcomes Y1 and Y0,
+            only including patients present in both input DataFrames
+
+    Note:
+        - Sets PID as index on counterfactual_outcomes before merging
+        - Performs inner join to only keep patients present in both DataFrames
+        - Validates 1:1 relationship between DataFrames during merge
     """
     counterfactual_outcomes = counterfactual_outcomes.set_index("PID")
     df = pd.merge(
