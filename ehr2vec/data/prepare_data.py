@@ -114,9 +114,7 @@ class DatasetPreparer:
             control_pids = set(data.pids) - set(data.exposed_patients)
             if self.cfg.outcome.get("control_code", None) is not None:
                 logger.info(f"Inserting control codes for {len(control_pids)} patients")
-                data = insert_control_codes(
-                    data, control_pids, self.cfg.outcome.control_code
-                )
+                insert_control_codes(data, control_pids, self.cfg.outcome.control_code)
             exposed_pids = set(data.exposed_patients)
             data.exposures = [1 if pid in exposed_pids else 0 for pid in data.pids]
             data.check_lengths()
