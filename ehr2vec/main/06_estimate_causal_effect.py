@@ -250,7 +250,8 @@ class EffectEstimator:
                     self.cfg.paths.run_name,
                 ),
             )
-        self.mount_context.stop()
+        if self.mount_context is not None and hasattr(self.mount_context, "stop"):
+            self.mount_context.stop()
 
 
 def main(config_path: str):
