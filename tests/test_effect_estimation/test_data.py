@@ -13,7 +13,7 @@ from ehr2vec.common.default_args import (
 from ehr2vec.effect_estimation.data import (
     add_outcome_predictions,
     assign_counterfactuals,
-    construct_data_for_effect_estimation,
+    construct_from_observed_data,
     merge_with_predictions,
 )
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class TestConstructDataForEffectEstimation(unittest.TestCase):
-    def test_construct_data_for_effect_estimation(self):
+    def test_construct_from_observed_data(self):
         # Set up input dataframes
         propensities = pd.DataFrame(
             {"proba": [0.2, 0.8, 0.5], "treatment": [0, 1, 0]}, index=[1, 2, 3]
@@ -32,7 +32,7 @@ class TestConstructDataForEffectEstimation(unittest.TestCase):
         outcomes.index.name = "PID"
 
         # Run function
-        result = construct_data_for_effect_estimation(propensities, outcomes)
+        result = construct_from_observed_data(propensities, outcomes)
 
         # Set up expected result
         expected_result = pd.DataFrame(

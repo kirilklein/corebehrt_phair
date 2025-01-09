@@ -11,10 +11,13 @@ from ehr2vec.common.default_args import (
 )
 from ehr2vec.data.utils import remove_duplicate_indices
 
+OUTCOME_COL = "outcome"
+CF_TEMP_COL = "Y_hat_counterfactual"
+
 logger = logging.getLogger(__name__)
 
 
-def construct_data_for_effect_estimation(
+def construct_from_observed_data(
     propensity_scores: pd.DataFrame,
     outcomes: pd.DataFrame,
     outcome_predictions: pd.DataFrame = None,
@@ -49,13 +52,47 @@ def construct_data_for_effect_estimation(
     df = pd.merge(
         propensity_scores, outcomes, left_index=True, right_index=True, how="left"
     )
-    df.loc[:, "outcome"] = df["outcome"].fillna(0)
-    df["outcome"] = df["outcome"].astype(int)
+    df.loc[:, OUTCOME_COL] = df[OUTCOME_COL].fillna(0)
+    df[OUTCOME_COL] = df[OUTCOME_COL].astype(int)
     if counterfactual_predictions is not None and outcome_predictions is not None:
         df = add_outcome_predictions(
             df, outcome_predictions, counterfactual_predictions
         )
 
+    return df
+
+
+def construct_from_counterfactuals(
+    propensity_scores: pd.DataFrame, counterfactual_outcomes: pd.DataFrame
+) -> pd.DataFrame:
+    """Constructs data for causal effect estimation by merging propensity scores with counterfactual outcomes.
+
+    Takes propensity scores and counterfactual outcomes and merges them into a single DataFrame
+    for causal effect estimation. The counterfactual outcomes contain the potential outcomes
+    under treatment (Y1) and control (Y0) for each patient.
+
+    Args:
+        propensity_scores: DataFrame containing propensity scores indexed by patient ID
+        counterfactual_outcomes: DataFrame containing Y1 and Y0 columns with patient ID in 'PID' column
+
+    Returns:
+        pd.DataFrame: Merged DataFrame containing propensity scores and counterfactual outcomes Y1 and Y0,
+            only including patients present in both input DataFrames
+
+    Note:
+        - Sets PID as index on counterfactual_outcomes before merging
+        - Performs inner join to only keep patients present in both DataFrames
+        - Validates 1:1 relationship between DataFrames during merge
+    """
+    counterfactual_outcomes = counterfactual_outcomes.set_index("PID")
+    df = pd.merge(
+        propensity_scores,
+        counterfactual_outcomes,
+        left_index=True,
+        right_index=True,
+        how="inner",
+        validate="one_to_one",
+    )
     return df
 
 
@@ -99,11 +136,11 @@ def add_outcome_predictions(
         )
 
     df = merge_with_predictions(
-        df, counterfactual_predictions, OUTCOME_PREDICTIONS_COL, "Y_hat_counterfactual"
+        df, counterfactual_predictions, OUTCOME_PREDICTIONS_COL, CF_TEMP_COL
     )
 
     df = assign_counterfactuals(df)
-    df.drop(columns=["Y_hat_counterfactual"], inplace=True)
+    df.drop(columns=[CF_TEMP_COL], inplace=True)
 
     logger.info(f"Final DataFrame shape: {df.shape}, Unique PIDs: {df.index.nunique()}")
 
@@ -155,43 +192,9 @@ def assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
     untreated_mask = ~treated_mask
 
     df[COUNTERFACTUAL_TREATED_COL] = np.where(
-        treated_mask, df[OUTCOME_PREDICTIONS_COL], df["Y_hat_counterfactual"]
+        treated_mask, df[OUTCOME_PREDICTIONS_COL], df[CF_TEMP_COL]
     )
     df[COUNTERFACTUAL_CONTROL_COL] = np.where(
-        untreated_mask, df[OUTCOME_PREDICTIONS_COL], df["Y_hat_counterfactual"]
-    )
-    return df
-
-
-def construct_data_to_estimate_effect_from_counterfactuals(
-    propensity_scores: pd.DataFrame, counterfactual_outcomes: pd.DataFrame
-) -> pd.DataFrame:
-    """Constructs data for causal effect estimation by merging propensity scores with counterfactual outcomes.
-
-    Takes propensity scores and counterfactual outcomes and merges them into a single DataFrame
-    for causal effect estimation. The counterfactual outcomes contain the potential outcomes
-    under treatment (Y1) and control (Y0) for each patient.
-
-    Args:
-        propensity_scores: DataFrame containing propensity scores indexed by patient ID
-        counterfactual_outcomes: DataFrame containing Y1 and Y0 columns with patient ID in 'PID' column
-
-    Returns:
-        pd.DataFrame: Merged DataFrame containing propensity scores and counterfactual outcomes Y1 and Y0,
-            only including patients present in both input DataFrames
-
-    Note:
-        - Sets PID as index on counterfactual_outcomes before merging
-        - Performs inner join to only keep patients present in both DataFrames
-        - Validates 1:1 relationship between DataFrames during merge
-    """
-    counterfactual_outcomes = counterfactual_outcomes.set_index("PID")
-    df = pd.merge(
-        propensity_scores,
-        counterfactual_outcomes,
-        left_index=True,
-        right_index=True,
-        how="inner",
-        validate="one_to_one",
+        untreated_mask, df[OUTCOME_PREDICTIONS_COL], df[CF_TEMP_COL]
     )
     return df

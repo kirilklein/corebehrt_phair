@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 from ehr2vec.effect_estimation.data import (
-    construct_data_to_estimate_effect_from_counterfactuals,
+    construct_from_counterfactuals,
 )
 
 
@@ -23,9 +23,9 @@ class TestConstructDataToEstimateEffectFromCounterfactuals(unittest.TestCase):
         )
         self.expected_result.index.name = "PID"
 
-    def test_construct_data_to_estimate_effect_from_counterfactuals(self):
+    def test_construct_from_counterfactuals(self):
         # Run function
-        result = construct_data_to_estimate_effect_from_counterfactuals(
+        result = construct_from_counterfactuals(
             self.propensity_scores, self.counterfactual_outcomes
         )
 

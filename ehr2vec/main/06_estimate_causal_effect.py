@@ -24,8 +24,8 @@ from ehr2vec.common.setup import (
 from ehr2vec.common.wandb import finish_wandb, initialize_wandb, log_dataframe
 from ehr2vec.effect_estimation.counterfactual import compute_effect_from_counterfactuals
 from ehr2vec.effect_estimation.data import (
-    construct_data_for_effect_estimation,
-    construct_data_to_estimate_effect_from_counterfactuals,
+    construct_from_observed_data,
+    construct_from_counterfactuals,
 )
 from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
 from ehr2vec.common.default_args import (
@@ -122,7 +122,7 @@ class EffectEstimator:
 
         outcomes = load_outcomes(path_cfg.outcome)
 
-        df = construct_data_for_effect_estimation(
+        df = construct_from_observed_data(
             propensity_scores, outcomes, outcome_predictions, counterfactual_predictions
         )
 
@@ -202,9 +202,7 @@ class EffectEstimator:
         counterfactuals = load_counterfactual_outcomes(
             self.cfg.paths.counterfactual_outcome
         )
-        df_counterfactual = construct_data_to_estimate_effect_from_counterfactuals(
-            df, counterfactuals
-        )
+        df_counterfactual = construct_from_counterfactuals(df, counterfactuals)
 
         if common_support:
             df_counterfactual = filter_common_support(
