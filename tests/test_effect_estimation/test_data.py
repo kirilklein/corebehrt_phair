@@ -14,10 +14,10 @@ from ehr2vec.common.default_args import (
     PROBA_COL,
 )
 from ehr2vec.effect_estimation.data import (
-    add_outcome_predictions,
-    assign_counterfactuals,
+    _add_outcome_predictions,
+    _assign_counterfactuals,
     construct_from_observed_data,
-    merge_with_predictions,
+    _merge_with_predictions,
 )
 
 TEMP_CF_COL = "Y_hat_counterfactual"
@@ -79,9 +79,9 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
             index=[101, 102, 103, 104],
         )
 
-    def test_merge_with_predictions(self):
+    def test__merge_with_predictions(self):
         # Test merging works correctly
-        merged_df = merge_with_predictions(
+        merged_df = _merge_with_predictions(
             self.df.copy(),
             self.outcome_predictions.copy(),
             OUTCOME_PROBABILITY_COL,
@@ -91,14 +91,14 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
         self.assertEqual(len(merged_df), 4)
         pd.testing.assert_index_equal(merged_df.index, self.df.index)
 
-    def test_assign_counterfactuals(self):
+    def test__assign_counterfactuals(self):
         # Prepare DataFrame with necessary columns
         df = self.df.copy()
         df[OUTCOME_PROBABILITY_COL] = [0.9, 0.1, 0.8, 0.2]
         df[TEMP_CF_COL] = [0.3, 0.7, 0.4, 0.6]
 
         # Assign counterfactuals
-        df = assign_counterfactuals(df)
+        df = _assign_counterfactuals(df)
 
         # Expected values
         expected_Y1_hat = [0.9, 0.7, 0.8, 0.6]
@@ -107,9 +107,9 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
         np.testing.assert_array_almost_equal(df[CF_TREATED_COL], expected_Y1_hat)
         np.testing.assert_array_almost_equal(df[CF_CONTROL_COL], expected_Y0_hat)
 
-    def test_add_outcome_predictions(self):
+    def test__add_outcome_predictions(self):
         # Test the main function
-        df = add_outcome_predictions(
+        df = _add_outcome_predictions(
             self.df.copy(),
             self.outcome_predictions.copy(),
             self.counterfactual_predictions.copy(),
@@ -133,7 +133,7 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
         outcome_predictions_mismatch = self.outcome_predictions.copy()
         outcome_predictions_mismatch.index = [201, 202, 203, 204]
 
-        df_result = add_outcome_predictions(
+        df_result = _add_outcome_predictions(
             self.df.copy(),
             outcome_predictions_mismatch,
             self.counterfactual_predictions.copy(),
@@ -151,7 +151,7 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
             columns=self.counterfactual_predictions.columns
         )
 
-        df_result = add_outcome_predictions(
+        df_result = _add_outcome_predictions(
             empty_df, empty_outcome_predictions, empty_counterfactual_predictions
         )
 
@@ -172,7 +172,7 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
         outcome_predictions_partial = self.outcome_predictions.copy()
         outcome_predictions_partial.index = [101, 102, 201, 202]
 
-        df_result = add_outcome_predictions(
+        df_result = _add_outcome_predictions(
             self.df.copy(),
             outcome_predictions_partial,
             self.counterfactual_predictions.copy(),
@@ -187,7 +187,7 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
         df_missing_treatment = self.df.drop(columns=[TREATMENT_COL])
 
         with self.assertRaises(KeyError):
-            assign_counterfactuals(df_missing_treatment)
+            _assign_counterfactuals(df_missing_treatment)
 
     def test_incorrect_prediction_columns(self):
         # Missing OUTCOME_PREDICTIONS_COL in df
@@ -195,16 +195,16 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
         df_missing_prediction[TEMP_CF_COL] = [0.3, 0.7, 0.4, 0.6]
 
         with self.assertRaises(KeyError):
-            assign_counterfactuals(df_missing_prediction)
+            _assign_counterfactuals(df_missing_prediction)
 
-    def test_assign_counterfactuals_with_nonbinary_treatment(self):
+    def test__assign_counterfactuals_with_nonbinary_treatment(self):
         # Non-binary treatment values
         df_nonbinary_treatment = self.df.copy()
         df_nonbinary_treatment[TREATMENT_COL] = [2, -1, 1, 0]
         df_nonbinary_treatment[OUTCOME_PROBABILITY_COL] = [0.9, 0.1, 0.8, 0.2]
         df_nonbinary_treatment[TEMP_CF_COL] = [0.3, 0.7, 0.4, 0.6]
 
-        df_result = assign_counterfactuals(df_nonbinary_treatment)
+        df_result = _assign_counterfactuals(df_nonbinary_treatment)
 
         # Treated if TREATMENT_COL == 1
         expected_Y1_hat = [0.3, 0.7, 0.8, 0.6]

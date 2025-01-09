@@ -55,7 +55,7 @@ def construct_from_observed_data(
     df.loc[:, OUTCOME_COL] = df[OUTCOME_COL].fillna(0)
     df[OUTCOME_COL] = df[OUTCOME_COL].astype(int)
     if counterfactual_predictions is not None and outcome_predictions is not None:
-        df = add_outcome_predictions(
+        df = _add_outcome_predictions(
             df, outcome_predictions, counterfactual_predictions
         )
 
@@ -96,7 +96,7 @@ def construct_from_counterfactuals(
     return df
 
 
-def add_outcome_predictions(
+def _add_outcome_predictions(
     df: pd.DataFrame,
     outcome_predictions: pd.DataFrame,
     counterfactual_predictions: pd.DataFrame,
@@ -126,7 +126,7 @@ def add_outcome_predictions(
 
     initial_pids = df.index.unique()
 
-    df = merge_with_predictions(
+    df = _merge_with_predictions(
         df, outcome_predictions, OUTCOME_PROBABILITY_COL, OUTCOME_PROBABILITY_COL
     )
 
@@ -135,11 +135,11 @@ def add_outcome_predictions(
             f"Number of unique PIDs reduced from {len(initial_pids)} to {len(df.index.unique())}"
         )
 
-    df = merge_with_predictions(
+    df = _merge_with_predictions(
         df, counterfactual_predictions, OUTCOME_PROBABILITY_COL, TEMP_CF_COL
     )
 
-    df = assign_counterfactuals(df)
+    df = _assign_counterfactuals(df)
     df.drop(columns=[TEMP_CF_COL], inplace=True)
 
     logger.info(f"Final DataFrame shape: {df.shape}, Unique PIDs: {df.index.nunique()}")
@@ -147,7 +147,7 @@ def add_outcome_predictions(
     return df
 
 
-def merge_with_predictions(
+def _merge_with_predictions(
     df: pd.DataFrame, predictions: pd.DataFrame, predictions_col: str, new_col_name: str
 ) -> pd.DataFrame:
     """Merge a DataFrame with predictions on their indices.
@@ -172,7 +172,7 @@ def merge_with_predictions(
     )
 
 
-def assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
+def _assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
     """Assign counterfactual outcome predictions based on treatment status.
 
     For each patient, assigns their predicted outcomes under treatment (Y1_hat) and
