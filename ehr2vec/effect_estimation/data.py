@@ -4,15 +4,15 @@ import numpy as np
 import pandas as pd
 
 from ehr2vec.common.default_args import (
-    COUNTERFACTUAL_CONTROL_COL,
-    COUNTERFACTUAL_TREATED_COL,
-    OUTCOME_PREDICTIONS_COL,
+    CF_CONTROL_COL,
+    CF_TREATED_COL,
+    OUTCOME_PROBABILITY_COL,
     TREATMENT_COL,
+    OUTCOME_COL,
 )
 from ehr2vec.data.utils import remove_duplicate_indices
 
-OUTCOME_COL = "outcome"
-CF_TEMP_COL = "Y_hat_counterfactual"
+TEMP_CF_COL = "Y_hat_counterfactual"
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ def add_outcome_predictions(
     initial_pids = df.index.unique()
 
     df = merge_with_predictions(
-        df, outcome_predictions, OUTCOME_PREDICTIONS_COL, OUTCOME_PREDICTIONS_COL
+        df, outcome_predictions, OUTCOME_PROBABILITY_COL, OUTCOME_PROBABILITY_COL
     )
 
     if len(df.index.unique()) != len(initial_pids):
@@ -136,11 +136,11 @@ def add_outcome_predictions(
         )
 
     df = merge_with_predictions(
-        df, counterfactual_predictions, OUTCOME_PREDICTIONS_COL, CF_TEMP_COL
+        df, counterfactual_predictions, OUTCOME_PROBABILITY_COL, TEMP_CF_COL
     )
 
     df = assign_counterfactuals(df)
-    df.drop(columns=[CF_TEMP_COL], inplace=True)
+    df.drop(columns=[TEMP_CF_COL], inplace=True)
 
     logger.info(f"Final DataFrame shape: {df.shape}, Unique PIDs: {df.index.nunique()}")
 
@@ -182,19 +182,19 @@ def assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
 
     Args:
         df: DataFrame containing treatment status (TREATMENT_COL), predicted outcomes
-            (OUTCOME_PREDICTIONS_COL), and counterfactual predictions (Y_hat_counterfactual)
+            (OUTCOME_PROBABILITY_COL), and counterfactual predictions (TEMP_CF_COL)
 
     Returns:
         DataFrame with additional columns for predicted outcomes under treatment
-        (COUNTERFACTUAL_TREATED_COL) and control (COUNTERFACTUAL_CONTROL_COL)
+        (CF_TREATED_COL) and control (CF_CONTROL_COL)
     """
     treated_mask = df[TREATMENT_COL] == 1
     untreated_mask = ~treated_mask
 
-    df[COUNTERFACTUAL_TREATED_COL] = np.where(
-        treated_mask, df[OUTCOME_PREDICTIONS_COL], df[CF_TEMP_COL]
+    df[CF_TREATED_COL] = np.where(
+        treated_mask, df[OUTCOME_PROBABILITY_COL], df[TEMP_CF_COL]
     )
-    df[COUNTERFACTUAL_CONTROL_COL] = np.where(
-        untreated_mask, df[OUTCOME_PREDICTIONS_COL], df[CF_TEMP_COL]
+    df[CF_CONTROL_COL] = np.where(
+        untreated_mask, df[OUTCOME_PROBABILITY_COL], df[TEMP_CF_COL]
     )
     return df

@@ -31,12 +31,17 @@ from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
 from ehr2vec.common.default_args import (
     DEFAULT_BLOBSTORE,
     OUTCOME_COL,
-    COUNTERFACTUAL_CONTROL_COL,
-    COUNTERFACTUAL_TREATED_COL,
+    CF_CONTROL_COL,
+    CF_TREATED_COL,
     PS_COL,
     TREATMENT_COL,
-    OUTCOME_PREDICTIONS_COL,
+    OUTCOME_PROBABILITY_COL,
+    PID_COL,
+    PROBA_COL,
+    TARGET_COL,
 )
+
+ORG_PID_COL = "pid"
 
 
 @dataclass
@@ -102,22 +107,32 @@ class EffectEstimator:
         if path_cfg.get("outcome_predictions", None):
             outcome_predictions = (
                 pd.read_csv(path_cfg.outcome_predictions)
-                .rename(columns={"pid": "PID", "proba": OUTCOME_PREDICTIONS_COL})
-                .set_index("PID")
+                .rename(
+                    columns={ORG_PID_COL: PID_COL, PROBA_COL: OUTCOME_PROBABILITY_COL}
+                )
+                .set_index(PID_COL)
             )
 
         counterfactual_predictions = None
         if path_cfg.get("outcome_predictions_counterfactual", None):
             counterfactual_predictions = (
                 pd.read_csv(path_cfg.outcome_predictions_counterfactual)
-                .rename(columns={"pid": "PID", "proba": OUTCOME_PREDICTIONS_COL})
-                .set_index("PID")
+                .rename(
+                    columns={ORG_PID_COL: PID_COL, PROBA_COL: OUTCOME_PROBABILITY_COL}
+                )
+                .set_index(PID_COL)
             )
 
         propensity_scores = (
             pd.read_csv(path_cfg.propensity_scores)
-            .rename(columns={"pid": "PID", "target": TREATMENT_COL, "proba": PS_COL})
-            .set_index("PID")
+            .rename(
+                columns={
+                    ORG_PID_COL: PID_COL,
+                    TARGET_COL: TREATMENT_COL,
+                    PROBA_COL: PS_COL,
+                }
+            )
+            .set_index(PID_COL)
         )
 
         outcomes = load_outcomes(path_cfg.outcome)
@@ -142,9 +157,9 @@ class EffectEstimator:
 
         method_args = {
             method: {
-                "predicted_outcome_treated_col": COUNTERFACTUAL_TREATED_COL,
-                "predicted_outcome_control_col": COUNTERFACTUAL_CONTROL_COL,
-                "predicted_outcome_col": OUTCOME_PREDICTIONS_COL,
+                "predicted_outcome_treated_col": CF_TREATED_COL,
+                "predicted_outcome_control_col": CF_CONTROL_COL,
+                "predicted_outcome_col": OUTCOME_PROBABILITY_COL,
             }
             for method in ["AIPW", "TMLE"]
         }
