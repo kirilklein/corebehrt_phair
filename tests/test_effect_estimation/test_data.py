@@ -17,7 +17,7 @@ from ehr2vec.effect_estimation.data import (
     _add_outcome_predictions,
     _assign_counterfactuals,
     construct_from_observed_data,
-    _merge_with_predictions,
+    _merge_prediction_column,
 )
 
 TEMP_CF_COL = "Y_hat_counterfactual"
@@ -79,9 +79,9 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
             index=[101, 102, 103, 104],
         )
 
-    def test__merge_with_predictions(self):
+    def test__merge_prediction_column(self):
         # Test merging works correctly
-        merged_df = _merge_with_predictions(
+        merged_df = _merge_prediction_column(
             self.df.copy(),
             self.outcome_predictions.copy(),
             OUTCOME_PROBABILITY_COL,

@@ -48,17 +48,38 @@ def construct_from_observed_data(
         The returned DataFrame will only contain patients present in the propensity_scores DataFrame.
         Missing outcomes are filled with 0 and cast to integer type.
     """
-    # Perform an outer merge but only keep PIDs in propensities
+    df = _merge_and_format_outcomes(propensity_scores, outcomes)
+
+    if outcome_predictions is not None and counterfactual_predictions is not None:
+        df = _add_outcome_predictions(
+            df=df,
+            outcome_predictions=outcome_predictions,
+            counterfactual_predictions=counterfactual_predictions,
+        )
+
+    return df
+
+
+def _merge_and_format_outcomes(
+    propensity_scores: pd.DataFrame, outcomes: pd.DataFrame
+) -> pd.DataFrame:
+    """Merges propensity scores with outcomes and formats outcome values.
+
+    Performs a left merge of propensity scores with outcomes, keeping all patients from
+    propensity scores. Missing outcomes are filled with 0 and cast to integer type.
+
+    Args:
+        propensity_scores: DataFrame with propensity scores and treatment status, indexed by patient ID
+        outcomes: DataFrame with binary outcomes, indexed by patient ID
+
+    Returns:
+        DataFrame containing propensity scores and formatted binary outcomes (0/1)
+    """
     df = pd.merge(
         propensity_scores, outcomes, left_index=True, right_index=True, how="left"
     )
     df.loc[:, OUTCOME_COL] = df[OUTCOME_COL].fillna(0)
     df[OUTCOME_COL] = df[OUTCOME_COL].astype(int)
-    if counterfactual_predictions is not None and outcome_predictions is not None:
-        df = _add_outcome_predictions(
-            df, outcome_predictions, counterfactual_predictions
-        )
-
     return df
 
 
@@ -126,7 +147,7 @@ def _add_outcome_predictions(
 
     initial_pids = df.index.unique()
 
-    df = _merge_with_predictions(
+    df = _merge_prediction_column(
         df, outcome_predictions, OUTCOME_PROBABILITY_COL, OUTCOME_PROBABILITY_COL
     )
 
@@ -135,9 +156,13 @@ def _add_outcome_predictions(
             f"Number of unique PIDs reduced from {len(initial_pids)} to {len(df.index.unique())}"
         )
 
-    df = _merge_with_predictions(
+    df = _merge_prediction_column(
         df, counterfactual_predictions, OUTCOME_PROBABILITY_COL, TEMP_CF_COL
     )
+    if len(df.index.unique()) != len(initial_pids):
+        logger.warning(
+            f"Number of unique PIDs reduced from {len(initial_pids)} to {len(df.index.unique())}"
+        )
 
     df = _assign_counterfactuals(df)
     df.drop(columns=[TEMP_CF_COL], inplace=True)
@@ -147,24 +172,37 @@ def _add_outcome_predictions(
     return df
 
 
-def _merge_with_predictions(
+def _merge_prediction_column(
     df: pd.DataFrame, predictions: pd.DataFrame, predictions_col: str, new_col_name: str
 ) -> pd.DataFrame:
-    """Merge a DataFrame with predictions on their indices.
+    """Merge a predictions DataFrame into the main DataFrame by matching their indices.
+
+    This function takes a predictions DataFrame and merges a single column of predictions
+    into the main DataFrame. It performs an inner merge, meaning only rows with matching
+    indices in both DataFrames are kept. The predictions column is renamed before merging
+    and all other columns in the predictions DataFrame are discarded.
 
     Args:
-        df: Input DataFrame to merge predictions into
-        predictions: DataFrame containing the predictions to merge
-        predictions_col: Name of column in predictions DataFrame containing the prediction values
-        new_col_name: New name to give the predictions column in the merged DataFrame
+        df: Main DataFrame that predictions will be merged into. Must have an index that
+            matches with the predictions DataFrame.
+        predictions: DataFrame containing the prediction values to merge. Must have an index
+            that matches with the main DataFrame.
+        predictions_col: Name of the column in predictions DataFrame that contains the actual
+            prediction values to merge.
+        new_col_name: The name to give the predictions column in the merged DataFrame. The
+            predictions will appear under this name in the output.
 
     Returns:
-        pd.DataFrame: DataFrame with predictions merged in under new_col_name
+        pd.DataFrame: A new DataFrame containing all columns from the input df plus the
+            predictions column under new_col_name. Only contains rows where indices matched
+            between df and predictions.
 
     Note:
-        - Performs an inner merge on index, only keeping rows present in both DataFrames
-        - Renames the predictions column to new_col_name before merging
-        - Only merges the predictions column, discarding any other columns in predictions DataFrame
+        - Uses an inner merge strategy, so rows will be dropped if their indices don't exist
+          in both DataFrames
+        - Only the specified predictions column is merged, all other columns in the predictions
+          DataFrame are ignored
+        - The original DataFrames are not modified - a new merged DataFrame is returned
     """
     predictions = predictions.rename(columns={predictions_col: new_col_name})
     return df.merge(
@@ -188,13 +226,12 @@ def _assign_counterfactuals(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with additional columns for predicted outcomes under treatment
         (CF_TREATED_COL) and control (CF_CONTROL_COL)
     """
-    treated_mask = df[TREATMENT_COL] == 1
-    untreated_mask = ~treated_mask
+    is_treated = df[TREATMENT_COL] == 1
+    is_untreated = ~is_treated
 
-    df[CF_TREATED_COL] = np.where(
-        treated_mask, df[OUTCOME_PROBABILITY_COL], df[TEMP_CF_COL]
-    )
-    df[CF_CONTROL_COL] = np.where(
-        untreated_mask, df[OUTCOME_PROBABILITY_COL], df[TEMP_CF_COL]
-    )
+    actual_outcomes = df[OUTCOME_PROBABILITY_COL]
+    cf_outcomes = df[TEMP_CF_COL]
+
+    df[CF_TREATED_COL] = np.where(is_treated, actual_outcomes, cf_outcomes)
+    df[CF_CONTROL_COL] = np.where(is_untreated, actual_outcomes, cf_outcomes)
     return df

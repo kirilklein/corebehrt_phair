@@ -105,26 +105,31 @@ class EffectEstimator:
 
         outcome_predictions = None
         if path_cfg.get("outcome_predictions", None):
-            outcome_predictions = (
-                pd.read_csv(path_cfg.outcome_predictions)
-                .rename(
-                    columns={ORG_PID_COL: PID_COL, PROBA_COL: OUTCOME_PROBABILITY_COL}
-                )
-                .set_index(PID_COL)
-            )
+            outcome_predictions = self._load_predictions(path_cfg.outcome_predictions)
 
         counterfactual_predictions = None
         if path_cfg.get("outcome_predictions_counterfactual", None):
-            counterfactual_predictions = (
-                pd.read_csv(path_cfg.outcome_predictions_counterfactual)
-                .rename(
-                    columns={ORG_PID_COL: PID_COL, PROBA_COL: OUTCOME_PROBABILITY_COL}
-                )
-                .set_index(PID_COL)
+            counterfactual_predictions = self._load_predictions(
+                path_cfg.outcome_predictions_counterfactual
             )
 
-        propensity_scores = (
-            pd.read_csv(path_cfg.propensity_scores)
+        propensity_scores = self._load_propensity_scores(path_cfg.propensity_scores)
+        outcomes = load_outcomes(path_cfg.outcome)
+
+        df = construct_from_observed_data(
+            propensity_scores=propensity_scores,
+            outcomes=outcomes,
+            outcome_predictions=outcome_predictions,
+            counterfactual_predictions=counterfactual_predictions,
+        )
+
+        df = self._sample_patients(df)
+
+        return df
+
+    def _load_propensity_scores(self, path: str) -> pd.DataFrame:
+        return (
+            pd.read_csv(path)
             .rename(
                 columns={
                     ORG_PID_COL: PID_COL,
@@ -135,18 +140,27 @@ class EffectEstimator:
             .set_index(PID_COL)
         )
 
-        outcomes = load_outcomes(path_cfg.outcome)
+    def _load_predictions(self, path: str) -> pd.DataFrame:
+        """Load and format outcome predictions from a CSV file.
 
-        df = construct_from_observed_data(
-            propensity_scores, outcomes, outcome_predictions, counterfactual_predictions
+        Args:
+            path: Path to CSV file containing predictions. Expected columns:
+                - Original patient ID column (will be renamed to PID)
+                - Original probability column (will be renamed to Y_hat)
+
+        Returns:
+            DataFrame with:
+                - Index: Patient IDs (PID)
+                - Y_hat: Predicted outcome probabilities
+
+        Note:
+            Renames columns to standardized names and sets patient ID as index
+        """
+        return (
+            pd.read_csv(path)
+            .rename(columns={ORG_PID_COL: PID_COL, PROBA_COL: OUTCOME_PROBABILITY_COL})
+            .set_index(PID_COL)
         )
-
-        num_patients = self.cfg.get("num_patients")
-        if num_patients and num_patients < len(df):
-            self.logger.info(f"Sampling {num_patients} patients")
-            df = df.sample(n=num_patients, replace=False)
-
-        return df
 
     def _compute_causal_effect(self, df: pd.DataFrame) -> pd.DataFrame:
         estimator_cfg = self.cfg.get("estimator")
@@ -251,6 +265,18 @@ class EffectEstimator:
             df_copy[PS_COL] = df_copy[PS_COL].clip(lower=1e-6, upper=1 - 1e-6)
 
         return df_copy
+
+    def _sample_patients(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        This function is intended to test the robustness of the causal effect estimation.
+        This samples a subset of patients from the data (optional).
+        """
+        num_patients = self.cfg.get("num_patients")
+        if num_patients and num_patients < len(df):
+            self.logger.info(f"Sampling {num_patients} patients")
+            df = df.sample(n=num_patients, replace=False)
+
+        return df
 
     def _cleanup(self):
         finish_wandb()
