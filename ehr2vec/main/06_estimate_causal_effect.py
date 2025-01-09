@@ -24,19 +24,24 @@ from ehr2vec.common.setup import (
 from ehr2vec.common.wandb import finish_wandb, initialize_wandb, log_dataframe
 from ehr2vec.effect_estimation.counterfactual import compute_effect_from_counterfactuals
 from ehr2vec.effect_estimation.data import (
-    construct_data_for_effect_estimation,
-    construct_data_to_estimate_effect_from_counterfactuals,
+    construct_from_observed_data,
+    construct_from_counterfactuals,
 )
 from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
 from ehr2vec.common.default_args import (
     DEFAULT_BLOBSTORE,
     OUTCOME_COL,
-    COUNTERFACTUAL_CONTROL_COL,
-    COUNTERFACTUAL_TREATED_COL,
+    CF_CONTROL_COL,
+    CF_TREATED_COL,
     PS_COL,
     TREATMENT_COL,
-    OUTCOME_PREDICTIONS_COL,
+    OUTCOME_PROBABILITY_COL,
+    PID_COL,
+    PROBA_COL,
+    TARGET_COL,
 )
+
+ORG_PID_COL = "pid"
 
 
 @dataclass
@@ -44,15 +49,13 @@ class EffectEstimator:
     cfg: Config
     logger: Any
     exp_folder: str
+    mount_context: Any
 
     def run(self):
         df = self._load_data()
-        df_noisy = self._add_noise(df)
+        self._log_basic_stats(df)
 
-        stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
-        stats_table.index.name = "Treatment"
-        stats_table.reset_index(inplace=True)
-        log_dataframe(stats_table, "stats_table")
+        df_noisy = self._add_noise(df)  # optional
 
         self.logger.info("Estimating causal effect")
         effect_df, common_support, threshold = self._compute_causal_effect(df_noisy)
@@ -79,10 +82,8 @@ class EffectEstimator:
         if "wandb_kwargs" in cfg:
             cfg.wandb_kwargs.name = cfg.paths.run_name
 
-        cfg, run, mount_context, azure_context = (
-            initialize_configuration_effect_estimation(
-                cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
-            )
+        cfg, run, mount_context, _ = initialize_configuration_effect_estimation(
+            cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
         )
         run = initialize_wandb(run, cfg, cfg.get("wandb_kwargs", {}))
 
@@ -92,56 +93,74 @@ class EffectEstimator:
         logger = setup_logger(exp_folder, "info.log")
         cfg.save_to_yaml(join(exp_folder, "config.yaml"))
 
-        return cls(cfg=cfg, logger=logger, exp_folder=exp_folder)
+        return cls(
+            cfg=cfg,
+            logger=logger,
+            exp_folder=exp_folder,
+            mount_context=mount_context,
+        )
 
     def _load_data(self) -> pd.DataFrame:
         path_cfg = self.cfg.paths
 
         outcome_predictions = None
         if path_cfg.get("outcome_predictions", None):
-            outcome_predictions = (
-                pd.read_csv(path_cfg.outcome_predictions)
-                .rename(columns={"pid": "PID", "proba": OUTCOME_PREDICTIONS_COL})
-                .set_index("PID")
-            )
+            outcome_predictions = self._load_predictions(path_cfg.outcome_predictions)
 
         counterfactual_predictions = None
         if path_cfg.get("outcome_predictions_counterfactual", None):
-            counterfactual_predictions = (
-                pd.read_csv(path_cfg.outcome_predictions_counterfactual)
-                .rename(columns={"pid": "PID", "proba": OUTCOME_PREDICTIONS_COL})
-                .set_index("PID")
+            counterfactual_predictions = self._load_predictions(
+                path_cfg.outcome_predictions_counterfactual
             )
 
-        propensity_scores = (
-            pd.read_csv(path_cfg.propensity_scores)
-            .rename(columns={"pid": "PID", "target": TREATMENT_COL, "proba": PS_COL})
-            .set_index("PID")
-        )
-
+        propensity_scores = self._load_propensity_scores(path_cfg.propensity_scores)
         outcomes = load_outcomes(path_cfg.outcome)
 
-        df = construct_data_for_effect_estimation(
-            propensity_scores, outcomes, outcome_predictions, counterfactual_predictions
+        df = construct_from_observed_data(
+            propensity_scores=propensity_scores,
+            outcomes=outcomes,
+            outcome_predictions=outcome_predictions,
+            counterfactual_predictions=counterfactual_predictions,
         )
 
-        num_patients = self.cfg.get("num_patients")
-        if num_patients and num_patients < len(df):
-            self.logger.info(f"Sampling {num_patients} patients")
-            df = df.sample(n=num_patients, replace=False)
+        df = self._sample_patients(df)
 
         return df
 
-    def _add_noise(self, df: pd.DataFrame) -> pd.DataFrame:
-        df_copy = df.copy(deep=True)
-        noise = self.cfg.get("ps_noise", 0)
+    def _load_propensity_scores(self, path: str) -> pd.DataFrame:
+        return (
+            pd.read_csv(path)
+            .rename(
+                columns={
+                    ORG_PID_COL: PID_COL,
+                    TARGET_COL: TREATMENT_COL,
+                    PROBA_COL: PS_COL,
+                }
+            )
+            .set_index(PID_COL)
+        )
 
-        if noise > 0:
-            self.logger.info(f"Adding {noise} noise to propensity scores")
-            df_copy[PS_COL] *= 1 + np.random.uniform(-noise, noise, len(df_copy))
-            df_copy[PS_COL] = df_copy[PS_COL].clip(lower=1e-6, upper=1 - 1e-6)
+    def _load_predictions(self, path: str) -> pd.DataFrame:
+        """Load and format outcome predictions from a CSV file.
 
-        return df_copy
+        Args:
+            path: Path to CSV file containing predictions. Expected columns:
+                - Original patient ID column (will be renamed to PID)
+                - Original probability column (will be renamed to Y_hat)
+
+        Returns:
+            DataFrame with:
+                - Index: Patient IDs (PID)
+                - Y_hat: Predicted outcome probabilities
+
+        Note:
+            Renames columns to standardized names and sets patient ID as index
+        """
+        return (
+            pd.read_csv(path)
+            .rename(columns={ORG_PID_COL: PID_COL, PROBA_COL: OUTCOME_PROBABILITY_COL})
+            .set_index(PID_COL)
+        )
 
     def _compute_causal_effect(self, df: pd.DataFrame) -> pd.DataFrame:
         estimator_cfg = self.cfg.get("estimator")
@@ -152,9 +171,9 @@ class EffectEstimator:
 
         method_args = {
             method: {
-                "predicted_outcome_treated_col": COUNTERFACTUAL_TREATED_COL,
-                "predicted_outcome_control_col": COUNTERFACTUAL_CONTROL_COL,
-                "predicted_outcome_col": OUTCOME_PREDICTIONS_COL,
+                "predicted_outcome_treated_col": CF_TREATED_COL,
+                "predicted_outcome_control_col": CF_CONTROL_COL,
+                "predicted_outcome_col": OUTCOME_PROBABILITY_COL,
             }
             for method in ["AIPW", "TMLE"]
         }
@@ -186,6 +205,25 @@ class EffectEstimator:
     def _compute_counterfactual_effect(
         self, df: pd.DataFrame, common_support: bool, threshold: Optional[float]
     ) -> Optional[float]:
+        """Compute causal effect using counterfactual outcomes if available.
+
+        This method loads pre-computed counterfactual outcomes and uses them to estimate
+        the causal effect. It optionally applies common support filtering to ensure
+        comparable treatment and control groups.
+
+        Args:
+            df: DataFrame containing the original data with treatment assignments and outcomes
+            common_support: Whether to apply common support filtering based on propensity scores
+            threshold: Threshold value for common support filtering. Only used if common_support=True
+
+        Returns:
+            float: Estimated causal effect computed from counterfactuals if counterfactual
+                  outcomes are available, None otherwise
+
+        Note:
+            The counterfactual outcomes must be pre-computed and specified in the config
+            under paths.counterfactual_outcome
+        """
         if not self.cfg.paths.get("counterfactual_outcome"):
             return None
 
@@ -193,9 +231,7 @@ class EffectEstimator:
         counterfactuals = load_counterfactual_outcomes(
             self.cfg.paths.counterfactual_outcome
         )
-        df_counterfactual = construct_data_to_estimate_effect_from_counterfactuals(
-            df, counterfactuals
-        )
+        df_counterfactual = construct_from_counterfactuals(df, counterfactuals)
 
         if common_support:
             df_counterfactual = filter_common_support(
@@ -209,6 +245,39 @@ class EffectEstimator:
             df_counterfactual, self.cfg.get("estimator").effect_type
         )
 
+    def _log_basic_stats(self, df: pd.DataFrame) -> None:
+        stats_table = compute_treatment_outcome_table(df, TREATMENT_COL, OUTCOME_COL)
+        stats_table.index.name = "Treatment"
+        stats_table.reset_index(inplace=True)
+        log_dataframe(stats_table, "stats_table")
+
+    def _add_noise(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        This function is intended to test the robustness of the causal effect estimation.
+        This adds noise to the propensity scores.
+        """
+        df_copy = df.copy(deep=True)
+        noise = self.cfg.get("ps_noise", 0)
+
+        if noise > 0:
+            self.logger.info(f"Adding {noise} noise to propensity scores")
+            df_copy[PS_COL] *= 1 + np.random.uniform(-noise, noise, len(df_copy))
+            df_copy[PS_COL] = df_copy[PS_COL].clip(lower=1e-6, upper=1 - 1e-6)
+
+        return df_copy
+
+    def _sample_patients(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        This function is intended to test the robustness of the causal effect estimation.
+        This samples a subset of patients from the data (optional).
+        """
+        num_patients = self.cfg.get("num_patients")
+        if num_patients and num_patients < len(df):
+            self.logger.info(f"Sampling {num_patients} patients")
+            df = df.sample(n=num_patients, replace=False)
+
+        return df
+
     def _cleanup(self):
         finish_wandb()
         if self.cfg.env == "azure":
@@ -220,6 +289,8 @@ class EffectEstimator:
                     self.cfg.paths.run_name,
                 ),
             )
+        if self.mount_context is not None and hasattr(self.mount_context, "stop"):
+            self.mount_context.stop()
 
 
 def main(config_path: str):
