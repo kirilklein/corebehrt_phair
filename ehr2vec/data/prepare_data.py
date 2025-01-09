@@ -313,7 +313,7 @@ class DatasetPreparer:
 
     def _load_index_dates_to_data(self, data: Data):
         data.index_dates = torch.load(
-            join(self.cfg.paths.predefined_splits, "index_dates.pt")
+            join(self.cfg.paths.predefined_splits, "index_dates.pt"), weights_only=False
         )
 
     def _load_exposed_pids_to_data(self, data: Data):
