@@ -296,6 +296,6 @@ def load_counterfactual_outcomes(counterfactual_outcome_path: str) -> pd.DataFra
 def load_index_dates(finetune_dir: str) -> pd.DataFrame:
     """Load index dates from finetune directory."""
     check_path(finetune_dir, "index_dates.pt")
-    index_dates = torch.load(join(finetune_dir, "index_dates.pt"))
+    index_dates = torch.load(join(finetune_dir, "index_dates.pt"), weights_only=False)
     all_pids = torch.load(join(finetune_dir, "pids.pt"))
     return pd.DataFrame({"index_date": index_dates, "pid": all_pids})
