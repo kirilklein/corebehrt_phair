@@ -85,9 +85,9 @@ class TestConfigClass(unittest.TestCase):
         """Test updating the config."""
         cfg1 = Config({"a": 1, "b": 2})
         cfg2 = Config({"b": 3, "c": 4})
-        cfg1.update(cfg2)
-        self.assertEqual(cfg1.a, 1)
-        self.assertEqual(cfg1.b, 2)  # Should not be updated
+        cfg1.add_missing_keys(cfg2)
+        self.assertEqual(cfg1.a, 1)  # should not be updated
+        self.assertEqual(cfg1.b, 2)  # should not be updated
         self.assertEqual(cfg1.c, 4)
 
 

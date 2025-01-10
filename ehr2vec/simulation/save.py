@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from ehr2vec.common.default_args import ORG_PID_COL, PROBA_COL, TARGET_COL
 
 
 def save_probas_and_targets(
@@ -17,9 +18,9 @@ def save_probas_and_targets(
         probability: Array of predicted probabilities
         output_path: Path where the CSV file will be saved
     """
-    pd.DataFrame({"pid": pids, "target": binary_outcome, "proba": probability}).to_csv(
-        output_path, index=False
-    )
+    pd.DataFrame(
+        {ORG_PID_COL: pids, TARGET_COL: binary_outcome, PROBA_COL: probability}
+    ).to_csv(output_path, index=False)
 
 
 def save_counterfactual_probas_and_targets(
@@ -45,11 +46,11 @@ def save_counterfactual_probas_and_targets(
     """
     pd.DataFrame(
         {
-            "pid": pids,
-            "target": select_counterfactual(
+            ORG_PID_COL: pids,
+            TARGET_COL: select_counterfactual(
                 target, binary_outcome_exp, binary_outcome_ctrl
             ),
-            "proba": select_counterfactual(target, probability_exp, probability_ctrl),
+            PROBA_COL: select_counterfactual(target, probability_exp, probability_ctrl),
         }
     ).to_csv(output_path, index=False)
 

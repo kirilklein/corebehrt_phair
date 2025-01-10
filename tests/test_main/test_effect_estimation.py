@@ -13,6 +13,8 @@ from CausalEstimate.simulation.binary_simulation import simulate_binary_data
 from tests.common.plot_sim import plot_causal_effect_estimation_comparison
 from tests.common.predictions import predict_and_save
 
+from ehr2vec.common.default_args import ORG_PID_COL
+
 MAX_DEVIATION = 0.1
 
 ESTIMATION_METHODS = {"ATE": ["IPW", "AIPW", "TMLE"], "ATT": ["IPW", "AIPW"]}
@@ -58,7 +60,7 @@ if __name__ == "__main__":
         data = simulate_binary_data(
             n=N_SAMPLES, alpha=params["alpha"], beta=params["beta"], seed=i
         )
-        data["pid"] = range(len(data))
+        data[ORG_PID_COL] = range(len(data))
         predict_and_save(data, save_dir, seed=i)
         # Create minimal config file
         for effect_type, methods in ESTIMATION_METHODS.items():

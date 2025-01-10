@@ -8,6 +8,15 @@ from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.isotonic import IsotonicRegression
 from sklearn.model_selection import KFold
+from ehr2vec.common.default_args import (
+    ORG_PID_COL,
+    PROBA_COL,
+    TARGET_COL,
+    PID_COL,
+    TIMESTAMP_COL,
+    OUTCOME_CONTROL_COL,
+    OUTCOME_TREATED_COL,
+)
 
 CLIP = 1e-3
 
@@ -265,17 +274,17 @@ def predict_and_save(data: pd.DataFrame, save_dir: str, seed: int = 41) -> None:
     # Prepare output files
     ps_df = pd.DataFrame(
         {
-            "pid": data_with_preds["pid"],
-            "target": data_with_preds["A"],
-            "proba": data_with_preds["ps"],
+            ORG_PID_COL: data_with_preds[ORG_PID_COL],
+            TARGET_COL: data_with_preds["A"],
+            PROBA_COL: data_with_preds["ps"],
         }
     )
 
     # Create outcomes dataframe with only positive cases and random timestamps
     outcomes_df = pd.DataFrame(
         {
-            "PID": data_with_preds["pid"],
-            "TIMESTAMP": pd.date_range(
+            PID_COL: data_with_preds[ORG_PID_COL],
+            TIMESTAMP_COL: pd.date_range(
                 start="2015-01-01", end="2024-12-31", periods=len(data_with_preds)
             ),
         }
@@ -285,18 +294,18 @@ def predict_and_save(data: pd.DataFrame, save_dir: str, seed: int = 41) -> None:
     # Create counterfactual outcomes dataframe with true Y0/Y1 values
     counterfactual_outcomes_df = pd.DataFrame(
         {
-            "PID": data_with_preds["pid"],
-            "Y0": data_with_preds["Y0"],
-            "Y1": data_with_preds["Y1"],
+            PID_COL: data_with_preds[ORG_PID_COL],
+            OUTCOME_CONTROL_COL: data_with_preds[OUTCOME_CONTROL_COL],
+            OUTCOME_TREATED_COL: data_with_preds[OUTCOME_TREATED_COL],
         }
     )
 
     outcome_predictions_df = pd.DataFrame(
-        {"pid": data_with_preds["pid"], "proba": data_with_preds["Q"]}
+        {ORG_PID_COL: data_with_preds[ORG_PID_COL], PROBA_COL: data_with_preds["Q"]}
     )
 
     counterfactual_predictions_df = pd.DataFrame(
-        {"pid": data_with_preds["pid"], "proba": data_with_preds["Q*"]}
+        {ORG_PID_COL: data_with_preds[ORG_PID_COL], PROBA_COL: data_with_preds["Q*"]}
     )
 
     # Save files

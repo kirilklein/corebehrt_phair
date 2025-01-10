@@ -11,6 +11,14 @@ from ehr2vec.common.checks import check_columns, check_path
 from ehr2vec.common.config import Config, load_config
 from ehr2vec.common.utils import Data
 from ehr2vec.data.utils import Utilities
+from ehr2vec.common.default_args import (
+    ORG_PID_COL,
+    PID_COL,
+    OUTCOME_COL,
+    TIMESTAMP_COL,
+    OUTCOME_TREATED_COL,
+    OUTCOME_CONTROL_COL,
+)
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -279,17 +287,19 @@ def load_outcomes(outcome_path: str) -> pd.DataFrame:
     """Loads the outcomes from the given path and converts them to binary."""
     # Add error handling for missing files or columns
     outcomes = pd.read_csv(outcome_path)
-    check_columns(outcomes, ["PID", "TIMESTAMP"])
-    outcomes = outcomes.set_index("PID")
-    outcomes["outcome"] = 1  # Everyone with a timestamp has the outcome
-    outcomes = outcomes.drop(columns=["TIMESTAMP"])
+    check_columns(outcomes, [PID_COL, TIMESTAMP_COL])
+    outcomes = outcomes.set_index(PID_COL)
+    outcomes[OUTCOME_COL] = 1  # Everyone with a timestamp has the outcome
+    outcomes = outcomes.drop(columns=[TIMESTAMP_COL])
     return outcomes
 
 
 def load_counterfactual_outcomes(counterfactual_outcome_path: str) -> pd.DataFrame:
     """Loads the counterfactual outcomes from the given path."""
     counterfactual_outcomes = pd.read_csv(counterfactual_outcome_path)
-    check_columns(counterfactual_outcomes, ["PID", "Y0", "Y1"])
+    check_columns(
+        counterfactual_outcomes, [PID_COL, OUTCOME_CONTROL_COL, OUTCOME_TREATED_COL]
+    )
     return counterfactual_outcomes
 
 
@@ -298,4 +308,4 @@ def load_index_dates(finetune_dir: str) -> pd.DataFrame:
     check_path(finetune_dir, "index_dates.pt")
     index_dates = torch.load(join(finetune_dir, "index_dates.pt"), weights_only=False)
     all_pids = torch.load(join(finetune_dir, "pids.pt"))
-    return pd.DataFrame({"index_date": index_dates, "pid": all_pids})
+    return pd.DataFrame({"index_date": index_dates, ORG_PID_COL: all_pids})

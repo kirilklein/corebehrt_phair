@@ -9,7 +9,16 @@ import pandas as pd
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import Config
-from ehr2vec.common.default_args import DEFAULT_BLOBSTORE
+from ehr2vec.common.default_args import (
+    DEFAULT_BLOBSTORE,
+    ORG_PID_COL,
+    OUTCOME_CONTROL_COL,
+    OUTCOME_TREATED_COL,
+    PID_COL,
+    PROBA_COL,
+    TARGET_COL,
+    TIMESTAMP_COL,
+)
 from ehr2vec.common.loader import load_config, load_index_dates
 from ehr2vec.common.setup import (
     get_args,
@@ -51,30 +60,30 @@ def main(config_path: str) -> None:
     df_index_dates = load_index_dates(cfg.paths.model_path)
 
     logger.info("Merge predictions and index dates")
-    df_merged = pd.merge(df_predictions, df_index_dates, on="pid")
+    df_merged = pd.merge(df_predictions, df_index_dates, on=ORG_PID_COL)
 
     logger.info("Simulate outcome")
     binary_outcome, probability = simulate_outcome(
-        df_merged["proba"], df_merged["target"], cfg.simulation
+        df_merged[PROBA_COL], df_merged[TARGET_COL], cfg.simulation
     )
     logger.info("Simulate outcome under treatment")
     binary_outcome_exp, probability_exp = simulate_outcome(
-        df_merged["proba"], np.ones(len(df_merged)), cfg.simulation
+        df_merged[PROBA_COL], np.ones(len(df_merged)), cfg.simulation
     )
     logger.info("Simulate outcome under control")
     binary_outcome_ctrl, probability_ctrl = simulate_outcome(
-        df_merged["proba"], np.zeros(len(df_merged)), cfg.simulation
+        df_merged[PROBA_COL], np.zeros(len(df_merged)), cfg.simulation
     )
 
     save_probas_and_targets(
-        df_merged["pid"],
+        df_merged[ORG_PID_COL],
         binary_outcome,
         probability,
         join(simulation_folder, "probas_and_targets.csv"),
     )
     save_counterfactual_probas_and_targets(
-        df_merged["pid"],
-        df_merged["target"],
+        df_merged[ORG_PID_COL],
+        df_merged[TARGET_COL],
         binary_outcome_exp,
         binary_outcome_ctrl,
         probability_exp,
@@ -89,12 +98,18 @@ def main(config_path: str) -> None:
         cfg.get("max_years", 3),
         cfg.get("days_offset", 0),
     )
-    result_df = pd.DataFrame({"PID": df_merged["pid"], "TIMESTAMP": abspos_outcome})
+    result_df = pd.DataFrame(
+        {PID_COL: df_merged[ORG_PID_COL], TIMESTAMP_COL: abspos_outcome}
+    )
     logger.info("Save simulated outcome to %s", simulation_folder)
     os.makedirs(simulation_folder, exist_ok=True)
     result_df.dropna().to_csv(join(simulation_folder, "SIMULATED.csv"), index=False)
     counterfactual_df = pd.DataFrame(
-        {"PID": df_merged["pid"], "Y1": binary_outcome_exp, "Y0": binary_outcome_ctrl}
+        {
+            PID_COL: df_merged[ORG_PID_COL],
+            OUTCOME_TREATED_COL: binary_outcome_exp,
+            OUTCOME_CONTROL_COL: binary_outcome_ctrl,
+        }
     )
     counterfactual_df.to_csv(join(simulation_folder, "COUNTERFACTUAL.csv"), index=False)
 

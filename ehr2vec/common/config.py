@@ -82,8 +82,8 @@ class Config(dict):
         with open(file_name, "w") as file:
             json.dump(self.to_dict(), file)
 
-    def update(self, config: "Config"):
-        """Updates the config with a different config. Update only if key is not present in self."""
+    def add_missing_keys(self, config: "Config"):
+        """Adds keys from a different config to self. Add only if key is not present in self."""
         for key, value in config.items():
             if isinstance(value, dict):
                 value = Config(value)

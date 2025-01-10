@@ -17,7 +17,7 @@ class TestPatternMatching(unittest.TestCase):
     def test_match_pattern_exact(self):
         """Test exact pattern matching"""
         result = match_pattern("^CONTROL$", self.vocabulary)
-        self.assertEqual(result, [1000])
+        self.assertEqual(result, {1000})
 
     def test_match_pattern_wildcard(self):
         """Test pattern matching with wildcards"""
@@ -27,7 +27,7 @@ class TestPatternMatching(unittest.TestCase):
     def test_match_pattern_no_matches(self):
         """Test pattern with no matches"""
         result = match_pattern("NONEXISTENT", self.vocabulary)
-        self.assertEqual(result, [])
+        self.assertEqual(result, set())
 
     def test_match_pattern_partial(self):
         """Test partial pattern matching"""
@@ -50,13 +50,13 @@ class TestPatternMatching(unittest.TestCase):
         """Test matching with empty pattern list"""
         patterns = []
         result = match_patterns(patterns, self.vocabulary)
-        self.assertEqual(result, [])
+        self.assertEqual(result, set())
 
     def test_match_patterns_no_matches(self):
         """Test matching patterns with no matches"""
         patterns = ["NONEXISTENT1", "NONEXISTENT2"]
         result = match_patterns(patterns, self.vocabulary)
-        self.assertEqual(result, [])
+        self.assertEqual(result, set())
 
     def tearDown(self):
         """Clean up after each test method."""

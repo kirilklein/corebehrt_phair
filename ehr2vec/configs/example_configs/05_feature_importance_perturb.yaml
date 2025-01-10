@@ -16,7 +16,7 @@ model:
   scale_with_frequency: true
 data:
   min_len: 1
-  # preprocess: True
+  # preprocess: True # either just loads the data or preprocesses it
 
 trainer_args:
   sampler: true

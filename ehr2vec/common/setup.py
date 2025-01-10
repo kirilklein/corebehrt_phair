@@ -128,18 +128,43 @@ def copy_pretrain_config(cfg: Config, run_folder: str) -> None:
 
 def update_test_cfg_with_pt_ft_cfgs(cfg: Config, finetune_folder: str) -> Config:
     """
-    Update config with pretrain and ft information.
-    Used for testing/feature importance calculation after finetuning.
+    Update test configuration by merging settings from pretrain and finetune configs.
+
+    Args:
+        cfg: The test configuration to update
+        finetune_folder: Path to the folder containing finetune and pretrain config files
+
+    Returns:
+        The updated test configuration with merged settings from pretrain and finetune
     """
-    finetune_config = load_config(join(finetune_folder, "finetune_config.yaml"))
-    pretrain_config = load_config(join(finetune_folder, "pretrain_config.yaml"))
-    if cfg.data.get("preprocess", False):
-        cfg.data.update(finetune_config.data)
-        cfg.outcome = finetune_config.outcome
-        cfg.data.update(pretrain_config.data)
-    cfg.model = finetune_config.model
-    cfg.paths.update(finetune_config.paths)
-    cfg.model.update(pretrain_config.model)
+    # Load config files
+    configs = {
+        "finetune": load_config(join(finetune_folder, "finetune_config.yaml")),
+        "pretrain": load_config(join(finetune_folder, "pretrain_config.yaml")),
+    }
+
+    # Define sections to update
+    sections = ["data", "model", "paths"]
+
+    # Update data and outcome if preprocessing is enabled
+    data_cfg: Config = cfg.data
+    if data_cfg.get("preprocess", False):
+        data_cfg.add_missing_keys(configs["finetune"].data)
+        data_cfg.add_missing_keys(configs["pretrain"].data)
+        cfg.outcome = configs[
+            "finetune"
+        ].outcome  # simply replace outcome with finetune outcome
+        cfg.data = data_cfg
+
+    # Update remaining sections
+    for section in sections:
+        if section != "data" or not data_cfg.get("preprocess", False):
+            section_cfg: Config = getattr(cfg, section)
+            section_cfg.add_missing_keys(configs["finetune"][section])
+            if section == "model":  # Only model needs pretrain keys
+                section_cfg.add_missing_keys(configs["pretrain"][section])
+            setattr(cfg, section, section_cfg)
+
     return cfg
 
 

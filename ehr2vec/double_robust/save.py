@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import torch
 
+from ehr2vec.common.default_args import ORG_PID_COL, PROBA_COL
+
 
 def save_combined_predictions_evaluation(
     n_splits: int, evaluation_folder: str, mode="val"
@@ -24,5 +26,5 @@ def save_combined_predictions_evaluation(
 
     predictions = np.concatenate(predictions).flatten()
 
-    df = pd.DataFrame({"pid": pids, "proba": predictions})
+    df = pd.DataFrame({ORG_PID_COL: pids, PROBA_COL: predictions})
     df.to_csv(join(evaluation_folder, "counterfactual_predictions.csv"), index=False)

@@ -1,11 +1,15 @@
-import unittest
-import pandas as pd
-import torch
 import os
 import tempfile
+import unittest
+
+import numpy as np
+import pandas as pd
+import torch
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
-from ehr2vec.evaluation.calibration import train_calibrator, calibrate_data
+
+from ehr2vec.common.default_args import ORG_PID_COL, PROBA_COL, TARGET_COL
+from ehr2vec.evaluation.calibration import calibrate_data, train_calibrator
 
 
 class TestCalibrationPipeline(unittest.TestCase):
@@ -16,9 +20,9 @@ class TestCalibrationPipeline(unittest.TestCase):
 
         # Create sample data
         self.predictions_data = {
-            "pid": [1, 2, 3, 4, 5, 6, 7, 8],
-            "proba": [0.1, 0.4, 0.8, 0.7, 0.3, 0.5, 0.9, 0.6],
-            "target": [0, 1, 1, 0, 0, 1, 1, 0],
+            ORG_PID_COL: [1, 2, 3, 4, 5, 6, 7, 8],
+            PROBA_COL: [0.1, 0.4, 0.8, 0.7, 0.3, 0.5, 0.9, 0.6],
+            TARGET_COL: [0, 1, 1, 0, 0, 1, 1, 0],
         }
         self.predictions_df = pd.DataFrame(self.predictions_data)
         self.predictions_df.to_csv(
@@ -46,18 +50,30 @@ class TestCalibrationPipeline(unittest.TestCase):
         # Clean up the temporary directory
         self.test_dir.cleanup()
 
-    def test_train_calibrator(self):
-        # Test isotonic calibration
+    def test_train_calibrator_isotonic(self):
+        """Test training isotonic calibrator"""
         if not self.predictions_df.empty:
             calibrator = train_calibrator(self.predictions_df, method="isotonic")
             self.assertIsInstance(calibrator, IsotonicRegression)
 
-        # Test sigmoid calibration
+            # Test predictions are monotonic
+            test_inputs = [0.1, 0.3, 0.5, 0.7, 0.9]
+            predictions = calibrator.predict(test_inputs)
+            self.assertTrue(all(x <= y for x, y in zip(predictions, predictions[1:])))
+
+    def test_train_calibrator_sigmoid(self):
+        """Test training sigmoid calibrator"""
         if not self.predictions_df.empty:
             calibrator = train_calibrator(self.predictions_df, method="sigmoid")
             self.assertIsInstance(calibrator, LogisticRegression)
 
-        # Test invalid method
+            # Test predictions are in valid range
+            test_inputs = np.array([0.1, 0.3, 0.5, 0.7, 0.9]).reshape(-1, 1)
+            predictions = calibrator.predict_proba(test_inputs)[:, 1]
+            self.assertTrue(all(0 <= p <= 1 for p in predictions))
+
+    def test_train_calibrator_invalid(self):
+        """Test invalid calibration method raises error"""
         with self.assertRaises(ValueError):
             train_calibrator(self.predictions_df, method="invalid")
 
@@ -73,7 +89,9 @@ class TestCalibrationPipeline(unittest.TestCase):
             # Check if the calibrated data has the same number of rows
             self.assertEqual(len(calibrated_val_data), len(val_data))
             # Check if the 'proba' column has been updated
-            self.assertFalse((calibrated_val_data["proba"] == val_data["proba"]).all())
+            self.assertFalse(
+                (calibrated_val_data[PROBA_COL] == val_data[PROBA_COL]).all()
+            )
 
 
 if __name__ == "__main__":
