@@ -31,8 +31,8 @@ data:
   min_age: 0
   max_age: 90
   min_len: 2
-  code_types:
-    - D
+  # code_types: # throws an error currently because of different vocab sizes
+   #  - D
   remove_features: ['abspos']
   cv_folds: 2
 
