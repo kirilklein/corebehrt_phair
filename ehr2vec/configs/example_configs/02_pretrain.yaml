@@ -16,8 +16,6 @@ data:
     replace_ratio: .1
     ignore_special_tokens: true
   truncation_len: 128
-  # num_train_patients: 100
-  # num_val_patients: 20
   val_ratio: 0.2
   min_len: 2
 

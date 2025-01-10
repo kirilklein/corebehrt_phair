@@ -11,7 +11,6 @@ paths:
   # predefined_splits: outputs/pretraining/behrt_test/finetune_TEST_OUTCOME_censored_5_days_post_TEST_OUTCOME_test_2
   # exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
 data:
-  num_patients: 300 #300
   val_split: 0.1
   test_split: 0.1
   truncation_len: 30

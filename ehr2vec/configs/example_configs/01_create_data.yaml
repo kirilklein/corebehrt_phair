@@ -11,7 +11,7 @@ loader:
     diagnose,
     medication
   ]
-  batch_size: 3000 # number of patients to process at a time
+  batch_size: 1500 # number of patients to process at a time
   chunksize: 100000 # chunks of data to load at a time
 
 features:

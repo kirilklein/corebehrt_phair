@@ -22,7 +22,6 @@ model:
   # hidden_size: null
 
 data:
-  # num_patients: 300 #300
   val_split: 0.1
   test_split: 0
   truncation_len: 128

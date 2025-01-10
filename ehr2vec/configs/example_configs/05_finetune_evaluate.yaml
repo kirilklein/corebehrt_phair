@@ -12,7 +12,6 @@ model:
   bidirectional: true
 
 data:
-  num_patients: 300 #300
   truncation_len: 30
   min_age: 0
   max_age: 70
