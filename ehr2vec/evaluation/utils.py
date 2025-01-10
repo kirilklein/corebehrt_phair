@@ -11,6 +11,7 @@ from sklearn.utils import resample
 from torch.utils.data import WeightedRandomSampler
 
 from ehr2vec.common.config import get_function
+from ehr2vec.common.default_args import ORG_PID_COL, PROBA_COL, TARGET_COL
 from ehr2vec.common.utils import Data
 
 logger = logging.getLogger(__name__)
@@ -222,9 +223,9 @@ def save_combined_predictions(n_splits: int, finetune_folder: str, mode="val") -
     else:
         save_name = f"predictions_and_targets.csv"
 
-    pd.DataFrame({"pid": pids, "target": targets, "proba": predictions}).to_csv(
-        join(finetune_folder, save_name), index=False
-    )
+    pd.DataFrame(
+        {ORG_PID_COL: pids, TARGET_COL: targets, PROBA_COL: predictions}
+    ).to_csv(join(finetune_folder, save_name), index=False)
 
 
 def check_data_for_overlap(

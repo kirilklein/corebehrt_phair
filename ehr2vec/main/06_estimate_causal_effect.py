@@ -1,16 +1,30 @@
 import os
+from dataclasses import dataclass
+from os.path import abspath, dirname, join
+from typing import Any, Optional
+
 import numpy as np
 import pandas as pd
-from os.path import abspath, dirname, join
-from dataclasses import dataclass
-from typing import Optional, Any
-
+from CausalEstimate.filter.propensity import filter_common_support
 from CausalEstimate.interface.estimator import Estimator
 from CausalEstimate.stats.stats import compute_treatment_outcome_table
-from CausalEstimate.filter.propensity import filter_common_support
+
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import Config
+from ehr2vec.common.default_args import (
+    CF_CONTROL_COL,
+    CF_TREATED_COL,
+    DEFAULT_BLOBSTORE,
+    ORG_PID_COL,
+    OUTCOME_COL,
+    OUTCOME_PROBABILITY_COL,
+    PID_COL,
+    PROBA_COL,
+    PS_COL,
+    TARGET_COL,
+    TREATMENT_COL,
+)
 from ehr2vec.common.loader import (
     load_config,
     load_counterfactual_outcomes,
@@ -24,24 +38,10 @@ from ehr2vec.common.setup import (
 from ehr2vec.common.wandb import finish_wandb, initialize_wandb, log_dataframe
 from ehr2vec.effect_estimation.counterfactual import compute_effect_from_counterfactuals
 from ehr2vec.effect_estimation.data import (
-    construct_from_observed_data,
     construct_from_counterfactuals,
+    construct_from_observed_data,
 )
 from ehr2vec.effect_estimation.utils import convert_effect_to_dataframe
-from ehr2vec.common.default_args import (
-    DEFAULT_BLOBSTORE,
-    OUTCOME_COL,
-    CF_CONTROL_COL,
-    CF_TREATED_COL,
-    PS_COL,
-    TREATMENT_COL,
-    OUTCOME_PROBABILITY_COL,
-    PID_COL,
-    PROBA_COL,
-    TARGET_COL,
-)
-
-ORG_PID_COL = "pid"
 
 
 @dataclass

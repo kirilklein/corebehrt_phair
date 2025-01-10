@@ -199,7 +199,7 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
         """Test merging propensity scores with outcomes and outcome formatting."""
         # Set up test data
         propensity_scores = pd.DataFrame(
-            {TREATMENT_COL: [1, 0, 1, 0], "proba": [0.7, 0.3, 0.8, 0.2]},
+            {TREATMENT_COL: [1, 0, 1, 0], PROBA_COL: [0.7, 0.3, 0.8, 0.2]},
             index=[101, 102, 103, 104],  # patient IDs
         )
 
@@ -216,7 +216,9 @@ class TestOutcomePredictionFunctions(unittest.TestCase):
             len(result), 4
         )  # should keep all patients from propensity_scores
         self.assertTrue(
-            all(col in result.columns for col in [TREATMENT_COL, "proba", OUTCOME_COL])
+            all(
+                col in result.columns for col in [TREATMENT_COL, PROBA_COL, OUTCOME_COL]
+            )
         )
 
         # Check values
