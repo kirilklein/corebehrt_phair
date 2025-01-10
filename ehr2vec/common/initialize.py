@@ -54,7 +54,7 @@ class Initializer:
         if self.checkpoint:
             logger.info("Loading model from checkpoint")
             add_config = {**self.cfg.model}
-            add_config.add_missing_keys(
+            add_config.update(
                 {
                     "pos_weight": get_pos_weight(self.cfg, train_dataset.outcomes),
                     "pool_type": self.cfg.model.get("pool_type", "mean"),
