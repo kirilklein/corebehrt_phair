@@ -9,6 +9,8 @@ import torch
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 
+from ehr2vec.common.default_args import ORG_PID_COL, PROBA_COL, TARGET_COL
+
 
 def compute_and_save_calibration(
     write_folder: str, finetune_folder: str, method: str = "isotonic"
@@ -122,8 +124,10 @@ def split_data(
     predictions_df: pd.DataFrame, train_pids: torch.Tensor, val_pids: torch.Tensor
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Split the predictions dataframe into train and val dataframes based on the given PIDs."""
-    train_data: pd.DataFrame = predictions_df[predictions_df["pid"].isin(train_pids)]
-    val_data: pd.DataFrame = predictions_df[predictions_df["pid"].isin(val_pids)]
+    train_data: pd.DataFrame = predictions_df[
+        predictions_df[ORG_PID_COL].isin(train_pids)
+    ]
+    val_data: pd.DataFrame = predictions_df[predictions_df[ORG_PID_COL].isin(val_pids)]
     return train_data, val_data
 
 
@@ -134,17 +138,17 @@ def train_calibrator(
     Train a calibrator for the given method.
     method{'isotonic', 'sigmoid'}, default='isotonic'
     """
+    X = train_data[PROBA_COL].to_numpy()
+    y = train_data[TARGET_COL].to_numpy().ravel()
     if method == "isotonic":
         calibrator = IsotonicRegression(out_of_bounds="clip")
     elif method == "sigmoid":
         calibrator = LogisticRegression()
+        X = X.reshape(-1, 1)
     else:
         raise ValueError(f"Invalid calibration method: {method}")
 
-    calibrator.fit(
-        train_data["proba"].to_numpy(),
-        train_data["target"].to_numpy().ravel(),
-    )
+    calibrator.fit(X, y)
     return calibrator
 
 
@@ -157,6 +161,6 @@ def calibrate_data(
     Calibrate the probabilities of the given dataframe using the calibrator.
     Clip the probabilities to avoid values close to 0 or 1. (Often happening with isotonic regression)
     """
-    calibrated_probas = calibrator.predict(val_data["proba"].to_numpy())
+    calibrated_probas = calibrator.predict(val_data[PROBA_COL].to_numpy())
     calibrated_probas = np.clip(calibrated_probas, epsilon, 1 - epsilon)
     return val_data.assign(proba=calibrated_probas)
