@@ -15,7 +15,7 @@ paths:
   tokenized_file: "tokenized_finetune.pt" # can also be a list
   tokenized_pids: "pids_finetune.pt" # can also be a list
   
-  predefined_splits: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"
+  # predefined_splits: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"
   # exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
 model:
   pool_type: "gru"
@@ -25,16 +25,15 @@ model:
 
 data:
   val_split: 0.1
-  test_split: 0.05
+  test_split: 0.2
   truncation_len: 30
   gender: M
   min_age: 0
-  max_age: 70
+  max_age: 90
   min_len: 2
   code_types:
     - D
   remove_features: ['abspos']
-  number_of_train_patients: 50
   cv_folds: 2
 
 
