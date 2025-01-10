@@ -12,15 +12,14 @@ model:
   bidirectional: true
 
 data:
-  num_patients: 300 #300
   truncation_len: 30
   min_age: 0
   max_age: 70
   min_len: 2
 
 tester_args:
-  batch_size: 16
-  val_batch_size: 16
+  batch_size: 256
+  val_batch_size: 256
   info: true
   shuffle: true
 

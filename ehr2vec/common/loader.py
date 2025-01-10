@@ -211,7 +211,7 @@ class ModelLoader:
             checkpoints_dir, f"checkpoint_epoch{checkpoint_epoch}_end.pt"
         )
         logger.info("Loading checkpoint from %s", checkpoint_path)
-        return torch.load(checkpoint_path, map_location=device)
+        return torch.load(checkpoint_path, map_location=device, weights_only=False)
 
     def get_checkpoint_epoch(self) -> int:
         """Get checkpoint epoch from config or return the last checkpoint_epoch for this model."""
@@ -296,6 +296,6 @@ def load_counterfactual_outcomes(counterfactual_outcome_path: str) -> pd.DataFra
 def load_index_dates(finetune_dir: str) -> pd.DataFrame:
     """Load index dates from finetune directory."""
     check_path(finetune_dir, "index_dates.pt")
-    index_dates = torch.load(join(finetune_dir, "index_dates.pt"))
+    index_dates = torch.load(join(finetune_dir, "index_dates.pt"), weights_only=False)
     all_pids = torch.load(join(finetune_dir, "pids.pt"))
     return pd.DataFrame({"index_date": index_dates, "pid": all_pids})

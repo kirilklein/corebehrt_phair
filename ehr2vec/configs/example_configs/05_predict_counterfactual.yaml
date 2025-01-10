@@ -1,7 +1,7 @@
 env: local
 project: "PHAIR"
 paths:
-  model_path: outputs/example_pretraining/example/finetune_SIMULATED_censored_1_hours_pre_EXAMPLE_CENSOR_followup_start_4_days_post_index_date_run_test
+  model_path: outputs/example_pretraining/example/finetune_SIMULATED_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_post_index_date_run_test
   run_name: "test"
 
 model:
@@ -12,15 +12,15 @@ model:
 calibration: isotonic
 
 data:
-  truncation_len: 30
+  truncation_len: 128
   counterfactual: # can be a list of regexes
     exposure_regex: # list of codes to use as exposure (insert at same frequency as present in data)
       - "M308136"
     control_regex: "PLACEHOLDER_1" # code to use for "no exposure"
 
 tester_args:
-  batch_size: 16
-  val_batch_size: 16
+  batch_size: 256
+  val_batch_size: 256
   info: true
   shuffle: true
 

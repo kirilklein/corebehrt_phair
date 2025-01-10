@@ -147,7 +147,7 @@ class Data:
                     raise FileNotFoundError(f"{filename} not found in {data_dir}")
                 else:
                     return None
-            return torch.load(filepath)
+            return torch.load(filepath, weights_only=False)
 
         prepend = f"{mode}_" if mode != "" else ""
         features = load_tensor(f"{prepend}features.pt", required=True)

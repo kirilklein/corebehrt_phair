@@ -18,8 +18,9 @@ paths:
   outcome: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/SIMULATED.csv"
   counterfactual_outcome: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/COUNTERFACTUAL.csv" 
   # used for double-robust estimation:
-  outcome_predictions: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/probas_and_targets.csv"
-  outcome_predictions_counterfactual: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome/counterfactual_probas_and_targets.csv"
+  outcome_predictions: "outputs/example_pretraining/example/finetune_SIMULATED_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_post_index_date_run_test/predictions_and_targets_calibrated_isotonic.csv"
+  outcome_predictions_counterfactual: "outputs/example_pretraining/example/finetune_SIMULATED_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_post_index_date_run_test/counterfactual_predictions_test/counterfactual_predictions_calibrated_isotonic.csv"
+
   output_path: "outputs/experiments/test"
   run_name: *default_run_name
 

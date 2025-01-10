@@ -5,13 +5,13 @@ paths:
 outcomes_name: "EXAMPLE_OUTCOME"
 features_dir: outputs/example_features
 loader:
-  data_dir: example_data/synthea500
+  data_dir: example_data
   concepts: [
     medication,
     diagnose
   ]
-  batch_size: 50
-  chunksize: 300
+  batch_size: 3000
+  chunksize: 100000
 outcomes:
   EXAMPLE_OUTCOME: 
     type: [CONCEPT]

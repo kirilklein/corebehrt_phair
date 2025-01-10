@@ -15,17 +15,14 @@ data:
     masking_ratio: .8
     replace_ratio: .1
     ignore_special_tokens: true
-  truncation_len: 20
-  num_train_patients: 100
-  num_val_patients: 20
+  truncation_len: 128
   val_ratio: 0.2
-  remove_background: true
   min_len: 2
 
 trainer_args:
-  batch_size: 32
-  effective_batch_size: 64
-  epochs: 3
+  batch_size: 256
+  effective_batch_size: 256
+  epochs: 2
   info: true
   sampler: null
   gradient_clip: 
@@ -38,22 +35,22 @@ model:
   # type_vocab_size should be > truncation_len//2 if sep token else >truncation len
   # !!! If you want to feed longer sequences during finetuning adjust type_vocab_size accordingly
   linear: true
-  hidden_size: 96
-  num_hidden_layers: 3
+  hidden_size: 48
+  num_hidden_layers: 2
   num_attention_heads: 3
-  intermediate_size: 64
+  intermediate_size: 48
   type_vocab_size: 240 #  if discrete_abspos_embeddings: true, give the range of abspos in months
   plusplus: true
   abspos_embeddings: false
-  pool_type: mean
+  # pool_type: mean
 optimizer:
-  lr: 5e-4
+  lr: 1e-3
   eps: 1e-6
 
 scheduler:
   _target_: transformers.get_linear_schedule_with_warmup
-  num_warmup_epochs: 2
-  num_training_epochs: 3
+  num_warmup_epochs: 1
+  num_training_epochs: 2
 
 metrics:
   top1:

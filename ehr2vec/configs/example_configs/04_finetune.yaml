@@ -15,7 +15,7 @@ paths:
   tokenized_file: "tokenized_finetune.pt" # can also be a list
   tokenized_pids: "pids_finetune.pt" # can also be a list
   
-  predefined_splits: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"
+  # predefined_splits: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"
   # exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
 model:
   pool_type: "gru"
@@ -24,18 +24,16 @@ model:
   # hidden_size: null
 
 data:
-  num_patients: 300 
   val_split: 0.1
-  test_split: 0.05
+  test_split: 0.2
   truncation_len: 30
   gender: M
   min_age: 0
-  max_age: 70
+  max_age: 90
   min_len: 2
-  code_types:
-    - D
+  # code_types: # throws an error currently because of different vocab sizes
+   #  - D
   remove_features: ['abspos']
-  number_of_train_patients: 50
   cv_folds: 2
 
 
@@ -55,10 +53,10 @@ trainer_args:
     _target_: ehr2vec.evaluation.utils.inverse_sqrt # function to calculate sample weights
   sample_weight_multiplier: 1 # adjust the sampling weight of the positive class (1 is balanced)
   pos_weight: null # weight for positive class in the loss
-  batch_size: 8
-  val_batch_size: 16
-  effective_batch_size: 16
-  epochs: 2
+  batch_size: 256
+  val_batch_size: 256
+  effective_batch_size: 256
+  epochs: 1
   info: true
   gradient_clip: 
     clip_value: 1.0

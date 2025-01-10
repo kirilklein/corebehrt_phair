@@ -166,7 +166,7 @@ class ConceptLoaderLarge(ConceptLoader):
         _, file_ext = os.path.splitext(file_path)
         if file_ext == ".csv":
             return pd.read_csv(file_path, chunksize=chunksize)
-        elif file_ext == "parquet":
+        elif file_ext == ".parquet":
             return ParquetIterator(file_path, chunksize)
         else:
             raise ValueError(f"File path must be .csv or .parquet, was {file_ext}")
