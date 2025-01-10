@@ -128,18 +128,45 @@ def copy_pretrain_config(cfg: Config, run_folder: str) -> None:
 
 def update_test_cfg_with_pt_ft_cfgs(cfg: Config, finetune_folder: str) -> Config:
     """
-    Update config with pretrain and ft information.
-    Used for testing/feature importance calculation after finetuning.
+    Update test configuration by merging in settings from pretrain and finetune configs.
+
+    This function loads the pretrain and finetune configuration files from the finetune folder
+    and updates the test config by adding any missing keys from those configs. This ensures
+    the test config has all necessary settings from the training pipeline.
+
+    Args:
+        cfg: The test configuration to update
+        finetune_folder: Path to the folder containing finetune and pretrain config files
+
+    Returns:
+        Config: The updated test configuration with merged settings
+
+    The function updates the following config sections:
+    - data: Adds missing data processing settings from finetune/pretrain configs
+    - outcome: Uses outcome settings from finetune config if preprocessing is enabled
+    - model: Adds missing model architecture settings from finetune/pretrain configs  
+    - paths: Adds missing path settings from finetune config
     """
     finetune_config = load_config(join(finetune_folder, "finetune_config.yaml"))
     pretrain_config = load_config(join(finetune_folder, "pretrain_config.yaml"))
+    data_cfg : Config = cfg.data
+    
     if cfg.data.get("preprocess", False):
-        cfg.data.add_missing_keys(finetune_config.data)
-        cfg.outcome = finetune_config.outcome
-        cfg.data.add_missing_keys(pretrain_config.data)
-    cfg.model = finetune_config.model
-    cfg.paths.add_missing_keys(finetune_config.paths)
-    cfg.model.add_missing_keys(pretrain_config.model)
+        data_cfg.add_missing_keys(finetune_config.data)
+        outcome_cfg : Config = cfg.outcome
+        outcome_cfg = finetune_config.outcome
+        data_cfg.add_missing_keys(pretrain_config.data)
+        cfg.outcome = outcome_cfg
+    model_cfg : Config = cfg.model
+    paths_cfg : Config = cfg.paths
+    model_cfg.add_missing_keys(finetune_config.model)
+    paths_cfg.add_missing_keys(finetune_config.paths)
+    model_cfg.add_missing_keys(pretrain_config.model)
+    
+    cfg.data = data_cfg
+    cfg.model = model_cfg
+    cfg.paths = paths_cfg
+    
     return cfg
 
 
