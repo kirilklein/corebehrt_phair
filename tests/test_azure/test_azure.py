@@ -9,7 +9,7 @@ class TestConfig(unittest.TestCase):
         self.update_config = Config({"a": 4, "d": 6})
 
     def test_update(self):
-        self.cfg.update(self.update_config)
+        self.cfg.add_missing_keys(self.update_config)
         self.assertEqual(self.cfg.a, 1)
         self.assertEqual(self.cfg.b, 2)
         self.assertEqual(self.cfg.c, 3)

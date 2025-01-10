@@ -134,12 +134,12 @@ def update_test_cfg_with_pt_ft_cfgs(cfg: Config, finetune_folder: str) -> Config
     finetune_config = load_config(join(finetune_folder, "finetune_config.yaml"))
     pretrain_config = load_config(join(finetune_folder, "pretrain_config.yaml"))
     if cfg.data.get("preprocess", False):
-        cfg.data.update(finetune_config.data)
+        cfg.data.add_missing_keys(finetune_config.data)
         cfg.outcome = finetune_config.outcome
-        cfg.data.update(pretrain_config.data)
+        cfg.data.add_missing_keys(pretrain_config.data)
     cfg.model = finetune_config.model
-    cfg.paths.update(finetune_config.paths)
-    cfg.model.update(pretrain_config.model)
+    cfg.paths.add_missing_keys(finetune_config.paths)
+    cfg.model.add_missing_keys(pretrain_config.model)
     return cfg
 
 

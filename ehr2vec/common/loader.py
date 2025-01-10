@@ -161,7 +161,7 @@ class ModelLoader:
         checkpoint = self.load_checkpoint() if checkpoint is None else checkpoint
         # Load the config from file
         config = BertConfig.from_pretrained(self.model_path)
-        config.update(add_config)
+        config.add_missing_keys(add_config)
         model = model_class(config, **kwargs)
 
         return self.load_state_dict_into_model(model, checkpoint)
