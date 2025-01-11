@@ -53,6 +53,7 @@ class EffectEstimator:
 
     def run(self):
         df = self._load_data()
+        df.to_parquet(join(self.exp_folder, "data.parquet"), index=False)
         self._log_basic_stats(df)
 
         df_noisy = self._add_noise(df)  # optional
@@ -232,6 +233,9 @@ class EffectEstimator:
             self.cfg.paths.counterfactual_outcome
         )
         df_counterfactual = construct_from_counterfactuals(df, counterfactuals)
+        df_counterfactual.to_parquet(
+            join(self.exp_folder, "data_cf.parquet"), index=False
+        )
 
         if common_support:
             df_counterfactual = filter_common_support(
@@ -271,7 +275,7 @@ class EffectEstimator:
         This function is intended to test the robustness of the causal effect estimation.
         This samples a subset of patients from the data (optional).
         """
-        num_patients = self.cfg.get("num_patients")
+        num_patients = self.cfg.get("num_patients", False)
         if num_patients and num_patients < len(df):
             self.logger.info(f"Sampling {num_patients} patients")
             df = df.sample(n=num_patients, replace=False)
