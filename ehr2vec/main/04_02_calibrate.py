@@ -25,8 +25,8 @@ def main(config_path: str) -> None:
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
 
-    finetune_folder = cfg.paths.output_path
-    write_folder = cfg.paths.model_path
+    finetune_folder = cfg.paths.model_path
+    write_folder = cfg.paths.output_path
 
     logger = setup_logger(finetune_folder, f"calibration.log")
     logger.info("Starting calibration")
