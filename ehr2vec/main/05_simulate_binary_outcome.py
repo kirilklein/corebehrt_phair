@@ -40,11 +40,15 @@ config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 
 def main(config_path: str) -> None:
+
+    # 1) Load and set up configuration
     cfg: Config = load_config(config_path)
     override_config_from_cli(cfg)
     cfg, _, mount_context, _ = initialize_configuration_effect_estimation(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
     )
+
+    # 2) Prepare output folder and logging
     simulation_folder = cfg.paths.output_path
     if cfg.env == "azure":
         simulation_folder = join(simulation_folder, cfg.paths.run_name)
@@ -52,67 +56,102 @@ def main(config_path: str) -> None:
     os.makedirs(simulation_folder, exist_ok=True)
     logger = setup_logger(simulation_folder)
 
+    # Save the final, possibly CLI-overridden, config
     cfg.save_to_yaml(join(simulation_folder, "simulation_config.yaml"))
+
+    # 3) Load model predictions and index dates
     logger.info("Load predictions from %s", cfg.paths.model_path)
-    df_predictions = pd.read_csv(join(cfg.paths.model_path, cfg.predictions_file))
+    df_ps_predictions = pd.read_csv(join(cfg.paths.model_path, cfg.predictions_file))
 
     logger.info("Load index dates from %s", cfg.paths.model_path)
     df_index_dates = load_index_dates(cfg.paths.model_path)
 
+    # 4) Merge predictions and index dates
     logger.info("Merge predictions and index dates")
-    df_merged = pd.merge(df_predictions, df_index_dates, on=ORG_PID_COL)
+    # Note: TARGET_COL here represents actual treatment assignment (0 or 1).
+    df = pd.merge(df_ps_predictions, df_index_dates, on=ORG_PID_COL)
 
-    logger.info("Simulate outcome")
-    binary_outcome, probability = simulate_outcome(
-        df_merged[PROBA_COL], df_merged[TARGET_COL], cfg.simulation
+    # 5) Simulate outcomes in three scenarios
+    logger.info("Simulating outcome for actual treatment assignment")
+    outcome_actual, probas_actual = simulate_outcome(
+        df[PROBA_COL], df[TARGET_COL], cfg.simulation
     )
-    logger.info("Simulate outcome under treatment")
-    binary_outcome_exp, probability_exp = simulate_outcome(
-        df_merged[PROBA_COL], np.ones(len(df_merged)), cfg.simulation
+    logger.info("Simulating outcome under TREATMENT for all (treated scenario).")
+    outcome_treated, probas_treated = simulate_outcome(
+        df[PROBA_COL], np.ones(len(df)), cfg.simulation
     )
-    logger.info("Simulate outcome under control")
-    binary_outcome_ctrl, probability_ctrl = simulate_outcome(
-        df_merged[PROBA_COL], np.zeros(len(df_merged)), cfg.simulation
+    logger.info("Simulating outcome under CONTROL for all (untreated scenario).")
+    outcome_control, probas_control = simulate_outcome(
+        df[PROBA_COL], np.zeros(len(df)), cfg.simulation
     )
 
-    save_probas_and_targets(
-        df_merged[ORG_PID_COL],
-        binary_outcome,
-        probability,
-        join(simulation_folder, "probas_and_targets.csv"),
-    )
+    # 6) Save counterfactual-based data (everyone treated vs. everyone untreated)
+    # The "counterfactual" file is for potential future effect estimation.
     save_counterfactual_probas_and_targets(
-        df_merged[ORG_PID_COL],
-        df_merged[TARGET_COL],
-        binary_outcome_exp,
-        binary_outcome_ctrl,
-        probability_exp,
-        probability_ctrl,
+        df[ORG_PID_COL],
+        df[TARGET_COL],
+        outcome_treated,
+        outcome_control,
+        probas_treated,
+        probas_control,
         join(simulation_folder, "counterfactual_probas_and_targets.csv"),
     )
 
-    logger.info("Simulate absolute position")
-    abspos_outcome = simulate_abspos_from_binary_outcome(
-        binary_outcome,
-        df_merged["index_date"],
+    # 7) Generate "actual" outcomes by combining each patient's relevant scenario:
+    #    If a patient is truly treated, use 'outcome_treated'; if untreated, use 'outcome_control'.
+    logger.info("Combine treated vs. untreated outcomes for the ACTUAL scenario")
+    outcome_actual = np.where(
+        df[TARGET_COL] == 1,
+        outcome_treated,  # use the "treated" simulation for actually treated
+        outcome_control,  # use the "untreated" simulation for actually untreated
+    )
+
+    # Same approach for predicted probabilities
+    probas_actual = np.where(
+        df[TARGET_COL] == 1,
+        probas_treated,
+        probas_control,
+    )
+
+    # 8) Save "actual" scenario probabilities and outcomes
+    logger.info("Saving probabilities and outcomes for the ACTUAL scenario.")
+    save_probas_and_targets(
+        df[ORG_PID_COL],
+        outcome_actual,
+        probas_actual,
+        join(simulation_folder, "probas_and_targets.csv"),
+    )
+
+    # 9) Simulate absolute position (timestamp) for patients with outcome=1 in the actual scenario
+    logger.info("Simulating absolute position for the ACTUAL scenario.")
+    abspos_outcome_actual = simulate_abspos_from_binary_outcome(
+        outcome_actual,
+        df["index_date"],
         cfg.get("max_years", 3),
         cfg.get("days_offset", 0),
     )
     result_df = pd.DataFrame(
-        {PID_COL: df_merged[ORG_PID_COL], TIMESTAMP_COL: abspos_outcome}
+        {PID_COL: df[ORG_PID_COL], TIMESTAMP_COL: abspos_outcome_actual}
     )
-    logger.info("Save simulated outcome to %s", simulation_folder)
+    # Save the actual scenario timestamps to SIMULATED.csv
+    logger.info("Saving simulated outcome to %s", simulation_folder)
     os.makedirs(simulation_folder, exist_ok=True)
+    # Rows with null timestamps are those with outcome=0
     result_df.dropna().to_csv(join(simulation_folder, "SIMULATED.csv"), index=False)
+
+    # 10) Also save the explicit treated/control outcomes to a separate file
+    # This is for potential future effect estimation.
+    logger.info("Saving explicit TREATED vs. CONTROL outcomes to COUNTERFACTUAL.csv.")
     counterfactual_df = pd.DataFrame(
         {
-            PID_COL: df_merged[ORG_PID_COL],
-            OUTCOME_TREATED_COL: binary_outcome_exp,
-            OUTCOME_CONTROL_COL: binary_outcome_ctrl,
+            PID_COL: df[ORG_PID_COL],
+            OUTCOME_TREATED_COL: outcome_treated,
+            OUTCOME_CONTROL_COL: outcome_control,
         }
     )
     counterfactual_df.to_csv(join(simulation_folder, "COUNTERFACTUAL.csv"), index=False)
 
+    # 11) If running in Azure, also store results to blob
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",
