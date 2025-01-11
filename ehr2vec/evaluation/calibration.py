@@ -142,8 +142,17 @@ def train_calibrator(
     y = train_data[TARGET_COL].to_numpy().ravel()
     if method == "isotonic":
         calibrator = IsotonicRegression(out_of_bounds="clip")
-    elif method == "sigmoid":
-        calibrator = LogisticRegression()
+    elif (method == "sigmoid") or (method == "logistic") or (method == "platt"):
+        calibrator = LogisticRegression(C=99999999)  # Don't regularize
+        X = X.reshape(-1, 1)
+    elif method == "beta":
+        try:
+            from betacal import BetaCalibration
+        except ImportError:
+            raise ImportError(
+                "betacal is not installed. Please install it using pip install betacal."
+            )
+        calibrator = BetaCalibration(parameters="abm")
         X = X.reshape(-1, 1)
     else:
         raise ValueError(f"Invalid calibration method: {method}")
@@ -161,6 +170,11 @@ def calibrate_data(
     Calibrate the probabilities of the given dataframe using the calibrator.
     Clip the probabilities to avoid values close to 0 or 1. (Often happening with isotonic regression)
     """
-    calibrated_probas = calibrator.predict(val_data[PROBA_COL].to_numpy())
+    if isinstance(calibrator, LogisticRegression):
+        calibrated_probas = calibrator.predict_proba(
+            val_data[PROBA_COL].to_numpy().reshape(-1, 1)
+        )[:, 1]
+    else:
+        calibrated_probas = calibrator.predict(val_data[PROBA_COL].to_numpy())
     calibrated_probas = np.clip(calibrated_probas, epsilon, 1 - epsilon)
     return val_data.assign(proba=calibrated_probas)
