@@ -44,6 +44,11 @@ jobs:
                 source .venv/bin/activate  
                 python -m ehr2vec.main.04_finetune_cv --config_path example_configs/04_finetune_exposure.yaml
             
+            - name: calibrate
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.04_02_calibrate --config_path example_configs/04_02_calibrate.yaml
+
             - name: simulate_binary_outcome
               run: |
                 source .venv/bin/activate  
