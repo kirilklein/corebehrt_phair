@@ -53,7 +53,7 @@ class EffectEstimator:
 
     def run(self):
         df = self._load_data()
-        df.to_parquet(join(self.exp_folder, "data.parquet"), index=False)
+        df.to_parquet(join(self.exp_folder, "data.parquet"), index=True)
         self._log_basic_stats(df)
 
         df_noisy = self._add_noise(df)  # optional
@@ -234,7 +234,7 @@ class EffectEstimator:
         )
         df_counterfactual = construct_from_counterfactuals(df, counterfactuals)
         df_counterfactual.to_parquet(
-            join(self.exp_folder, "data_cf.parquet"), index=False
+            join(self.exp_folder, "data_cf.parquet"), index=True
         )
 
         if common_support:
