@@ -54,52 +54,68 @@ def main(config_path: str) -> None:
 
     cfg.save_to_yaml(join(simulation_folder, "simulation_config.yaml"))
     logger.info("Load predictions from %s", cfg.paths.model_path)
-    df_predictions = pd.read_csv(join(cfg.paths.model_path, cfg.predictions_file))
+    df_ps_predictions = pd.read_csv(join(cfg.paths.model_path, cfg.predictions_file))
 
     logger.info("Load index dates from %s", cfg.paths.model_path)
     df_index_dates = load_index_dates(cfg.paths.model_path)
 
     logger.info("Merge predictions and index dates")
-    df_merged = pd.merge(df_predictions, df_index_dates, on=ORG_PID_COL)
+    # target has the treatment status
+    df_merged = pd.merge(df_ps_predictions, df_index_dates, on=ORG_PID_COL)
 
     logger.info("Simulate outcome")
-    binary_outcome, probability = simulate_outcome(
+    outcome_actual, probas_actual = simulate_outcome(
         df_merged[PROBA_COL], df_merged[TARGET_COL], cfg.simulation
     )
     logger.info("Simulate outcome under treatment")
-    binary_outcome_exp, probability_exp = simulate_outcome(
+    outcome_exp, probas_exp = simulate_outcome(
         df_merged[PROBA_COL], np.ones(len(df_merged)), cfg.simulation
     )
     logger.info("Simulate outcome under control")
-    binary_outcome_ctrl, probability_ctrl = simulate_outcome(
+    outcome_ctrl, probas_ctrl = simulate_outcome(
         df_merged[PROBA_COL], np.zeros(len(df_merged)), cfg.simulation
+    )
+
+    save_counterfactual_probas_and_targets(
+        df_merged[ORG_PID_COL],
+        df_merged[TARGET_COL],
+        outcome_exp,
+        outcome_ctrl,
+        probas_exp,
+        probas_ctrl,
+        join(simulation_folder, "counterfactual_probas_and_targets.csv"),
+    )
+
+    logger.info("Combine treated vs. untreated outcomes for the ACTUAL scenario")
+    outcome_actual = np.where(
+        df_merged[TARGET_COL] == 1,
+        outcome_exp,  # use the "treated" simulation for actually treated
+        outcome_ctrl,  # use the "untreated" simulation for actually untreated
+    )
+
+    # If you want to keep consistent probabilities, do the same for probabilities:
+    probas_actual = np.where(
+        df_merged[TARGET_COL] == 1,
+        probas_exp,
+        probas_ctrl,
     )
 
     save_probas_and_targets(
         df_merged[ORG_PID_COL],
-        binary_outcome,
-        probability,
+        outcome_actual,
+        probas_actual,
         join(simulation_folder, "probas_and_targets.csv"),
     )
-    save_counterfactual_probas_and_targets(
-        df_merged[ORG_PID_COL],
-        df_merged[TARGET_COL],
-        binary_outcome_exp,
-        binary_outcome_ctrl,
-        probability_exp,
-        probability_ctrl,
-        join(simulation_folder, "counterfactual_probas_and_targets.csv"),
-    )
 
-    logger.info("Simulate absolute position")
-    abspos_outcome = simulate_abspos_from_binary_outcome(
-        binary_outcome,
+    logger.info("Simulate absolute position for the ACTUAL scenario")
+    abspos_outcome_actual = simulate_abspos_from_binary_outcome(
+        outcome_actual,
         df_merged["index_date"],
         cfg.get("max_years", 3),
         cfg.get("days_offset", 0),
     )
     result_df = pd.DataFrame(
-        {PID_COL: df_merged[ORG_PID_COL], TIMESTAMP_COL: abspos_outcome}
+        {PID_COL: df_merged[ORG_PID_COL], TIMESTAMP_COL: abspos_outcome_actual}
     )
     logger.info("Save simulated outcome to %s", simulation_folder)
     os.makedirs(simulation_folder, exist_ok=True)
@@ -107,8 +123,8 @@ def main(config_path: str) -> None:
     counterfactual_df = pd.DataFrame(
         {
             PID_COL: df_merged[ORG_PID_COL],
-            OUTCOME_TREATED_COL: binary_outcome_exp,
-            OUTCOME_CONTROL_COL: binary_outcome_ctrl,
+            OUTCOME_TREATED_COL: outcome_exp,
+            OUTCOME_CONTROL_COL: outcome_ctrl,
         }
     )
     counterfactual_df.to_csv(join(simulation_folder, "COUNTERFACTUAL.csv"), index=False)
