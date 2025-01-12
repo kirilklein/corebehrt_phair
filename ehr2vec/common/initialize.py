@@ -86,16 +86,52 @@ class Initializer:
 
     def initialize_optimizer(self, model):
         """Initialize optimizer from checkpoint or from scratch."""
-        parameters_to_optimize = [p for p in model.parameters() if p.requires_grad]
+        parameters_to_optimize = self.get_model_params(model)
+        if self.cfg.trainer_args.get("variable_learning_rate", False):
+            parameters_to_optimize = (
+                self.get_parameter_groups_with_differential_learning_rates(
+                    model, self.cfg.trainer_args.get("lr_reduction_factor", 0.1)
+                )
+            )
         if self.checkpoint:
             logger.info("Loading AdamW optimizer from checkpoint")
-            optimizer = AdamW(parameters_to_optimize)
+            optimizer = AdamW(parameters_to_optimize, **self.cfg.optimizer)
             self.optimizer_state_dic_to_device(self.checkpoint["optimizer_state_dict"])
             optimizer.load_state_dict(self.checkpoint["optimizer_state_dict"])
             return optimizer
         else:
             logger.info("Initializing new AdamW optimizer")
             return AdamW(parameters_to_optimize, **self.cfg.optimizer)
+
+    def get_parameter_groups_with_differential_learning_rates(
+        self, model, lr_reduction_factor=0.1
+    ):
+        """Get parameter groups with differential learning rates."""
+        head_params = []
+        base_params = []
+        for name, param in model.named_parameters():
+            if (
+                "cls" in name or "pooler" in name
+            ):  # adjust these names based on your model architecture
+                head_params.append(param)
+            else:
+                base_params.append(param)
+
+        # Create parameter groups with different learning rates
+        param_groups = [
+            {
+                "params": base_params,
+                "lr": self.cfg.optimizer.lr * lr_reduction_factor,
+            },  # reduced lr for base
+            {"params": head_params, "lr": self.cfg.optimizer.lr},  # normal lr for head
+        ]
+        return param_groups
+
+    def get_model_params(self, model):
+        """
+        Get trainable parameters of the model.
+        """
+        return [p for p in model.parameters() if p.requires_grad]
 
     def initialize_scheduler(self, optimizer):
         """Initialize scheduler from checkpoint or from scratch."""
