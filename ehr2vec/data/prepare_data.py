@@ -287,7 +287,7 @@ class DatasetPreparer:
         """Use ft features and map them onto one hot vectors with binary outcomes"""
         data = self.loader.load_finetune_data()
         token2index, new_vocab = self.utils.get_token_to_index_map(data.vocabulary)
-        X, y = OneHotEncoder.encode(data, token2index)
+        X, y = one_hot_encode(data, token2index)
         return X, y, new_vocab
 
     @staticmethod
@@ -381,63 +381,52 @@ class DatasetPreparer:
             )
 
 
-class OneHotEncoder:
+def one_hot_encode(data, token2index=None):
+    """
+    - data.features["age"]     -> List[List[float]],
+                                  each sub-list might have several ages, we use the last one.
+    - data.features["concept"] -> List[List[int]],
+                                  each sub-list contains concept IDs present in that sample.
+    - data.outcomes            -> List of outcomes (could be NaN or a valid value).
+    - data.vocabulary          -> List of possible concepts (integers or strings).
 
-    @staticmethod
-    def encode(data: Data, token2index: dict) -> Tuple[np.ndarray, np.ndarray]:
-        # ! Potentially map gender onto one index?
-        """Encode features to one hot and age at the time of last event"""
-        AGE_INDEX = 0
-        # Initialize arrays
-        num_samples = len(data)
-        num_features = len(token2index) + 1  # +1 for age
+    The function returns:
+    - X: np.ndarray of shape (num_samples, 1 + vocab_size),
+         where the first column is age, and subsequent columns one-hot encode concepts.
+    - y: np.ndarray of shape (num_samples,),
+         where y[i] = 1 if data.outcomes[i] is not NaN, else 0.
+    """
 
-        X, y = OneHotEncoder.initialize_Xy(num_samples, num_features)
-        keys_array = np.array(
-            list(token2index.keys())
-        )  # Create an array of keys for faster lookup
-        token2index_map = np.vectorize(
-            token2index.get
-        )  # Vectorized function to map tokens to indices
+    # 1. Build token2index from data.vocabulary if not provided (skip [CLS], [SEP])
+    if token2index is None:
+        valid_tokens = [
+            tok
+            for concept, tok in data.vocabulary.items()
+            if concept not in ("[CLS]", "[SEP]")
+        ]
+        token2index = {tok: i + 1 for i, tok in enumerate(valid_tokens)}
 
-        for sample, (concepts, outcome) in enumerate(
-            zip(data.features["concept"], data.outcomes)
-        ):
-            y[sample] = OneHotEncoder.encode_outcome(outcome)
-            X[sample, AGE_INDEX] = data.features["age"][sample][-1]
-            OneHotEncoder.encode_concepts(
-                concepts, token2index_map, keys_array, X, sample
-            )
-        return X, y
+    # 2. Prepare output arrays
+    num_samples = len(data.outcomes)
+    num_concepts = len(token2index)  # the number of valid concepts
+    X = np.zeros((num_samples, 1 + num_concepts), dtype=np.int16)  # 1 for age
+    y = np.zeros(num_samples, dtype=np.int16)
 
-    @staticmethod
-    def encode_outcome(outcome) -> int:
-        return int(pd.notna(outcome))
+    # 3. Fill X, y for each sample
+    for i in range(num_samples):
+        # Age
+        X[i, 0] = data.features["age"][i][-1]  # the last age in the sub-list
 
-    @staticmethod
-    def encode_concepts(
-        concepts: List[int],
-        token2index_map: np.vectorize,
-        keys_array: np.ndarray,
-        X: np.ndarray,
-        sample: int,
-    ) -> None:
-        concepts = np.array(concepts)
-        unique_concepts = np.unique(concepts)
-        valid_concepts_mask = np.isin(
-            unique_concepts, keys_array
-        )  # Only keep concepts that are in the token2index map
-        filtered_concepts = unique_concepts[valid_concepts_mask]
-        concept_indices = token2index_map(filtered_concepts) + 1
-        X[sample, concept_indices] = 1
+        # One-hot encode concepts
+        for concept in data.features["concept"][i]:
+            if concept in token2index:
+                col_idx = token2index[concept]  # +1 to skip the age column
+                X[i, col_idx] = 1
 
-    @staticmethod
-    def initialize_Xy(
-        num_samples: int, num_features: int
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        X = np.zeros((num_samples, num_features), dtype=np.int16)
-        y = np.zeros(num_samples, dtype=np.int16)
-        return X, y
+        # Outcome
+        y[i] = 1 if pd.notna(data.outcomes[i]) else 0
+
+    return X, y
 
 
 class DataModifier:
