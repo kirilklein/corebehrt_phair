@@ -64,6 +64,8 @@ trainer_args:
   checkpoint_frequency: 1
   early_stopping: 2
   stopping_criterion: roc_auc
+  variable_learning_rate: true
+  lr_reduction_factor: 0.1
   
 calibration: "isotonic"
 
