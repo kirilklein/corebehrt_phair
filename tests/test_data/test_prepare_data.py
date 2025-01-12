@@ -3,9 +3,11 @@ import shutil
 import unittest
 from unittest.mock import MagicMock, patch
 
+import numpy as np
+
 from ehr2vec.common.config import Config
 from ehr2vec.common.utils import Data
-from ehr2vec.data.prepare_data import DatasetPreparer
+from ehr2vec.data.prepare_data import DatasetPreparer, one_hot_encode
 
 
 class TestDatasetPreparerIndexDates(unittest.TestCase):
@@ -115,6 +117,43 @@ class TestDatasetPreparerIndexDates(unittest.TestCase):
             str(context.exception),
             "New censoring time must be later than the predefined one.",
         )
+
+    def test_one_hot_encode(self):
+        # Arrange
+        mock_data = MagicMock(spec=Data)
+        mock_data.features = {
+            "age": [[25], [30], [35]],  # Each patient has one age value
+            "concept": [[1, 2], [2, 3], [1, 3]],  # Each patient has multiple concepts
+        }
+        mock_data.vocabulary = {
+            "[CLS]": 0,
+            "[SEP]": 1,
+            "concept_1": 1,
+            "concept_2": 2,
+            "concept_3": 3,
+        }
+        mock_data.outcomes = [1.0, float("nan"), 2.0]
+
+        # Act
+        X, y = one_hot_encode(mock_data)
+
+        # Assert
+        # Check shape: num_samples x (1 age + 3 concepts)
+        self.assertEqual(X.shape, (3, 4))
+
+        # Check ages are in first column
+        np.testing.assert_array_equal(X[:, 0], [25, 30, 35])
+
+        # Check one-hot encoding of concepts (excluding [CLS], [SEP])
+        # Patient 1: concepts 1,2
+        np.testing.assert_array_equal(X[0, 1:], [1, 1, 0])
+        # Patient 2: concepts 2,3
+        np.testing.assert_array_equal(X[1, 1:], [0, 1, 1])
+        # Patient 3: concepts 1,3
+        np.testing.assert_array_equal(X[2, 1:], [1, 0, 1])
+
+        # Check outcomes
+        np.testing.assert_array_equal(y, [1, 0, 1])
 
 
 if __name__ == "__main__":
