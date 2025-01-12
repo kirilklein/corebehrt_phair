@@ -80,7 +80,7 @@ class Utilities:
             model_cfg.type_vocab_size = max_segment + 1
 
     @staticmethod
-    def get_token_to_index_map(vocabulary: dict) -> Tuple[dict]:
+    def get_token_to_index_map(vocabulary: dict) -> Tuple[dict, dict]:
         """
         Creates a new mapping from vocbulary values to new integers excluding special tokens
         """
