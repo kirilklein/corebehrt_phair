@@ -31,3 +31,15 @@ def tbehrt(
     probability = sigmoid(a * exposure + b * (propensity_score + c))
     binary_outcome = bernoulli.rvs(probability)
     return binary_outcome, probability
+
+
+def linear_logistic(
+    propensity_score: np.ndarray,
+    exposure: np.ndarray,
+    a: float,
+    b: float,
+    c: float,
+) -> Tuple[np.ndarray, np.ndarray]:
+    probability = sigmoid(a * exposure + b * propensity_score + c)
+    binary_outcome = bernoulli.rvs(probability)
+    return binary_outcome, probability
