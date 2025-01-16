@@ -1,11 +1,10 @@
 env: local
 project: "PHAIR"
 paths:
-  model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"
+  ps_model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"
+  probas: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test/predictions_and_targets_calibrated_isotonic.csv"
   run_name: simulate_binary_outcome
   output_path: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome"
-
-predictions_file: "predictions_and_targets.csv"
 
 simulation:
   _target_: ehr2vec.simulation.binary_outcome.tbehrt

@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.checks import check_pids
 from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import Config
 from ehr2vec.common.default_args import (
@@ -19,7 +20,7 @@ from ehr2vec.common.default_args import (
     TARGET_COL,
     TIMESTAMP_COL,
 )
-from ehr2vec.common.loader import load_config, load_index_dates
+from ehr2vec.common.loader import load_binary_outcomes, load_config, load_index_dates
 from ehr2vec.common.setup import (
     get_args,
     initialize_configuration_effect_estimation,
@@ -60,16 +61,21 @@ def main(config_path: str) -> None:
     cfg.save_to_yaml(join(simulation_folder, "simulation_config.yaml"))
 
     # 3) Load model predictions and index dates
-    logger.info("Load predictions from %s", cfg.paths.model_path)
-    df_ps_predictions = pd.read_csv(join(cfg.paths.model_path, cfg.predictions_file))
+    ps_model_path = cfg.paths.ps_model_path
+    logger.info("Load outcomes and index dates from %s", ps_model_path)
+    df_outcomes = load_binary_outcomes(ps_model_path)
+    df_index_dates = load_index_dates(ps_model_path)
+    logger.info("Load probas from %s", cfg.paths.probas)
+    df_probas = pd.read_csv(cfg.paths.probas).rename(columns={ORG_PID_COL: PID_COL})[
+        [PID_COL, PROBA_COL]
+    ]
+    check_pids(df_probas, df_outcomes)
 
-    logger.info("Load index dates from %s", cfg.paths.model_path)
-    df_index_dates = load_index_dates(cfg.paths.model_path)
-
-    # 4) Merge predictions and index dates
-    logger.info("Merge predictions and index dates")
+    # 4) Merge exposure status, probas, and index dates
+    logger.info("Merge predictions and index dates on %s", PID_COL)
     # Note: TARGET_COL here represents actual treatment assignment (0 or 1).
-    df = pd.merge(df_ps_predictions, df_index_dates, on=ORG_PID_COL)
+    df = pd.merge(df_probas, df_index_dates, on=PID_COL)
+    df = pd.merge(df, df_outcomes, on=PID_COL, how="inner")
 
     # 5) Simulate outcomes in three scenarios
     logger.info("Simulating outcome for actual treatment assignment")
@@ -88,7 +94,7 @@ def main(config_path: str) -> None:
     # 6) Save counterfactual-based data (everyone treated vs. everyone untreated)
     # The "counterfactual" file is for potential future effect estimation.
     save_counterfactual_probas_and_targets(
-        df[ORG_PID_COL],
+        df[PID_COL],
         df[TARGET_COL],
         outcome_treated,
         outcome_control,
@@ -116,7 +122,7 @@ def main(config_path: str) -> None:
     # 8) Save "actual" scenario probabilities and outcomes
     logger.info("Saving probabilities and outcomes for the ACTUAL scenario.")
     save_probas_and_targets(
-        df[ORG_PID_COL],
+        df[PID_COL],
         outcome_actual,
         probas_actual,
         join(simulation_folder, "probas_and_targets.csv"),
@@ -131,7 +137,7 @@ def main(config_path: str) -> None:
         cfg.get("days_offset", 0),
     )
     result_df = pd.DataFrame(
-        {PID_COL: df[ORG_PID_COL], TIMESTAMP_COL: abspos_outcome_actual}
+        {PID_COL: df[PID_COL], TIMESTAMP_COL: abspos_outcome_actual}
     )
     # Save the actual scenario timestamps to SIMULATED.csv
     logger.info("Saving simulated outcome to %s", simulation_folder)
@@ -144,7 +150,7 @@ def main(config_path: str) -> None:
     logger.info("Saving explicit TREATED vs. CONTROL outcomes to COUNTERFACTUAL.csv.")
     counterfactual_df = pd.DataFrame(
         {
-            PID_COL: df[ORG_PID_COL],
+            PID_COL: df[PID_COL],
             OUTCOME_TREATED_COL: outcome_treated,
             OUTCOME_CONTROL_COL: outcome_control,
         }

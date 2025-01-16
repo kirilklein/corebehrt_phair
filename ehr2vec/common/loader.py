@@ -3,22 +3,23 @@ import os
 from os.path import join
 from typing import Dict, List, Tuple, Union
 
+import numpy as np
 import pandas as pd
 import torch
 from transformers import BertConfig
 
 from ehr2vec.common.checks import check_columns, check_path
 from ehr2vec.common.config import Config, load_config
+from ehr2vec.common.default_args import (
+    OUTCOME_COL,
+    OUTCOME_CONTROL_COL,
+    OUTCOME_TREATED_COL,
+    PID_COL,
+    TIMESTAMP_COL,
+    TARGET_COL,
+)
 from ehr2vec.common.utils import Data
 from ehr2vec.data.utils import Utilities
-from ehr2vec.common.default_args import (
-    ORG_PID_COL,
-    PID_COL,
-    OUTCOME_COL,
-    TIMESTAMP_COL,
-    OUTCOME_TREATED_COL,
-    OUTCOME_CONTROL_COL,
-)
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -308,4 +309,13 @@ def load_index_dates(finetune_dir: str) -> pd.DataFrame:
     check_path(finetune_dir, "index_dates.pt")
     index_dates = torch.load(join(finetune_dir, "index_dates.pt"), weights_only=False)
     all_pids = torch.load(join(finetune_dir, "pids.pt"))
-    return pd.DataFrame({"index_date": index_dates, ORG_PID_COL: all_pids})
+    return pd.DataFrame({"index_date": index_dates, PID_COL: all_pids})
+
+
+def load_binary_outcomes(finetune_dir: str) -> pd.DataFrame:
+    """Load binary outcomes from finetune directory."""
+    check_path(finetune_dir, "outcomes.pt")
+    outcomes = torch.load(join(finetune_dir, "outcomes.pt"))
+    outcomes = np.array([pd.notna(o) for o in outcomes]).astype(int)
+    all_pids = torch.load(join(finetune_dir, "pids.pt"))
+    return pd.DataFrame({TARGET_COL: outcomes, PID_COL: all_pids})
