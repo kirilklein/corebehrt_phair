@@ -206,7 +206,9 @@ def save_combined_predictions(n_splits: int, finetune_folder: str, mode="val") -
             logger.warning(f"File {predictions_path} not found. Skipping fold {fold}.")
             continue
 
-        fold_pids = torch.load(join(finetune_folder, f"fold_{fold}", f"{mode}_pids.pt"))
+        fold_pids = torch.load(
+            join(finetune_folder, f"fold_{fold}", f"{mode}_pids.pt"), weights_only=True
+        )
         fold_predictions = np.load(predictions_path, allow_pickle=True)[
             "probas"
         ].flatten()

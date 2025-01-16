@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from ehr2vec.common.azure import save_to_blobstore
+from ehr2vec.common.checks import check_pids
 from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import Config
 from ehr2vec.common.default_args import (
@@ -68,6 +69,7 @@ def main(config_path: str) -> None:
     df_probas = pd.read_csv(cfg.paths.probas).rename(columns={ORG_PID_COL: PID_COL})[
         [PID_COL, PROBA_COL]
     ]
+    check_pids(df_probas, df_outcomes)
 
     # 4) Merge exposure status, probas, and index dates
     logger.info("Merge predictions and index dates on %s", PID_COL)
@@ -164,19 +166,6 @@ def main(config_path: str) -> None:
         )
         mount_context.stop()
     logger.info("Done")
-
-
-def check_pids(df1: pd.DataFrame, df2: pd.DataFrame) -> None:
-    """Check that both dataframes have the same set of PIDs."""
-    df1_pids = set(df1[PID_COL])
-    df2_pids = set(df2[PID_COL])
-
-    if df1_pids != df2_pids:
-        raise ValueError(
-            f"DataFrames have different PIDs. "
-            f"Missing PIDs: {df1_pids - df2_pids}, "
-            f"Extra PIDs: {df2_pids - df1_pids}"
-        )
 
 
 if __name__ == "__main__":

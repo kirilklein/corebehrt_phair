@@ -117,7 +117,7 @@ def get_number_of_folds(finetune_folder: str) -> int:
 
 def load_mode_pids(mode: str, fold_folder: str) -> torch.Tensor:
     """Load PIDs for the given mode from the given fold folder."""
-    return torch.load(join(fold_folder, f"{mode}_pids.pt"))
+    return torch.load(join(fold_folder, f"{mode}_pids.pt"), weights_only=True)
 
 
 def split_data(
