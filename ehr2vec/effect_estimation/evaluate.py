@@ -2,6 +2,8 @@ import numpy as np
 from sklearn.metrics import brier_score_loss, roc_auc_score
 
 from ehr2vec.common.default_args import (
+    CF_CONTROL_COL,
+    CF_TREATED_COL,
     OUTCOME_COL,
     OUTCOME_CONTROL_COL,
     OUTCOME_PROBABILITY_COL,
@@ -60,14 +62,14 @@ def evaluate_binary_outcome_models(df):
     )
     # Evaluate the "control" potential outcome (Y0 vs Y0_hat)
     y0_true = df[OUTCOME_CONTROL_COL].values
-    y0_pred = df[OUTCOME_CONTROL_COL].values
+    y0_pred = df[CF_CONTROL_COL].values
     metrics["control"] = compute_classif_metrics(
         y0_true, y0_pred, label=OUTCOME_CONTROL_COL
     )
 
     # Evaluate the "treatment" potential outcome (Y1 vs Y1_hat)
     y1_true = df[OUTCOME_TREATED_COL].values
-    y1_pred = df[OUTCOME_TREATED_COL].values
+    y1_pred = df[CF_TREATED_COL].values
     metrics["treatment"] = compute_classif_metrics(
         y1_true, y1_pred, label=OUTCOME_TREATED_COL
     )
