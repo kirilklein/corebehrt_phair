@@ -10,7 +10,7 @@ from scipy.special import expit, logit
 
 
 class CVTMLE:
-    def __init__(self, q_t0=None, q_t1=None, g=None, t=None, y=None, truncate_level=0):
+    def __init__(self, q_t0=None, q_t1=None, g=None, t=None, y=None):
         """
         Targeted BEHRT implementation
         CVTMLE as conceived by Levi, 2018:
@@ -21,8 +21,6 @@ class CVTMLE:
         :param g: prediction of propensity score
         :param t: treatment label
         :param y: factual outcome
-        :param fromFolds: if files for estimates per fold are provided (type list) which are npz files, then no need to provide first five parameterse
-        :param est_keys: once npz files are read, the keys are needed to extract estimates (i.e., first five parameters in this init)
         :param truncate_level: truncation for propensity scores (0.05 default means that only patients with estimates between 0.05 and 0.95 will be considered)
         """
 
@@ -31,7 +29,6 @@ class CVTMLE:
         self.g = g
         self.t = t
         self.y = y
-        self.truncate_level = truncate_level
 
     def _perturbed_model_bin_outcome(self, q_t0, q_t1, g, t, eps):
         """
@@ -55,13 +52,12 @@ class CVTMLE:
         """
 
         print("running CV-TMLE for binary outcomes...")
-        q_t0, q_t1, g, t, y, truncatel = (
+        q_t0, q_t1, g, t, y = (
             np.copy(self.q_t0),
             np.copy(self.q_t1),
             np.copy(self.g),
             np.copy(self.t),
             np.copy(self.y),
-            np.copy(self.truncate_level),
         )
 
         eps_hat = minimize(
