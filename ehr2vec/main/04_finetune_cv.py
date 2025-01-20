@@ -115,6 +115,24 @@ def finetune_fold(
     modelmanager.load_model_config()
     model = modelmanager_trained.initialize_finetune_model(checkpoint, train_dataset)
     trainer.model = model
+
+    if cfg.model.get("return_cls", False):
+        # Get train vectors using best model
+        logger.info("Computing train patient vectors")
+        train_dataloader = trainer.get_train_dataloader()
+        trainer._save_patient_vectors(train_dataloader, mode="train")
+
+        # Get val vectors using best model
+        logger.info("Computing validation patient vectors")
+        val_dataloader = trainer.get_val_dataloader()
+        trainer._save_patient_vectors(val_dataloader, mode="val")
+
+        # Get test vectors if test set exists
+        if len(test_data) > 0:
+            logger.info("Computing test patient vectors")
+            trainer.test_dataset = test_dataset
+            trainer._save_patient_vectors(trainer.get_test_dataloader(), mode="test")
+
     trainer.test_dataset = test_dataset
     trainer._evaluate(checkpoint["epoch"], mode="test")
     finish_wandb()

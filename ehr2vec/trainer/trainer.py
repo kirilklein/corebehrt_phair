@@ -568,3 +568,47 @@ class EHRTrainer:
                 self.args = {**self.args, **value}
             else:
                 setattr(self, key, value)
+
+    def _save_patient_vectors(self, dataloader, mode="train"):
+        """Compute and save patient vectors for a given dataset.
+
+        This method runs the model in evaluation mode to generate patient vector embeddings
+        for all patients in the provided dataloader. The vectors are concatenated and saved
+        to disk in the run folder.
+
+        Args:
+            dataloader: DataLoader containing the patient data to generate vectors for
+            mode: String indicating which dataset is being processed ('train', 'val', or 'test').
+                 Used for naming the output file.
+
+        The vectors are saved to {run_folder}/{mode}_patient_vectors.pt
+        """
+        self.model.eval()
+        patient_vectors_list = []
+
+        with torch.no_grad():
+            loop = get_tqdm(dataloader)
+            loop.set_description(f"Getting {mode} patient vectors")
+
+            for batch in loop:
+                self.batch_to_device(batch)
+                outputs = self.model(batch)
+                patient_vectors_list.append(outputs["patient_vector"].cpu())
+
+        # Concatenate all patient vectors
+        patient_vectors = torch.cat(patient_vectors_list)
+        # Save the vectors
+        save_path = os.path.join(self.run_folder, f"{mode}_patient_vectors.pt")
+        torch.save(patient_vectors, save_path)
+        self.log(f"Saved {mode} patient vectors to {save_path}")
+
+        self.model.train()
+
+    def get_train_dataloader(self):
+        """Returns the training dataloader"""
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.args["batch_size"],
+            shuffle=False,  # Set to False to maintain order
+            collate_fn=self.args["collate_fn"],
+        )

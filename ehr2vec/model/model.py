@@ -74,7 +74,9 @@ class BertEHRModel(BertEHREncoder):
             if batch is not None
             else torch.ones(inputs_embeds.shape[:2], device=inputs_embeds.device).int()
         )
-        logits = self.cls(sequence_output, attention_mask=attention_mask)
+        logits, patient_vector = self.cls(
+            sequence_output, attention_mask=attention_mask, return_cls=True
+        )
 
         # Calculate loss if target is provided
         loss = None
@@ -86,6 +88,7 @@ class BertEHRModel(BertEHREncoder):
             "last_hidden_state": outputs.last_hidden_state,
             "pooler_output": outputs.pooler_output,
             "hidden_states": outputs.hidden_states,
+            "patient_vector": patient_vector,
             "attentions": outputs.attentions,
             "logits": logits,
             "loss": loss,
@@ -112,7 +115,7 @@ class BertForFineTuning(BertEHREncoder):
     def forward(self, batch: dict = None, inputs_embeds: torch.tensor = None, **kwargs):
         outputs = super().forward(batch=batch, inputs_embeds=inputs_embeds, **kwargs)
         sequence_output = outputs["last_hidden_state"]
-        logits = self.cls(
+        logits, patient_vector = self.cls(
             sequence_output,
             batch["attention_mask"],
             exposure=batch.get("exposure", None),
@@ -127,6 +130,7 @@ class BertForFineTuning(BertEHREncoder):
             "hidden_states": outputs.get("hidden_states", None),
             "attentions": outputs.get("attentions", None),
             "logits": logits,
+            "patient_vector": patient_vector,
             "loss": loss,
         }
 
@@ -144,7 +148,7 @@ class BertForTime2Event(BertEHREncoder):
     def forward(self, batch: dict, inputs_embeds: torch.tensor = None):
         outputs = super().forward(batch=batch, inputs_embeds=inputs_embeds)
         sequence_output = outputs["last_hidden_state"]
-        logits = self.cls(sequence_output, batch["attention_mask"])
+        logits, patient_vector = self.cls(sequence_output, batch["attention_mask"])
 
         loss = None
         if (batch.get("target", None) is not None) and (
@@ -158,6 +162,7 @@ class BertForTime2Event(BertEHREncoder):
             "hidden_states": outputs["hidden_states"],
             "attentions": outputs["attentions"],
             "logits": logits,
+            "patient_vector": patient_vector,
             "loss": loss,
         }
 

@@ -56,6 +56,7 @@ class BaseRNN(nn.Module):
         base_rnn_output_size = self.hidden_size * (2 if self.bidirectional else 1)
         classifier_input_size = base_rnn_output_size + self.exposure_dim
         self.classifier = create_classifier(config, classifier_input_size)
+        self.return_cls = config.to_dict().get("return_cls", False)
 
     def forward(
         self,
@@ -98,7 +99,9 @@ class BaseRNN(nn.Module):
             x = torch.cat([x, exposure.unsqueeze(-1)], dim=-1)
 
         logits = self.classifier(x)
-        return logits
+        if self.return_cls:
+            return logits, x
+        return logits, None
 
 
 class FineTuneHead(nn.Module):
@@ -139,7 +142,7 @@ class FineTuneHead(nn.Module):
 
             classifier_input_size = config.hidden_size + self.exposure_dim
             self.classifier = create_classifier(config, classifier_input_size)
-
+        self.return_cls = config.to_dict().get("return_cls", False)
         logger.info(f"Using {self.pool_type} pooling for classification.")
 
     def forward(
@@ -173,7 +176,9 @@ class FineTuneHead(nn.Module):
                 )  # shape: [batch, hidden_size + exposure_dim]
 
             logits = self.classifier(pooled)
-            return logits
+            if self.return_cls:
+                return logits, pooled
+            return logits, None
 
     def pool_cls(self, x, attention_mask=None):
         """
