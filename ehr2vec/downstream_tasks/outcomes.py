@@ -466,7 +466,7 @@ class OutcomeHandler:
     @staticmethod
     def get_first_outcome_in_follow_up(
         outcomes: pd.DataFrame, index_dates: pd.Series, n_hours_start_followup: int = 0
-    ) -> pd.Series:
+    ) -> Tuple[pd.Series, set]:
         """Get the first outcome event occurring at or after the censor timestamp for each PID."""
         # First filter the outcomes based on the censor timestamps
         filtered_outcomes, outcome_pre_followup_pids = (
