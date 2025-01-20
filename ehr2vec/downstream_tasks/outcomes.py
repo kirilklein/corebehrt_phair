@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
+from ehr2vec.common.default_args import PID_COL, TIMESTAMP_COL
 from ehr2vec.common.utils import Data
 from ehr2vec.data.utils import Utilities, shuffle_df
 
@@ -36,24 +37,24 @@ class OutcomeMaker:
                 timestamps = self.match_patient_info(patients_info, matches)
             else:
                 timestamps = self.match_concepts(concepts_plus, types, matches, attrs)
-            timestamps["TIMESTAMP"] = Utilities.get_abspos_from_origin_point(
-                timestamps["TIMESTAMP"], self.features_cfg.features.abspos
+            timestamps[TIMESTAMP_COL] = Utilities.get_abspos_from_origin_point(
+                timestamps[TIMESTAMP_COL], self.features_cfg.features.abspos
             )
-            timestamps["TIMESTAMP"] = timestamps["TIMESTAMP"].astype(int)
+            timestamps[TIMESTAMP_COL] = timestamps[TIMESTAMP_COL].astype(int)
             outcome_tables[outcome] = timestamps
         return outcome_tables
 
     @staticmethod
     def filter_table_by_pids(table: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
-        return table[table.PID.isin(pids)]
+        return table[table[PID_COL].isin(pids)]
 
     @staticmethod
     def remove_missing_timestamps(concepts_plus: pd.DataFrame) -> pd.DataFrame:
-        return concepts_plus[concepts_plus.TIMESTAMP.notna()]
+        return concepts_plus[concepts_plus[TIMESTAMP_COL].notna()]
 
     def match_patient_info(self, patients_info: dict, match: List[List]) -> pd.Series:
         """Get timestamps of interest from patients_info"""
-        return patients_info[["PID", match]].dropna()
+        return patients_info[[PID_COL, match]].dropna()
 
     def match_concepts(
         self,
@@ -263,10 +264,14 @@ class OutcomeHandler:
     @staticmethod
     def check_input(outcomes, exposures):
         """Check that outcomes and exposures have columns PID and TIMESTAMP."""
-        if "PID" not in outcomes.columns or "TIMESTAMP" not in outcomes.columns:
-            raise ValueError("Outcomes must have columns PID and TIMESTAMP.")
-        if "PID" not in exposures.columns or "TIMESTAMP" not in exposures.columns:
-            raise ValueError("Exposures must have columns PID and TIMESTAMP.")
+        if PID_COL not in outcomes.columns or TIMESTAMP_COL not in outcomes.columns:
+            raise ValueError(
+                f"Outcomes must have columns {PID_COL} and {TIMESTAMP_COL}."
+            )
+        if PID_COL not in exposures.columns or TIMESTAMP_COL not in exposures.columns:
+            raise ValueError(
+                f"Exposures must have columns {PID_COL} and {TIMESTAMP_COL}."
+            )
 
     def assign_time2event(self, data: Data) -> Data:
         """
@@ -344,11 +349,11 @@ class OutcomeHandler:
             f"Filtering {type_info} to include only data patients which are present in the data."
         )
         logger.info(
-            f"Original number of patients in outcomes: {len(outcomes.PID.unique())}"
+            f"Original number of patients in outcomes: {len(outcomes[PID_COL].unique())}"
         )
-        filtered_outcomes = outcomes[outcomes["PID"].isin(data.pids)]
+        filtered_outcomes = outcomes[outcomes[PID_COL].isin(data.pids)]
         logger.info(
-            f"Number of patients in outcomes after filtering: {len(outcomes.PID.unique())}"
+            f"Number of patients in outcomes after filtering: {len(outcomes[PID_COL].unique())}"
         )
         return filtered_outcomes
 
@@ -395,7 +400,7 @@ class OutcomeHandler:
     ) -> pd.Series:
         """Assign control exposures to patients not in exposed_patients."""
         control_exposures = control_exposures[
-            control_exposures["PID"].isin(control_pids)
+            control_exposures[PID_COL].isin(control_pids)
         ]
         control_index_dates = self.get_first_event_by_pid(control_exposures)
         return control_index_dates
@@ -410,9 +415,9 @@ class OutcomeHandler:
             censoring_timestamps.values, size=len(control_pids)
         )
         control_index_dates = pd.Series(
-            random_abspos, index=list(control_pids), name="TIMESTAMP"
+            random_abspos, index=list(control_pids), name=TIMESTAMP_COL
         )
-        control_index_dates.index.name = "PID"
+        control_index_dates.index.name = PID_COL
         return control_index_dates
 
     def compute_abspos_for_index_date(self, pids: List) -> pd.Series:
@@ -433,7 +438,7 @@ class OutcomeHandler:
     def get_first_event_by_pid(table: pd.DataFrame):
         """Get the first event for each PID in the table."""
         logger.info(f"Selecting earliest censoring timestamp for each patient.")
-        return table.groupby("PID").TIMESTAMP.min()
+        return table.groupby(PID_COL).TIMESTAMP.min()
 
     @staticmethod
     def remove_outcomes_before_start_of_follow_up(
@@ -443,17 +448,17 @@ class OutcomeHandler:
         Filter the outcomes to include only those occurring at or after the censor timestamp for each PID.
         Returns: filtered dataframe, pids removed in this process.
         """
-        initial_pids = set(outcomes["PID"].unique())
+        initial_pids = set(outcomes[PID_COL].unique())
         # Merge outcomes with censor timestamps
         index_date_df = index_dates.rename("index_date").reset_index()
-        outcomes = outcomes[outcomes["PID"].isin(index_date_df["PID"])]
-        joint_df = outcomes.merge(index_date_df, on="PID")
+        outcomes = outcomes[outcomes[PID_COL].isin(index_date_df[PID_COL])]
+        joint_df = outcomes.merge(index_date_df, on=PID_COL)
         # Filter outcomes to get only those at or after the censor timestamp
         filtered_df = joint_df[
-            joint_df["TIMESTAMP"] >= joint_df["index_date"] + n_hours_start_followup
+            joint_df[TIMESTAMP_COL] >= joint_df["index_date"] + n_hours_start_followup
         ]
         # Get the PIDs that were removed
-        filtered_pids = set(filtered_df["PID"].unique())
+        filtered_pids = set(filtered_df[PID_COL].unique())
         pids_w_outcome_pre_followup = initial_pids - filtered_pids
 
         return outcomes, pids_w_outcome_pre_followup
