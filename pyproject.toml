@@ -31,6 +31,7 @@ dependencies = [
     "PyYAML",
     "dask",
     "dask-expr",
+    "xgboost",
 
 ]
 
