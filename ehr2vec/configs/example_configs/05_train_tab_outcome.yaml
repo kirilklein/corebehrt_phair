@@ -1,0 +1,25 @@
+
+env: local
+
+paths:
+  run_name: "xgboost_run"
+  model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"  # Path to the folder containing the finetuned model results
+  outcome: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_OUTCOME.csv"
+model:
+  params:
+    n_estimators: 1000
+    learning_rate: 0.01
+    max_depth: 6
+    min_child_weight: 1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    objective: 'binary:logistic'
+    eval_metric: 'auc'
+    verbosity: 2
+
+calibration: "isotonic"  # or "sigmoid" or null for no calibration
+
+outcome: 
+  n_hours_start_follow_up: 100
+  first_time_outcomes_only: False # only consider patients with no outcome before index date/ patient with outcome before index date are excluded#
+  
