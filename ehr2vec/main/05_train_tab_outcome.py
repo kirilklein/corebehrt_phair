@@ -10,7 +10,6 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
-import joblib
 import torch
 import xgboost as xgb
 from tqdm import tqdm
@@ -32,7 +31,6 @@ from ehr2vec.downstream_tasks.outcomes import OutcomeHandler
 from ehr2vec.downstream_tasks.tabular import load_tabular_data
 from ehr2vec.downstream_tasks.tabular_training import tune_xgboost_hyperparams
 from ehr2vec.evaluation.calibration import calibrate_data, train_calibrator
-from sklearn.pipeline import Pipeline
 
 DEFAULT_CONFIG_NAME = "example_configs/05_train_tab_outcome.yaml"
 logger = logging.getLogger(__name__)
