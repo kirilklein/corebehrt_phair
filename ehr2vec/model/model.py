@@ -75,7 +75,7 @@ class BertEHRModel(BertEHREncoder):
             else torch.ones(inputs_embeds.shape[:2], device=inputs_embeds.device).int()
         )
         logits, patient_vector = self.cls(
-            sequence_output, attention_mask=attention_mask, return_cls=True
+            sequence_output, attention_mask=attention_mask
         )
 
         # Calculate loss if target is provided
