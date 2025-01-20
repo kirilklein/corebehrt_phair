@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-from ehr2vec.common.default_args import PID_COL, TIMESTAMP_COL
+from ehr2vec.common.default_args import INDEX_DATE, PID_COL, TIMESTAMP_COL
 from ehr2vec.common.utils import Data
 from ehr2vec.data.utils import Utilities, shuffle_df
 
@@ -450,12 +450,12 @@ class OutcomeHandler:
         """
         initial_pids = set(outcomes[PID_COL].unique())
         # Merge outcomes with censor timestamps
-        index_date_df = index_dates.rename("index_date").reset_index()
+        index_date_df = index_dates.rename(INDEX_DATE).reset_index()
         outcomes = outcomes[outcomes[PID_COL].isin(index_date_df[PID_COL])]
         joint_df = outcomes.merge(index_date_df, on=PID_COL)
         # Filter outcomes to get only those at or after the censor timestamp
         filtered_df = joint_df[
-            joint_df[TIMESTAMP_COL] >= joint_df["index_date"] + n_hours_start_followup
+            joint_df[TIMESTAMP_COL] >= joint_df[INDEX_DATE] + n_hours_start_followup
         ]
         # Get the PIDs that were removed
         filtered_pids = set(filtered_df[PID_COL].unique())

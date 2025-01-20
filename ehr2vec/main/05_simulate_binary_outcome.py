@@ -19,6 +19,7 @@ from ehr2vec.common.default_args import (
     PROBA_COL,
     TARGET_COL,
     TIMESTAMP_COL,
+    INDEX_DATE,
 )
 from ehr2vec.common.loader import load_binary_outcomes, load_config, load_index_dates
 from ehr2vec.common.setup import (
@@ -132,7 +133,7 @@ def main(config_path: str) -> None:
     logger.info("Simulating absolute position for the ACTUAL scenario.")
     abspos_outcome_actual = simulate_abspos_from_binary_outcome(
         outcome_actual,
-        df["index_date"],
+        df[INDEX_DATE],
         cfg.get("max_years", 3),
         cfg.get("days_offset", 0),
     )
