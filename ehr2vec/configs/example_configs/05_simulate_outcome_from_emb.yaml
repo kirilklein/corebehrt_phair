@@ -1,0 +1,18 @@
+env: local
+project: "PHAIR"
+paths:
+  ps_model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"
+  run_name: simulate_outcome_from_emb
+  output_path: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome"
+
+simulation:
+  a: 1
+  b: .5
+  c: .1
+  sparsity: 0.7
+  scale: 0.1
+max_years: 3
+days_offset: 1
+  
+  
+  

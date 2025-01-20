@@ -43,3 +43,46 @@ def linear_logistic(
     probability = sigmoid(a * exposure + b * propensity_score + c)
     binary_outcome = bernoulli.rvs(probability)
     return binary_outcome, probability
+
+
+def simulate_outcome_from_embeddings(
+    features: np.ndarray,
+    exposure: np.ndarray,
+    a: float,
+    b: float,
+    c: float,
+    sparsity: float = 0.7,
+    scale: float = 0.1,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Simulate outcome from patient embeddings with sparse feature coefficients.
+
+    Args:
+        df: DataFrame containing features and exposure
+        a: exposure coefficient
+        b: coefficient for feature combination
+        c: intercept
+        sparsity: proportion of features that will have zero coefficients (default: 0.7)
+        scale: scale of the normal distribution for feature coefficients (default: 0.1)
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: binary outcome and probability
+    """
+
+    # Generate sparse feature coefficients
+    n_features = features.shape[1]
+    rng = np.random.RandomState(42)  # Set fixed random state for reproducibility
+    W = rng.normal(
+        0, scale, size=n_features
+    )  # Small coefficients from normal distribution
+    zero_mask = rng.random(n_features) < sparsity
+    W[zero_mask] = 0  # Set random subset of coefficients to zero
+
+    # Calculate probability using feature combination
+    feature_combination = (
+        features @ W
+    )  # Matrix multiplication of features and coefficients
+    probability = sigmoid(a * exposure + b * feature_combination + c)
+    binary_outcome = bernoulli.rvs(probability)
+
+    return binary_outcome, probability
