@@ -84,10 +84,10 @@ def get_binary_outcomes(
 
 def train_xgboost_on_fold_and_make_predictions(
     config, fold_dir: str, outcomes: pd.Series, exposures: pd.Series
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series]:
     """
     Train an XGBoost model on a single fold and produce both raw and calibrated
-    predictions for the validation set.
+    predictions for the validation set, along with feature importance scores.
 
     Args:
         config: Configuration object.
@@ -96,9 +96,11 @@ def train_xgboost_on_fold_and_make_predictions(
         exposures (pd.Series): Exposure values indexed by PID.
 
     Returns:
-        Tuple[pd.DataFrame, pd.DataFrame]:
+        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series]:
             - Uncalibrated validation predictions DataFrame.
             - Calibrated validation predictions DataFrame.
+            - Calibrated counterfactual validation predictions DataFrame.
+            - Feature importance scores Series.
     """
     # Load data
     train_data = load_tabular_data(fold_dir, "train", outcomes, exposures)
@@ -174,7 +176,16 @@ def train_xgboost_on_fold_and_make_predictions(
     calibrated_val_df = calibrate_data(calibrator, val_df)
     calibrated_val_cf_df = calibrate_data(calibrator, val_cf_df)
 
-    return val_df, calibrated_val_df, calibrated_val_cf_df
+    # After model training, get feature importance
+    importance_scores = pd.Series(
+        model.feature_importances_,
+        index=[
+            f"feature_{i}" for i in range(x_train_exp.shape[1])
+        ],  # Default feature names
+    )
+    importance_scores.index.name = "feature"
+
+    return val_df, calibrated_val_df, calibrated_val_cf_df, importance_scores
 
 
 def combine_with_exposures(x, exposures):
@@ -248,18 +259,23 @@ def main():
     uncalibrated_results = []
     calibrated_results = []
     calibrated_cf_results = []
+    all_importance_scores = []  # New list to collect importance scores
 
     for fold_dir_name in tqdm(fold_dirs, desc="Training folds"):
         fold_index = int(fold_dir_name.split("_")[1])
         logger.info(f"Training fold {fold_index}/{num_folds}")
         fold_dir_path = join(finetune_folder, fold_dir_name)
 
-        val_df, cal_val_df, cal_val_cf_df = train_xgboost_on_fold_and_make_predictions(
-            config, fold_dir_path, outcomes, exposures
+        val_df, cal_val_df, cal_val_cf_df, importance_scores = (
+            train_xgboost_on_fold_and_make_predictions(
+                config, fold_dir_path, outcomes, exposures
+            )
         )
         uncalibrated_results.append(val_df)
         calibrated_results.append(cal_val_df)
         calibrated_cf_results.append(cal_val_cf_df)
+        all_importance_scores.append(importance_scores)
+
     # Save results
     save_results(
         pd.concat(uncalibrated_results),
@@ -275,6 +291,12 @@ def main():
         pd.concat(calibrated_cf_results),
         xgboost_output_dir,
         f"predictions_and_targets_calibrated_cf_{config.calibration}.csv",
+    )
+
+    # Calculate and save mean feature importance across folds
+    mean_importance = pd.concat(all_importance_scores, axis=1).mean(axis=1)
+    mean_importance.sort_values(ascending=False).to_csv(
+        join(xgboost_output_dir, "feature_importance.csv")
     )
 
     # Save to Azure if needed
