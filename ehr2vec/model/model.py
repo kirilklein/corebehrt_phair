@@ -74,9 +74,7 @@ class BertEHRModel(BertEHREncoder):
             if batch is not None
             else torch.ones(inputs_embeds.shape[:2], device=inputs_embeds.device).int()
         )
-        logits, patient_vector = self.cls(
-            sequence_output, attention_mask=attention_mask
-        )
+        logits = self.cls(sequence_output, attention_mask=attention_mask)
 
         # Calculate loss if target is provided
         loss = None
@@ -88,7 +86,6 @@ class BertEHRModel(BertEHREncoder):
             "last_hidden_state": outputs.last_hidden_state,
             "pooler_output": outputs.pooler_output,
             "hidden_states": outputs.hidden_states,
-            "patient_vector": patient_vector,
             "attentions": outputs.attentions,
             "logits": logits,
             "loss": loss,
