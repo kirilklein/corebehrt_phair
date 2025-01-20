@@ -115,12 +115,14 @@ def train_fold(
         X_val = np.column_stack([X_val, val_data.exposures])
 
     # Initialize and train XGBoost model
-    model = xgb.XGBClassifier(**cfg.model.params)
+    xgb.set_config(verbosity=cfg.model.params.get("verbosity", 1))
+    model = xgb.XGBClassifier(
+        **cfg.model.params, device="cuda" if torch.cuda.is_available() else "cpu"
+    )
     model.fit(
         X_train,
         train_data.targets,
         eval_set=[(X_val, val_data.targets)],
-        verbose=cfg.model.get("verbose", True),
     )
 
     # Validation predictions
