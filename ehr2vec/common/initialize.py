@@ -174,6 +174,16 @@ class Initializer:
         cfg = azure_context.add_pretrain_info_to_cfg()
         return cfg, run, mount_context, pretrain_model_path
 
+    @staticmethod
+    def initialize_configuration_tabular(
+        cfg: Config, dataset_name: str = "PHAIR"
+    ) -> Tuple[Config, str, str]:
+        """Load and adjust the configuration."""
+        cfg = DirectoryPreparer.adjust_paths_for_finetune(cfg)
+        azure_context = AzurePathContext(cfg, dataset_name=dataset_name)
+        cfg, run, mount_context = azure_context.azure_finetune_setup()
+        return cfg, run, mount_context
+
 
 class ModelManager:
     def __init__(self, cfg, fold: int = None, model_path: str = None):
