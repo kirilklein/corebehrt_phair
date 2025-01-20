@@ -146,8 +146,41 @@ def train_xgboost_on_fold(
     return val_df, calibrated_val_df
 
 
-def main():
-    # Load and process config
+def process_outcomes(config, xgboost_output_dir):
+    """Process and save outcomes data."""
+    outcomes, outcome_pre_followup_pids = get_binary_outcomes(
+        finetune_folder=config.paths.model_path,
+        outcome_csv_path=config.paths.outcome,
+        n_hours_start_follow_up=config.outcome.n_hours_start_follow_up,
+    )
+
+    torch.save(
+        outcome_pre_followup_pids,
+        join(xgboost_output_dir, "outcome_pre_followup_pids.pt"),
+    )
+    outcomes.to_csv(join(xgboost_output_dir, "binary_outcomes.csv"), index=False)
+    return outcomes
+
+
+def load_exposures(config):
+    """Load and process exposures data."""
+    exposures_df = pd.read_csv(
+        join(config.paths.model_path, "predictions_and_targets.csv")
+    )
+    exposures_df = exposures_df.rename(columns={ORG_PID_COL: PID_COL})[
+        [PID_COL, TARGET_COL]
+    ]
+    exposures_df = exposures_df.set_index(PID_COL)
+    return exposures_df[TARGET_COL]
+
+
+def save_results(results_df, output_dir, filename):
+    """Save results to CSV with proper column renaming."""
+    results_df = results_df.rename(columns={PID_COL: ORG_PID_COL})
+    results_df.to_csv(join(output_dir, filename), index=False)
+
+
+def setup_environment():
     args = get_args(DEFAULT_CONFIG_NAME)
     config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
     config = load_config(config_path)
@@ -157,35 +190,19 @@ def main():
     config, _, mount_context = Initializer.initialize_configuration_tabular(
         config, dataset_name=config.get("project", DEFAULT_BLOBSTORE)
     )
+    return config, mount_context
 
+
+def main():
+    # Initialize configuration and environment
+    config, mount_context = setup_environment()
     # Prepare run folder and logger
     logger, xgboost_output_dir = DirectoryPreparer.setup_run_folder(config)
     config.save_to_yaml(join(xgboost_output_dir, "xgboost_config.yaml"))
 
-    # Determine outcomes
-    outcomes, outcome_pre_followup_pids = get_binary_outcomes(
-        finetune_folder=config.paths.model_path,
-        outcome_csv_path=config.paths.outcome,
-        n_hours_start_follow_up=config.outcome.n_hours_start_follow_up,
-    )
-
-    # Save pids with pre-follow-up outcomes
-    torch.save(
-        outcome_pre_followup_pids,
-        join(xgboost_output_dir, "outcome_pre_followup_pids.pt"),
-    )
-    # Save binary outcomes
-    outcomes.to_csv(join(xgboost_output_dir, "binary_outcomes.csv"), index=False)
-
-    # Load exposures
-    exposures_df = pd.read_csv(
-        join(config.paths.model_path, "predictions_and_targets.csv")
-    )
-    exposures_df = exposures_df.rename(columns={ORG_PID_COL: PID_COL})[
-        [PID_COL, TARGET_COL]
-    ]
-    exposures_df = exposures_df.set_index(PID_COL)
-    exposures = exposures_df[TARGET_COL]
+    # Process outcomes and exposures
+    outcomes = process_outcomes(config, xgboost_output_dir)
+    exposures = load_exposures(config)
 
     # Collect fold directories
     finetune_folder = config.paths.model_path
@@ -207,24 +224,16 @@ def main():
         uncalibrated_results.append(val_df)
         calibrated_results.append(cal_val_df)
 
-    # Combine and save uncalibrated results
-    uncalibrated_results_df = pd.concat(uncalibrated_results)
-    uncalibrated_results_df = uncalibrated_results_df.rename(
-        columns={PID_COL: ORG_PID_COL}
+    # Save results
+    save_results(
+        pd.concat(uncalibrated_results),
+        xgboost_output_dir,
+        "predictions_and_targets.csv",
     )
-    uncalibrated_results_df.to_csv(
-        join(xgboost_output_dir, "predictions_and_targets.csv"), index=False
-    )
-
-    # Combine and save calibrated results
-    calibrated_results_df = pd.concat(calibrated_results)
-    calibrated_results_df = calibrated_results_df.rename(columns={PID_COL: ORG_PID_COL})
-    calibrated_results_df.to_csv(
-        join(
-            xgboost_output_dir,
-            f"predictions_and_targets_calibrated_{config.calibration}.csv",
-        ),
-        index=False,
+    save_results(
+        pd.concat(calibrated_results),
+        xgboost_output_dir,
+        f"predictions_and_targets_calibrated_{config.calibration}.csv",
     )
 
     # Save to Azure if needed
