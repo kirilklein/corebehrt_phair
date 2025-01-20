@@ -3,6 +3,7 @@ This script is used to train a tabular model on the patient vectors produced by 
 The goal is to restrict the features of the outcome model to the features of the exposure model (covariates).
 """
 
+import logging
 import os
 from os.path import abspath, dirname, join
 from typing import Tuple
@@ -21,15 +22,18 @@ from ehr2vec.common.default_args import (
     PID_COL,
     PROBA_COL,
     TARGET_COL,
+    XGBOOST_RANDOM_SEARCH_PARAM_GRID,
 )
 from ehr2vec.common.initialize import Initializer
 from ehr2vec.common.loader import load_config
 from ehr2vec.common.setup import DirectoryPreparer, get_args
 from ehr2vec.downstream_tasks.outcomes import OutcomeHandler
-from ehr2vec.evaluation.calibration import calibrate_data, train_calibrator
 from ehr2vec.downstream_tasks.tabular import load_tabular_data
+from ehr2vec.downstream_tasks.tabular_training import tune_xgboost_hyperparams
+from ehr2vec.evaluation.calibration import calibrate_data, train_calibrator
 
 DEFAULT_CONFIG_NAME = "example_configs/05_train_tab_outcome.yaml"
+logger = logging.getLogger(__name__)
 
 
 def get_binary_outcomes(
@@ -108,10 +112,26 @@ def train_xgboost_on_fold(
         x_train = np.column_stack([x_train, train_data.exposures])
         x_val = np.column_stack([x_val, val_data.exposures])
 
+    # Tune hyperparameters
+    param_grid = config.model.random_search.get(
+        "param_grid", XGBOOST_RANDOM_SEARCH_PARAM_GRID
+    )
+    n_iter = config.model.random_search.n_iter
+
+    best_params = tune_xgboost_hyperparams(
+        x_train,
+        train_data.targets,
+        param_grid,
+        n_iter,
+        cv=config.model.random_search.get("cv", 5),
+    )
+    logger.info(f"Best params for fold {fold_dir}: {best_params}")
+
     # Initialize and train XGBoost model
-    xgb.set_config(verbosity=config.model.params.get("verbosity", 1))
     model = xgb.XGBClassifier(
-        **config.model.params, device="cuda" if torch.cuda.is_available() else "cpu"
+        **best_params,
+        verbosity=config.model.get("verbosity", 1),
+        early_stopping_rounds=config.model.get("early_stopping_rounds", 10),
     )
     model.fit(x_train, train_data.targets, eval_set=[(x_val, val_data.targets)])
 

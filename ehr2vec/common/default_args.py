@@ -20,3 +20,14 @@ TIMESTAMP_COL = "TIMESTAMP"
 
 OUTCOME_TREATED_COL = "Y1"
 OUTCOME_CONTROL_COL = "Y0"
+
+
+XGBOOST_RANDOM_SEARCH_PARAM_GRID = {
+    "max_depth": [3, 5, 7, 9],
+    "learning_rate": [1e-3, 1e-2, 1e-1],
+    "n_estimators": [100, 200, 300],
+    "subsample": [0.7, 0.9, 1.0],
+    "colsample_bytree": [0.7, 0.9, 1.0],
+    "min_child_weight": [1, 2, 3],
+    "gamma": [0, 0.1, 0.3, 0.5],
+}
