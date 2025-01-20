@@ -29,7 +29,9 @@ def tune_xgboost_hyperparams(
     """
     # Create a base XGBClassifier
     xgb_estimator = xgb.XGBClassifier(
-        tree_method="hist", eval_metric="logloss"  # faster on GPUs/large datasets
+        tree_method="hist",
+        eval_metric="logloss",
+        random_state=42,  # faster on GPUs/large datasets
     )
 
     random_search = RandomizedSearchCV(

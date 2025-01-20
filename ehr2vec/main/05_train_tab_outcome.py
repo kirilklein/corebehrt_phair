@@ -132,6 +132,7 @@ def train_xgboost_on_fold(
         **best_params,
         verbosity=config.model.get("verbosity", 1),
         early_stopping_rounds=config.model.get("early_stopping_rounds", 10),
+        random_state=config.model.get("random_state", 42),
     )
     model.fit(x_train, train_data.targets, eval_set=[(x_val, val_data.targets)])
 
