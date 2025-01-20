@@ -84,7 +84,7 @@ def get_binary_outcomes(
     return outcomes, outcome_pre_followup_pids
 
 
-def train_xgboost_on_fold(
+def train_xgboost_on_fold_and_make_predictions(
     config, fold_dir: str, outcomes: pd.Series, exposures: pd.Series
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -111,8 +111,9 @@ def train_xgboost_on_fold(
     x_val = val_data.vectors.numpy()
 
     if train_data.exposures is not None:
-        x_train = np.column_stack([x_train, train_data.exposures])
-        x_val = np.column_stack([x_val, val_data.exposures])
+        x_train_exp = combine_with_exposures(x_train, train_data.exposures)
+        x_val_exp = combine_with_exposures(x_val, val_data.exposures)
+        x_val_cf_exp = combine_with_exposures(x_val, 1 - val_data.exposures)
 
     # Tune hyperparameters
     param_grid = config.model.random_search.get(
@@ -136,11 +137,12 @@ def train_xgboost_on_fold(
         early_stopping_rounds=config.model.get("early_stopping_rounds", 10),
         random_state=config.model.get("random_state", 42),
     )
-    model.fit(x_train, train_data.targets, eval_set=[(x_val, val_data.targets)])
+    model.fit(x_train_exp, train_data.targets, eval_set=[(x_val_exp, val_data.targets)])
 
     # Predictions
-    train_probs = model.predict_proba(x_train)[:, 1]
-    val_probs = model.predict_proba(x_val)[:, 1]
+    train_probs = model.predict_proba(x_train_exp)[:, 1]
+    val_probs = model.predict_proba(x_val_exp)[:, 1]
+    val_cf_probs = model.predict_proba(x_val_cf_exp)[:, 1]
 
     # Wrap train predictions in a DataFrame
     train_df = pd.DataFrame(
@@ -162,11 +164,23 @@ def train_xgboost_on_fold(
             TARGET_COL: val_data.targets,
         }
     )
+    val_cf_df = pd.DataFrame(
+        {
+            PID_COL: val_data.pids,
+            PROBA_COL: val_cf_probs,
+            TARGET_COL: val_data.targets,
+        }
+    )
 
     # Calibrate validation probabilities
     calibrated_val_df = calibrate_data(calibrator, val_df)
+    calibrated_val_cf_df = calibrate_data(calibrator, val_cf_df)
 
-    return model, calibrator, val_df, calibrated_val_df
+    return val_df, calibrated_val_df, calibrated_val_cf_df
+
+
+def combine_with_exposures(x, exposures):
+    return np.column_stack([x, exposures - 0.5])
 
 
 def process_outcomes(config, xgboost_output_dir):
@@ -235,24 +249,19 @@ def main():
     # Train for each fold
     uncalibrated_results = []
     calibrated_results = []
+    calibrated_cf_results = []
 
     for fold_dir_name in tqdm(fold_dirs, desc="Training folds"):
         fold_index = int(fold_dir_name.split("_")[1])
         logger.info(f"Training fold {fold_index}/{num_folds}")
         fold_dir_path = join(finetune_folder, fold_dir_name)
 
-        model, calibrator, val_df, cal_val_df = train_xgboost_on_fold(
+        val_df, cal_val_df, cal_val_cf_df = train_xgboost_on_fold_and_make_predictions(
             config, fold_dir_path, outcomes, exposures
         )
-        pipe = Pipeline([("model", model), ("calibrator", calibrator)])
         uncalibrated_results.append(val_df)
         calibrated_results.append(cal_val_df)
-
-        joblib.dump(model, join(xgboost_output_dir, f"model_{fold_index}.joblib"))
-        joblib.dump(
-            calibrator, join(xgboost_output_dir, f"calibrator_{fold_index}.joblib")
-        )
-        joblib.dump(pipe, join(xgboost_output_dir, f"pipe_{fold_index}.joblib"))
+        calibrated_cf_results.append(cal_val_cf_df)
     # Save results
     save_results(
         pd.concat(uncalibrated_results),
@@ -263,6 +272,11 @@ def main():
         pd.concat(calibrated_results),
         xgboost_output_dir,
         f"predictions_and_targets_calibrated_{config.calibration}.csv",
+    )
+    save_results(
+        pd.concat(calibrated_cf_results),
+        xgboost_output_dir,
+        f"predictions_and_targets_calibrated_cf_{config.calibration}.csv",
     )
 
     # Save to Azure if needed
