@@ -10,6 +10,7 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
+import joblib
 import torch
 import xgboost as xgb
 from tqdm import tqdm
@@ -31,6 +32,7 @@ from ehr2vec.downstream_tasks.outcomes import OutcomeHandler
 from ehr2vec.downstream_tasks.tabular import load_tabular_data
 from ehr2vec.downstream_tasks.tabular_training import tune_xgboost_hyperparams
 from ehr2vec.evaluation.calibration import calibrate_data, train_calibrator
+from sklearn.pipeline import Pipeline
 
 DEFAULT_CONFIG_NAME = "example_configs/05_train_tab_outcome.yaml"
 logger = logging.getLogger(__name__)
@@ -164,7 +166,7 @@ def train_xgboost_on_fold(
     # Calibrate validation probabilities
     calibrated_val_df = calibrate_data(calibrator, val_df)
 
-    return val_df, calibrated_val_df
+    return model, calibrator, val_df, calibrated_val_df
 
 
 def process_outcomes(config, xgboost_output_dir):
@@ -179,7 +181,7 @@ def process_outcomes(config, xgboost_output_dir):
         outcome_pre_followup_pids,
         join(xgboost_output_dir, "outcome_pre_followup_pids.pt"),
     )
-    outcomes.to_csv(join(xgboost_output_dir, "binary_outcomes.csv"), index=False)
+    outcomes.to_csv(join(xgboost_output_dir, "binary_outcomes.csv"), index=True)
     return outcomes
 
 
@@ -239,12 +241,18 @@ def main():
         logger.info(f"Training fold {fold_index}/{num_folds}")
         fold_dir_path = join(finetune_folder, fold_dir_name)
 
-        val_df, cal_val_df = train_xgboost_on_fold(
+        model, calibrator, val_df, cal_val_df = train_xgboost_on_fold(
             config, fold_dir_path, outcomes, exposures
         )
+        pipe = Pipeline([("model", model), ("calibrator", calibrator)])
         uncalibrated_results.append(val_df)
         calibrated_results.append(cal_val_df)
 
+        joblib.dump(model, join(xgboost_output_dir, f"model_{fold_index}.joblib"))
+        joblib.dump(
+            calibrator, join(xgboost_output_dir, f"calibrator_{fold_index}.joblib")
+        )
+        joblib.dump(pipe, join(xgboost_output_dir, f"pipe_{fold_index}.joblib"))
     # Save results
     save_results(
         pd.concat(uncalibrated_results),
