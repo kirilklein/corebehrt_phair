@@ -243,19 +243,20 @@ def setup_environment():
     args = get_args(DEFAULT_CONFIG_NAME)
     config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
     config = load_config(config_path)
+    output_path = config.paths.output_path
     override_config_from_cli(config)
 
     # Initialize config and environment
     config, _, mount_context = Initializer.initialize_configuration_tabular(
         config, dataset_name=config.get("project", DEFAULT_BLOBSTORE)
     )
-    return config, mount_context
+    return config, mount_context, output_path
 
 
 def main():
     # Initialize configuration and environment
-    config, mount_context = setup_environment()
-    output_path = config.paths.output_path
+    config, mount_context, output_path = setup_environment()
+
     # Prepare run folder and logger
     logger, xgboost_output_dir = DirectoryPreparer.setup_run_folder(config)
     config.save_to_yaml(join(xgboost_output_dir, "xgboost_config.yaml"))
