@@ -44,6 +44,11 @@ jobs:
                 source .venv/bin/activate  
                 python -m ehr2vec.main.04_finetune_cv --config_path example_configs/04_finetune_exposure.yaml
             
+            - name: train_tab_outcome
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.05_train_tab_outcome 
+
             - name: calibrate
               run: |
                 source .venv/bin/activate  

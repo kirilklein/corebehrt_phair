@@ -17,6 +17,7 @@ from ehr2vec.common.default_args import (
     PID_COL,
     TIMESTAMP_COL,
     TARGET_COL,
+    INDEX_DATE,
 )
 from ehr2vec.common.utils import Data
 from ehr2vec.data.utils import Utilities
@@ -309,7 +310,7 @@ def load_index_dates(finetune_dir: str) -> pd.DataFrame:
     check_path(finetune_dir, "index_dates.pt")
     index_dates = torch.load(join(finetune_dir, "index_dates.pt"), weights_only=False)
     all_pids = torch.load(join(finetune_dir, "pids.pt"))
-    return pd.DataFrame({"index_date": index_dates, PID_COL: all_pids})
+    return pd.DataFrame({INDEX_DATE: index_dates, PID_COL: all_pids})
 
 
 def load_binary_outcomes(finetune_dir: str) -> pd.DataFrame:

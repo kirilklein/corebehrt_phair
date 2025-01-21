@@ -12,14 +12,12 @@ from ehr2vec.common.cli import override_config_from_cli
 from ehr2vec.common.config import Config
 from ehr2vec.common.default_args import (
     DEFAULT_BLOBSTORE,
-    ORG_PID_COL,
+    INDEX_DATE,
     OUTCOME_CONTROL_COL,
     OUTCOME_TREATED_COL,
     PID_COL,
-    PROBA_COL,
     TARGET_COL,
     TIMESTAMP_COL,
-    INDEX_DATE,
 )
 from ehr2vec.common.loader import load_binary_outcomes, load_config, load_index_dates
 from ehr2vec.common.setup import (
@@ -32,19 +30,52 @@ from ehr2vec.simulation.save import (
     save_counterfactual_probas_and_targets,
     save_probas_and_targets,
 )
-from ehr2vec.simulation.utils import simulate_outcome
+from ehr2vec.simulation.binary_outcome import simulate_outcome_from_embeddings
+import torch
 
-DEFAULT_CONFIG_NAME = "example_configs/05_simulate_binary_outcome.yaml"
+DEFAULT_CONFIG_NAME = "example_configs/05_simulate_outcome_from_emb.yaml"
 
 
 args = get_args(DEFAULT_CONFIG_NAME)
 config_path = join(dirname(dirname(abspath(__file__))), args.config_path)
 
 
+def load_validation_patient_embeddings(model_dir_path: str) -> pd.DataFrame:
+    """Load patient embeddings and IDs from validation folds and combine them.
+
+    Args:
+        model_dir_path: Path to the directory containing fold subdirectories
+
+    Returns:
+        DataFrame containing patient embeddings with patient ID as index
+    """
+    validation_fold_dfs = []
+
+    # Iterate through fold directories
+    for fold_name in sorted(os.listdir(model_dir_path)):
+        if not fold_name.startswith("fold_"):
+            continue
+
+        fold_path = join(model_dir_path, fold_name)
+        # Load validation patient IDs and embeddings
+        patient_ids = torch.load(join(fold_path, "val_pids.pt"))
+        patient_embeddings = torch.load(join(fold_path, "val_patient_vectors.pt"))
+
+        # Create dataframe with embeddings and patient IDs
+        fold_embeddings_df = pd.DataFrame(patient_embeddings)
+        fold_embeddings_df[PID_COL] = patient_ids
+        validation_fold_dfs.append(fold_embeddings_df)
+
+    # Concatenate all validation folds
+    combined_embeddings_df = pd.concat(validation_fold_dfs)
+    return combined_embeddings_df
+
+
 def main(config_path: str) -> None:
 
     # 1) Load and set up configuration
     cfg: Config = load_config(config_path)
+    output_path = cfg.path.output_path
     override_config_from_cli(cfg)
     cfg, _, mount_context, _ = initialize_configuration_effect_estimation(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
@@ -63,33 +94,37 @@ def main(config_path: str) -> None:
 
     # 3) Load model predictions and index dates
     ps_model_path = cfg.paths.ps_model_path
-    logger.info("Load outcomes and index dates from %s", ps_model_path)
+    logger.info(
+        "Load outcomes, index dates, and patient embeddings from %s", ps_model_path
+    )
     df_outcomes = load_binary_outcomes(ps_model_path)
     df_index_dates = load_index_dates(ps_model_path)
-    logger.info("Load probas from %s", cfg.paths.probas)
-    df_probas = pd.read_csv(cfg.paths.probas).rename(columns={ORG_PID_COL: PID_COL})[
-        [PID_COL, PROBA_COL]
-    ]
-    check_pids(df_probas, df_outcomes)
+    df_patient_vectors = load_validation_patient_embeddings(ps_model_path)
+    check_pids(df_patient_vectors, df_outcomes)
 
     # 4) Merge exposure status, probas, and index dates
     logger.info("Merge predictions and index dates on %s", PID_COL)
     # Note: TARGET_COL here represents actual treatment assignment (0 or 1).
-    df = pd.merge(df_probas, df_index_dates, on=PID_COL)
+    df = pd.merge(df_patient_vectors, df_index_dates, on=PID_COL)
+
     df = pd.merge(df, df_outcomes, on=PID_COL, how="inner")
+
+    feature_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
+    features = df[feature_cols].values
+    exposure = df[TARGET_COL].values
 
     # 5) Simulate outcomes in three scenarios
     logger.info("Simulating outcome for actual treatment assignment")
-    outcome_actual, probas_actual = simulate_outcome(
-        df[PROBA_COL], df[TARGET_COL], cfg.simulation
+    outcome_actual, probas_actual = simulate_outcome_from_embeddings(
+        features, exposure, **cfg.simulation
     )
     logger.info("Simulating outcome under TREATMENT for all (treated scenario).")
-    outcome_treated, probas_treated = simulate_outcome(
-        df[PROBA_COL], np.ones(len(df)), cfg.simulation
+    outcome_treated, probas_treated = simulate_outcome_from_embeddings(
+        features, np.ones(len(features)), **cfg.simulation
     )
     logger.info("Simulating outcome under CONTROL for all (untreated scenario).")
-    outcome_control, probas_control = simulate_outcome(
-        df[PROBA_COL], np.zeros(len(df)), cfg.simulation
+    outcome_control, probas_control = simulate_outcome_from_embeddings(
+        features, np.zeros(len(features)), **cfg.simulation
     )
 
     # 6) Save counterfactual-based data (everyone treated vs. everyone untreated)
@@ -162,7 +197,7 @@ def main(config_path: str) -> None:
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",
-            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), "outcomes"),
+            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), output_path),
             overwrite=False,
         )
         mount_context.stop()

@@ -43,6 +43,7 @@ def process_data(loader, cfg, features_cfg, logger) -> dict:
 
 def main_data(config_path):
     cfg = load_config(config_path)
+    output_path = cfg.paths.output_path
     override_config_from_cli(cfg)
     cfg.paths.outcome_dir = join(cfg.features_dir, "outcomes", cfg.outcomes_name)
 
@@ -69,7 +70,7 @@ def main_data(config_path):
         save_to_blobstore(
             local_path="outcomes",
             remote_path=join(
-                cfg.get("project", DEFAULT_BLOBSTORE), "outcomes", cfg.paths.run_name
+                cfg.get("project", DEFAULT_BLOBSTORE), output_path, cfg.paths.run_name
             ),
         )
         mount_context.stop()

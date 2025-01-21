@@ -20,6 +20,7 @@ model:
   bidirectional: true
   # extend_head: 
   # hidden_size: null
+  return_cls: true
 
 data:
   val_split: 0.1

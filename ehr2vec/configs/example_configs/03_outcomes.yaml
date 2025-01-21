@@ -2,6 +2,7 @@ env: local
 project: "PHAIR"
 paths:
   run_name: _example
+  output_path: "outcomes"
 outcomes_name: "EXAMPLE_OUTCOME"
 features_dir: outputs/example_features
 loader:
