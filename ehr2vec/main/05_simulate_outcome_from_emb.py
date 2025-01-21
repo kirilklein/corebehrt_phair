@@ -75,6 +75,7 @@ def main(config_path: str) -> None:
 
     # 1) Load and set up configuration
     cfg: Config = load_config(config_path)
+    output_path = cfg.path.output_path
     override_config_from_cli(cfg)
     cfg, _, mount_context, _ = initialize_configuration_effect_estimation(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
@@ -196,7 +197,7 @@ def main(config_path: str) -> None:
     if cfg.env == "azure":
         save_to_blobstore(
             local_path="",
-            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), "outcomes"),
+            remote_path=join(cfg.get("project", DEFAULT_BLOBSTORE), output_path),
             overwrite=False,
         )
         mount_context.stop()
