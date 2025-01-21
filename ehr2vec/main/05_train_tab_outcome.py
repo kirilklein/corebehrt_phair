@@ -242,6 +242,7 @@ def setup_environment():
 def main():
     # Initialize configuration and environment
     config, mount_context = setup_environment()
+    output_path = config.paths.output_path
     # Prepare run folder and logger
     logger, xgboost_output_dir = DirectoryPreparer.setup_run_folder(config)
     config.save_to_yaml(join(xgboost_output_dir, "xgboost_config.yaml"))
@@ -304,7 +305,9 @@ def main():
         save_to_blobstore(
             local_path=config.paths.run_name,
             remote_path=join(
-                config.get("project", DEFAULT_BLOBSTORE), config.paths.run_name
+                config.get("project", DEFAULT_BLOBSTORE),
+                output_path,
+                config.paths.run_name,
             ),
         )
         mount_context.stop()

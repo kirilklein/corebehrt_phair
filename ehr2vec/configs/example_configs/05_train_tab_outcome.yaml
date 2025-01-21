@@ -5,6 +5,7 @@ paths:
   run_name: "xgboost_run"
   model_path: "outputs/example_pretraining/example/finetune_EXAMPLE_CENSOR_censored_24_hours_pre_EXAMPLE_CENSOR_followup_start_1_hours_pre_index_date_run_test"  # Path to the folder containing the finetuned model results
   outcome: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/EXAMPLE_OUTCOME.csv"
+  output_path: "outputs/example_features/outcomes/EXAMPLE_OUTCOME/xgboost_run"
 model:
   random_search:
     n_iter: 3
