@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 import torch
 import xgboost as xgb
+from sklearn.metrics import average_precision_score, roc_auc_score
 from tqdm import tqdm
 
 from ehr2vec.common.azure import save_to_blobstore
@@ -144,6 +145,11 @@ def train_xgboost_on_fold_and_make_predictions(
     val_probs = model.predict_proba(x_val_exp)[:, 1]
     val_cf_probs = model.predict_proba(x_val_cf_exp)[:, 1]
 
+    val_auc = roc_auc_score(val_data.targets, val_probs)
+    val_pr_auc = average_precision_score(val_data.targets, val_probs)
+    logger.info(f"Validation AUC: {val_auc}")
+    logger.info(f"Validation PR AUC: {val_pr_auc}")
+
     # Wrap train predictions in a DataFrame
     train_df = pd.DataFrame(
         {
@@ -185,7 +191,14 @@ def train_xgboost_on_fold_and_make_predictions(
     )
     importance_scores.index.name = "feature"
 
-    return val_df, calibrated_val_df, calibrated_val_cf_df, importance_scores
+    return (
+        val_df,
+        calibrated_val_df,
+        calibrated_val_cf_df,
+        importance_scores,
+        val_auc,
+        val_pr_auc,
+    )
 
 
 def combine_with_exposures(x, exposures):
@@ -261,13 +274,15 @@ def main():
     calibrated_results = []
     calibrated_cf_results = []
     all_importance_scores = []  # New list to collect importance scores
+    all_val_auc = []
+    all_val_pr_auc = []
 
     for fold_dir_name in tqdm(fold_dirs, desc="Training folds"):
         fold_index = int(fold_dir_name.split("_")[1])
         logger.info(f"Training fold {fold_index}/{num_folds}")
         fold_dir_path = join(finetune_folder, fold_dir_name)
 
-        val_df, cal_val_df, cal_val_cf_df, importance_scores = (
+        val_df, cal_val_df, cal_val_cf_df, importance_scores, val_auc, val_pr_auc = (
             train_xgboost_on_fold_and_make_predictions(
                 config, fold_dir_path, outcomes, exposures
             )
@@ -276,7 +291,11 @@ def main():
         calibrated_results.append(cal_val_df)
         calibrated_cf_results.append(cal_val_cf_df)
         all_importance_scores.append(importance_scores)
+        all_val_auc.append(val_auc)
+        all_val_pr_auc.append(val_pr_auc)
 
+    logger.info(f"Mean AUC: {np.mean(all_val_auc)}")
+    logger.info(f"Mean PR AUC: {np.mean(all_val_pr_auc)}")
     # Save results
     save_results(
         pd.concat(uncalibrated_results),
