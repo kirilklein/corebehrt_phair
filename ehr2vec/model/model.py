@@ -3,10 +3,8 @@ import logging
 import torch
 import torch.nn as nn
 from transformers import ModernBertModel
-from transformers.models.roformer.modeling_roformer import RoFormerEncoder
 
 from ehr2vec.embeddings.ehr import EhrEmbeddings
-from ehr2vec.model.activations import SwiGLU
 from ehr2vec.model.heads import FineTuneHead, MLMHead
 from ehr2vec.model.loss import neg_partial_log_likelihood
 
