@@ -121,9 +121,7 @@ class EHRTrainer:
         if torch.cuda.is_available() and hasattr(torch, "compile"):
             try:
                 # Use a more conservative backend
-                self.model = torch.compile(
-                    self.model, backend="inductor", mode="reduce-overhead"
-                )
+                self.model = torch.compile(self.model, backend="inductor")
                 self.log("Model successfully compiled")
             except Exception as e:
                 self.log(

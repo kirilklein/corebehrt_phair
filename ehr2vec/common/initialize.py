@@ -6,7 +6,7 @@ from typing import List, Optional, Tuple
 import torch
 from torch.optim import AdamW
 from torch.utils.data import Sampler
-from transformers import BertConfig
+from transformers import ModernBertConfig
 
 from ehr2vec.common.azure import AzurePathContext
 from ehr2vec.common.config import Config, instantiate
@@ -39,12 +39,10 @@ class Initializer:
         else:
             logger.info("Initializing new model")
             vocab_size = len(train_dataset.vocabulary)
-            model = BertEHRModel(
-                BertConfig(
-                    **self.cfg.model,
-                    vocab_size=vocab_size,
-                )
+            bert_config = ModernBertConfig(
+                **self.cfg.model, vocab_size=vocab_size, pad_token_id=vocab_size - 1
             )
+            model = BertEHRModel(bert_config)
         # ! Uncomment if instabilities occur.
         # for layer in model.modules():
         #   layer.register_forward_hook(hook_fn)
@@ -75,14 +73,6 @@ class Initializer:
             return model
         else:
             raise NotImplementedError("Fine-tuning from scratch is not implemented.")
-            logger.info("Initializing new model")
-            return BertForFineTuning(
-                BertConfig(
-                    **self.cfg.model,
-                    pos_weight=get_pos_weight(self.cfg, train_dataset.outcomes),
-                    pool_type=self.cfg.model.get("pool_type", "mean"),
-                ),
-            )
 
     def initialize_optimizer(self, model):
         """Initialize optimizer from checkpoint or from scratch."""

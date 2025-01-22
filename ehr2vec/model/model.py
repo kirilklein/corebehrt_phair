@@ -2,54 +2,46 @@ import logging
 
 import torch
 import torch.nn as nn
-from transformers import BertModel
-from transformers.models.roformer.modeling_roformer import RoFormerEncoder
+from transformers import ModernBertModel
 
 from ehr2vec.embeddings.ehr import EhrEmbeddings
-from ehr2vec.model.activations import SwiGLU
 from ehr2vec.model.heads import FineTuneHead, MLMHead
 from ehr2vec.model.loss import neg_partial_log_likelihood
 
 logger = logging.getLogger(__name__)
 
 
-class BertEHREncoder(BertModel):
+class BertEHREncoder(ModernBertModel):
     def __init__(self, config):
         super().__init__(config)
         self.embeddings = EhrEmbeddings(config)
 
-        # Activate transformer++ recipe
-        if config.to_dict().get("plusplus"):
-            logger.info("Using Transformer++ recipe.")
-            config.rotary_value = False
-            self.encoder = RoFormerEncoder(config)
-
-            for layer in self.encoder.layer:
-                layer.intermediate.intermediate_act_fn = SwiGLU(config)
-                # layer.output.LayerNorm = RMSNorm(config.hidden_size, eps=config.layer_norm_eps) # We dont use RMSNorm (only speedup, no performance gain)
-
     def forward(self, batch: dict = None, inputs_embeds: torch.tensor = None, **kwargs):
-        """
-        Forward pass for the model. Either batch or inputs_embeds must be provided.
-        Inputs_embeds is prioritized over batch.
-        """
+
         if inputs_embeds is not None:
-            return super().forward(
-                inputs_embeds=inputs_embeds,
-            )
+            return super().forward(inputs_embeds=inputs_embeds, **kwargs)
         if batch is not None:
+            # Extract necessary components from the batch
+            input_ids = batch["concept"]
+            token_type_ids = batch.get("segment", None)
+            attention_mask = batch.get("attention_mask", None)
             present_keys = [
                 k
                 for k in ["age", "abspos", "position_ids", "dosage", "unit"]
                 if k in batch
             ]
             position_ids = {key: batch.get(key) for key in present_keys}
-            return super().forward(
-                input_ids=batch["concept"],
-                attention_mask=batch.get("attention_mask", None),
-                token_type_ids=batch.get("segment", None),
+
+            # Compute embeddings manually including token_type_ids and position_ids
+            inputs_embeds = self.embeddings(
+                input_ids=input_ids,
+                token_type_ids=token_type_ids,
                 position_ids=position_ids,
-                **kwargs,
+            )
+
+            # Call parent's forward with inputs_embeds and attention_mask
+            return super().forward(
+                inputs_embeds=inputs_embeds, attention_mask=attention_mask, **kwargs
             )
         else:
             raise ValueError("Either batch or inputs_embeds must be provided.")
@@ -84,7 +76,7 @@ class BertEHRModel(BertEHREncoder):
         # Return a dictionary instead of modifying outputs
         return {
             "last_hidden_state": outputs.last_hidden_state,
-            "pooler_output": outputs.pooler_output,
+            # "pooler_output": outputs.pooler_output,
             "hidden_states": outputs.hidden_states,
             "attentions": outputs.attentions,
             "logits": logits,
@@ -123,7 +115,7 @@ class BertForFineTuning(BertEHREncoder):
             loss = self.get_loss(logits, batch["target"])
         return {
             "last_hidden_state": outputs["last_hidden_state"],
-            "pooler_output": outputs["pooler_output"],
+            # "pooler_output": outputs["pooler_output"],
             "hidden_states": outputs.get("hidden_states", None),
             "attentions": outputs.get("attentions", None),
             "logits": logits,
@@ -155,7 +147,7 @@ class BertForTime2Event(BertEHREncoder):
 
         return {
             "last_hidden_state": outputs["last_hidden_state"],
-            "pooler_output": outputs["pooler_output"],
+            # "pooler_output": outputs["pooler_output"],
             "hidden_states": outputs["hidden_states"],
             "attentions": outputs["attentions"],
             "logits": logits,
