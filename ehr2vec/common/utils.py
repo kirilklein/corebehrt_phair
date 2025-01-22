@@ -309,3 +309,28 @@ def match_patterns(patterns: Union[str, List[str]], vocabulary: Dict) -> Set[int
 def match_pattern(pattern: str, vocabulary: Dict) -> Set[int]:
     """Match a pattern to a vocabulary and return the corresponding codes"""
     return {v for k, v in vocabulary.items() if re.match(pattern, k)}
+
+
+def is_integer(col) -> bool:
+    """
+    Check if a value can be converted to an integer.
+
+    Args:
+        col: Value to check (can be string, float, or other type)
+
+    Returns:
+        bool: True if the value can be converted to an integer, False otherwise
+
+    Examples:
+        >>> is_integer("123")
+        True
+        >>> is_integer("12.3")
+        False
+        >>> is_integer("abc")
+        False
+    """
+    try:
+        int(col)
+        return True  # Skip columns that are integer names
+    except ValueError:
+        return False

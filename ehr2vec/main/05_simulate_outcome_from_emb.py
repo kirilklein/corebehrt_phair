@@ -5,6 +5,7 @@ from os.path import abspath, dirname, join
 
 import numpy as np
 import pandas as pd
+import torch
 
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.checks import check_pids
@@ -25,13 +26,13 @@ from ehr2vec.common.setup import (
     initialize_configuration_effect_estimation,
     setup_logger,
 )
+from ehr2vec.common.utils import is_integer
+from ehr2vec.simulation.binary_outcome import simulate_outcome_from_embeddings
 from ehr2vec.simulation.longitudinal_outcome import simulate_abspos_from_binary_outcome
 from ehr2vec.simulation.save import (
     save_counterfactual_probas_and_targets,
     save_probas_and_targets,
 )
-from ehr2vec.simulation.binary_outcome import simulate_outcome_from_embeddings
-import torch
 
 DEFAULT_CONFIG_NAME = "example_configs/05_simulate_outcome_from_emb.yaml"
 
@@ -75,7 +76,7 @@ def main(config_path: str) -> None:
 
     # 1) Load and set up configuration
     cfg: Config = load_config(config_path)
-    output_path = cfg.path.output_path
+    output_path = cfg.paths.output_path
     override_config_from_cli(cfg)
     cfg, _, mount_context, _ = initialize_configuration_effect_estimation(
         cfg, dataset_name=cfg.get("project", DEFAULT_BLOBSTORE)
@@ -94,23 +95,45 @@ def main(config_path: str) -> None:
 
     # 3) Load model predictions and index dates
     ps_model_path = cfg.paths.ps_model_path
+    outcome_model_path = cfg.paths.get("outcome_model_path", None)
+    outcome_flag = outcome_model_path is not None
     logger.info(
-        "Load outcomes, index dates, and patient embeddings from %s", ps_model_path
+        "Load treatment, index dates, and patient embeddings from %s", ps_model_path
     )
-    df_outcomes = load_binary_outcomes(ps_model_path)
+    df_treatment = load_binary_outcomes(ps_model_path)
     df_index_dates = load_index_dates(ps_model_path)
     df_patient_vectors = load_validation_patient_embeddings(ps_model_path)
-    check_pids(df_patient_vectors, df_outcomes)
+
+    logger.info(
+        "Optionally load outcome patient embeddings from %s", outcome_model_path
+    )
+    df_patient_vectors_outcome = (
+        load_validation_patient_embeddings(outcome_model_path) if outcome_flag else None
+    )
+
+    check_pids(df_patient_vectors, df_treatment)
+
+    if outcome_flag:
+        check_pids(df_patient_vectors_outcome, df_treatment)
 
     # 4) Merge exposure status, probas, and index dates
-    logger.info("Merge predictions and index dates on %s", PID_COL)
+    logger.info("Merge patient embeddings and index dates on %s", PID_COL)
     # Note: TARGET_COL here represents actual treatment assignment (0 or 1).
     df = pd.merge(df_patient_vectors, df_index_dates, on=PID_COL)
+    if outcome_flag:
+        df = pd.merge(
+            df, df_patient_vectors_outcome, on=PID_COL, suffixes=("", "_outcome")
+        )
 
-    df = pd.merge(df, df_outcomes, on=PID_COL, how="inner")
+    df = pd.merge(df, df_treatment, on=PID_COL, how="inner")
 
-    feature_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
-    features = df[feature_cols].values
+    treatment_feature_cols = [col for col in df.columns if is_integer(col)]
+
+    outcome_feature_cols = (
+        [col + "_outcome" for col in treatment_feature_cols] if outcome_flag else []
+    )
+
+    features = df[treatment_feature_cols + outcome_feature_cols].values
     exposure = df[TARGET_COL].values
 
     # 5) Simulate outcomes in three scenarios
