@@ -97,17 +97,17 @@ def main(config_path: str) -> None:
     logger.info(
         "Load outcomes, index dates, and patient embeddings from %s", ps_model_path
     )
-    df_outcomes = load_binary_outcomes(ps_model_path)
+    df_treatment = load_binary_outcomes(ps_model_path)
     df_index_dates = load_index_dates(ps_model_path)
     df_patient_vectors = load_validation_patient_embeddings(ps_model_path)
-    check_pids(df_patient_vectors, df_outcomes)
+    check_pids(df_patient_vectors, df_treatment)
 
     # 4) Merge exposure status, probas, and index dates
     logger.info("Merge predictions and index dates on %s", PID_COL)
     # Note: TARGET_COL here represents actual treatment assignment (0 or 1).
     df = pd.merge(df_patient_vectors, df_index_dates, on=PID_COL)
 
-    df = pd.merge(df, df_outcomes, on=PID_COL, how="inner")
+    df = pd.merge(df, df_treatment, on=PID_COL, how="inner")
 
     feature_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
     features = df[feature_cols].values
