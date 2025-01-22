@@ -3,7 +3,7 @@ from typing import Dict
 
 import torch
 import torch.nn as nn
-from transformers import BertConfig
+from transformers import ModernBertConfig
 
 from ehr2vec.embeddings.time2vec import Time2Vec
 
@@ -18,7 +18,7 @@ TIME2VEC_MAX_CLIP = 100
 class BaseEmbeddings(nn.Module):
     """Base Embeddings class with shared methods"""
 
-    def __init__(self, config: BertConfig):
+    def __init__(self, config: ModernBertConfig):
         super().__init__()
         self.config = config
         self.LayerNorm = nn.LayerNorm(
@@ -63,12 +63,12 @@ class EhrEmbeddings(BaseEmbeddings):
         linear: bool                            - whether to linearly scale embeddings (a: concept, b: age, c: abspos, d: segment)
     """
 
-    def __init__(self, config: BertConfig):
+    def __init__(self, config: ModernBertConfig):
         super().__init__(config)
         self.initialize_embeddings(config)
         self.initialize_linear_params(config)
 
-    def initialize_embeddings(self, config: BertConfig) -> None:
+    def initialize_embeddings(self, config: ModernBertConfig) -> None:
         logger.info("Initialize Concept/Segment/Age embeddings.")
         self.concept_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
         self.age_embeddings = Time2Vec(

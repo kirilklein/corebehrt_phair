@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
 import torch
-from transformers import BertConfig
+from transformers import ModernBertConfig
 
 from ehr2vec.common.checks import check_columns, check_path
 from ehr2vec.common.config import Config, load_config
@@ -170,7 +170,7 @@ class ModelLoader:
         """Load model from config and checkpoint. model_class is the class of the model to be loaded."""
         checkpoint = self.load_checkpoint() if checkpoint is None else checkpoint
         # Load the config from file
-        config = BertConfig.from_pretrained(self.model_path)
+        config = ModernBertConfig.from_pretrained(self.model_path)
         config.update(add_config)
         model = model_class(config, **kwargs)
 
