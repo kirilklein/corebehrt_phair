@@ -126,10 +126,11 @@ def main(config_path: str) -> None:
 
     df = pd.merge(df, df_treatment, on=PID_COL, how="inner")
 
-    treatment_feature_cols = [col for col in df.columns if is_integer(col)]
+    treatment_feature_cols = [col for col in df.columns if col.isdigit()]
     outcome_feature_cols = (
         [col + "_outcome" for col in treatment_feature_cols] if outcome_flag else []
     )
+
     features = df[treatment_feature_cols + outcome_feature_cols].values
     exposure = df[TARGET_COL].values
 
@@ -222,14 +223,6 @@ def main(config_path: str) -> None:
         )
         mount_context.stop()
     logger.info("Done")
-
-
-def is_integer(col):
-    try:
-        int(col)
-        return True  # Skip columns that are integer names
-    except ValueError:
-        return False
 
 
 if __name__ == "__main__":
