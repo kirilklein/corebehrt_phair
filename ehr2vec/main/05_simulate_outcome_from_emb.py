@@ -26,6 +26,7 @@ from ehr2vec.common.setup import (
     initialize_configuration_effect_estimation,
     setup_logger,
 )
+from ehr2vec.common.utils import is_integer
 from ehr2vec.simulation.binary_outcome import simulate_outcome_from_embeddings
 from ehr2vec.simulation.longitudinal_outcome import simulate_abspos_from_binary_outcome
 from ehr2vec.simulation.save import (
@@ -126,7 +127,8 @@ def main(config_path: str) -> None:
 
     df = pd.merge(df, df_treatment, on=PID_COL, how="inner")
 
-    treatment_feature_cols = [col for col in df.columns if col.isdigit()]
+    treatment_feature_cols = [col for col in df.columns if is_integer(col)]
+
     outcome_feature_cols = (
         [col + "_outcome" for col in treatment_feature_cols] if outcome_flag else []
     )
