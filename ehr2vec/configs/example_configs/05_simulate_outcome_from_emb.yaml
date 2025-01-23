@@ -7,11 +7,14 @@ paths:
   output_path: "outputs/example_features/outcomes/EXAMPLE_CENSOR_simulated_outcome"
 
 simulation:
-  a: 1
-  b: .5
-  c: .1
-  sparsity: 0.7
-  scale: 0.1
+  a: 1 # exposure coefficient
+  b: .5 # treatment patient embeddings coefficient
+  c: .1 # outcome patient embeddings coefficient
+  d: .3 # intercept
+  t_sparsity: 0.7 # proportion of treatment patient embeddings that will have zero coefficients
+  o_sparsity: 0.7 # proportion of outcome patient embeddings that will have zero coefficients
+  t_scale: 0.1 # scale of the normal distribution for treatment patient embeddings coefficients
+  o_scale: 0.1 # scale of the normal distribution for outcome patient embeddings coefficients
 max_years: 3
 days_offset: 1
   
