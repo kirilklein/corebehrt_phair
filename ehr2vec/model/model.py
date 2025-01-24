@@ -14,7 +14,12 @@ logger = logging.getLogger(__name__)
 class BertEHREncoder(ModernBertModel):
     def __init__(self, config):
         super().__init__(config)
-        self.embeddings = EhrEmbeddings(config)
+        self.embeddings = EhrEmbeddings(
+            vocab_size=config.vocab_size,
+            hidden_size=config.hidden_size,
+            type_vocab_size=config.type_vocab_size,
+            embeddings_dropout=config.embeddings_dropout,
+        )
 
     def forward(self, batch: dict = None, inputs_embeds: torch.tensor = None, **kwargs):
 
