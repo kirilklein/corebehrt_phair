@@ -133,21 +133,26 @@ def main(config_path: str) -> None:
         [col + "_outcome" for col in treatment_feature_cols] if outcome_flag else []
     )
 
-    features = df[treatment_feature_cols + outcome_feature_cols].values
+    z_t = df[treatment_feature_cols].values
+    z_o = (
+        df[outcome_feature_cols].values
+        if outcome_flag
+        else np.zeros(len(z_t)).reshape(-1, 1)
+    )
     exposure = df[TARGET_COL].values
 
     # 5) Simulate outcomes in three scenarios
     logger.info("Simulating outcome for actual treatment assignment")
     outcome_actual, probas_actual = simulate_outcome_from_embeddings(
-        features, exposure, **cfg.simulation
+        z_t, z_o, exposure, **cfg.simulation
     )
     logger.info("Simulating outcome under TREATMENT for all (treated scenario).")
     outcome_treated, probas_treated = simulate_outcome_from_embeddings(
-        features, np.ones(len(features)), **cfg.simulation
+        z_t, z_o, np.ones(len(z_t)), **cfg.simulation
     )
     logger.info("Simulating outcome under CONTROL for all (untreated scenario).")
     outcome_control, probas_control = simulate_outcome_from_embeddings(
-        features, np.zeros(len(features)), **cfg.simulation
+        z_t, z_o, np.zeros(len(z_t)), **cfg.simulation
     )
 
     # 6) Save counterfactual-based data (everyone treated vs. everyone untreated)
@@ -166,14 +171,14 @@ def main(config_path: str) -> None:
     #    If a patient is truly treated, use 'outcome_treated'; if untreated, use 'outcome_control'.
     logger.info("Combine treated vs. untreated outcomes for the ACTUAL scenario")
     outcome_actual = np.where(
-        df[TARGET_COL] == 1,
+        exposure == 1,
         outcome_treated,  # use the "treated" simulation for actually treated
         outcome_control,  # use the "untreated" simulation for actually untreated
     )
 
     # Same approach for predicted probabilities
     probas_actual = np.where(
-        df[TARGET_COL] == 1,
+        exposure == 1,
         probas_treated,
         probas_control,
     )

@@ -59,6 +59,16 @@ jobs:
                 source .venv/bin/activate  
                 python -m ehr2vec.main.05_simulate_binary_outcome
 
+            - name: simulate_outcome_from_emb
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.05_simulate_outcome_from_emb
+
+            - name: train_tab_outcome_from_emb
+              run: |
+                source .venv/bin/activate  
+                python -m ehr2vec.main.05_train_tab_outcome
+
             - name: finetune_on_simulated_outcomes
               run: |
                 source .venv/bin/activate  
