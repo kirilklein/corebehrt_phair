@@ -43,7 +43,6 @@ model:
   num_attention_heads: 6
   num_hidden_layers: 6
   type_vocab_size: 257
-  behrt_embeddings: true
 
 optimizer:
   lr: 1e-3
