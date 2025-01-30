@@ -80,7 +80,7 @@ class ConceptMasker:
 
     @staticmethod
     def _initialize_masked_concepts_and_target(
-        patient: Dict[str, list]
+        patient: Dict[str, list],
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         concepts = patient["concept"]
         target = torch.ones(len(concepts), dtype=torch.long) * -100

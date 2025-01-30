@@ -1,6 +1,6 @@
-"""Simulation from R code from appendix in the paper 
-    'One-step targeted maximum likelihood estimation for time-to-event outcomes' 
-    !The formulas provided in the paper differ from that using a log-normal for T"""
+"""Simulation from R code from appendix in the paper
+'One-step targeted maximum likelihood estimation for time-to-event outcomes'
+!The formulas provided in the paper differ from that using a log-normal for T"""
 
 import numpy as np
 
