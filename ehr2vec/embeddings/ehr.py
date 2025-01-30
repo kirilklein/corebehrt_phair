@@ -17,10 +17,10 @@ TIME2VEC_MAX_CLIP = 100
 class BaseEmbeddings(nn.Module):
     """Base Embeddings class with shared methods"""
 
-    def __init__(self, hidden_size: int, embeddings_dropout: float):
+    def __init__(self, hidden_size: int, embedding_dropout: float):
         super().__init__()
         self.LayerNorm = nn.LayerNorm(hidden_size)
-        self.dropout = nn.Dropout(embeddings_dropout)
+        self.dropout = nn.Dropout(embedding_dropout)
 
     def apply_layer_norm_and_dropout(self, embeddings: torch.Tensor) -> torch.Tensor:
         embeddings = self.LayerNorm(embeddings)
@@ -61,9 +61,9 @@ class EhrEmbeddings(BaseEmbeddings):
         vocab_size: int,
         hidden_size: int,
         type_vocab_size: int,
-        embeddings_dropout: float,
+        embedding_dropout: float,
     ):
-        super().__init__(hidden_size, embeddings_dropout)
+        super().__init__(hidden_size, embedding_dropout)
         self.initialize_embeddings(vocab_size, hidden_size, type_vocab_size)
         self.initialize_linear_params()
 
@@ -131,14 +131,14 @@ class PerturbedEHREmbeddings(EhrEmbeddings):
         vocab_size = config.vocab_size
         hidden_size = config.hidden_size
         type_vocab_size = config.type_vocab_size
-        embeddings_dropout = config.hidden_dropout_prob
+        embedding_dropout = config.embedding_dropout
 
         # Initialize parent class with extracted parameters
         super().__init__(
             vocab_size=vocab_size,
             hidden_size=hidden_size,
             type_vocab_size=type_vocab_size,
-            embeddings_dropout=embeddings_dropout,
+            embedding_dropout=embedding_dropout,
         )
 
     def forward(

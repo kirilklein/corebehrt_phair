@@ -18,7 +18,7 @@ class BertEHREncoder(ModernBertModel):
             vocab_size=config.vocab_size,
             hidden_size=config.hidden_size,
             type_vocab_size=config.type_vocab_size,
-            embeddings_dropout=config.embeddings_dropout,
+            embedding_dropout=config.embedding_dropout,
         )
 
     def forward(self, batch: dict = None, inputs_embeds: torch.tensor = None, **kwargs):
