@@ -14,7 +14,7 @@ class MLMHead(nn.Module):
         # BertPredictionHeadTransform
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.GELU()
-        self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.LayerNorm = nn.LayerNorm(config.hidden_size)
 
         # BertLMPredictionHead
         self.decoder = nn.Linear(config.hidden_size, config.vocab_size, bias=False)

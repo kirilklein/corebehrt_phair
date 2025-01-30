@@ -40,7 +40,11 @@ class Initializer:
             logger.info("Initializing new model")
             vocab_size = len(train_dataset.vocabulary)
             bert_config = ModernBertConfig(
-                **self.cfg.model, vocab_size=vocab_size, pad_token_id=vocab_size - 1
+                **self.cfg.model,
+                vocab_size=vocab_size,
+                pad_token_id=0,
+                cls_token_id=1,
+                sep_token_id=2,
             )
             model = BertEHRModel(bert_config)
         # ! Uncomment if instabilities occur.

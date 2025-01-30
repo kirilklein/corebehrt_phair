@@ -1,5 +1,5 @@
 """
-This script contains the implementation of the CV-TMLE algorithm for estimating 
+This script contains the implementation of the CV-TMLE algorithm for estimating
 the causal effect of a treatment on a binary outcome. The intended use is to compare
 with estimates from the CausalEstimate package.
 """

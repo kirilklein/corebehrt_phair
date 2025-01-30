@@ -166,7 +166,7 @@ def plot_propensity_score_dist_for_models(
 
 
 def plot_calibration_curves(
-    filtered_dataframes: Dict[str, pd.DataFrame]
+    filtered_dataframes: Dict[str, pd.DataFrame],
 ) -> Tuple[plt.Figure, plt.Axes]:
     """Plot calibration curves for multiple models.
 

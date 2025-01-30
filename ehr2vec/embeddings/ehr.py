@@ -3,7 +3,6 @@ from typing import Dict
 
 import torch
 import torch.nn as nn
-from transformers import ModernBertConfig
 
 from ehr2vec.embeddings.time2vec import Time2Vec
 
@@ -18,26 +17,20 @@ TIME2VEC_MAX_CLIP = 100
 class BaseEmbeddings(nn.Module):
     """Base Embeddings class with shared methods"""
 
-    def __init__(self, config: ModernBertConfig):
+    def __init__(self, hidden_size: int, embedding_dropout: float):
         super().__init__()
-        self.config = config
-        self.LayerNorm = nn.LayerNorm(
-            config.hidden_size, eps=config.to_dict().get("layer_norm_eps", 1e-12)
-        )
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.LayerNorm = nn.LayerNorm(hidden_size)
+        self.dropout = nn.Dropout(embedding_dropout)
 
     def apply_layer_norm_and_dropout(self, embeddings: torch.Tensor) -> torch.Tensor:
         embeddings = self.LayerNorm(embeddings)
         return self.dropout(embeddings)
 
-    def initialize_linear_params(self, config) -> None:
-        if config.to_dict().get("linear", False):
-            self.a = nn.Parameter(torch.ones(1))
-            self.b = nn.Parameter(torch.zeros(1))
-            self.c = nn.Parameter(torch.zeros(1))
-            self.d = nn.Parameter(torch.zeros(1))
-        else:
-            self.a = self.b = self.c = self.d = 1
+    def initialize_linear_params(self) -> None:
+        self.a = nn.Parameter(torch.ones(1))
+        self.b = nn.Parameter(torch.zeros(1))
+        self.c = nn.Parameter(torch.zeros(1))
+        self.d = nn.Parameter(torch.zeros(1))
 
     def freeze(self):
         """Freeze the embeddings."""
@@ -63,17 +56,25 @@ class EhrEmbeddings(BaseEmbeddings):
         linear: bool                            - whether to linearly scale embeddings (a: concept, b: age, c: abspos, d: segment)
     """
 
-    def __init__(self, config: ModernBertConfig):
-        super().__init__(config)
-        self.initialize_embeddings(config)
-        self.initialize_linear_params(config)
+    def __init__(
+        self,
+        vocab_size: int,
+        hidden_size: int,
+        type_vocab_size: int,
+        embedding_dropout: float,
+    ):
+        super().__init__(hidden_size, embedding_dropout)
+        self.initialize_embeddings(vocab_size, hidden_size, type_vocab_size)
+        self.initialize_linear_params()
 
-    def initialize_embeddings(self, config: ModernBertConfig) -> None:
+    def initialize_embeddings(
+        self, vocab_size: int, hidden_size: int, type_vocab_size: int
+    ) -> None:
         logger.info("Initialize Concept/Segment/Age embeddings.")
-        self.concept_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
+        self.concept_embeddings = nn.Embedding(vocab_size, hidden_size)
         self.age_embeddings = Time2Vec(
             1,
-            config.hidden_size,
+            hidden_size,
             init_scale=TIME2VEC_AGE_MULTIPLIER,
             clip_min=TIME2VEC_MIN_CLIP,
             clip_max=TIME2VEC_MAX_CLIP,
@@ -81,14 +82,12 @@ class EhrEmbeddings(BaseEmbeddings):
         logger.info("Initialize time2vec(abspos) embeddings.")
         self.abspos_embeddings = Time2Vec(
             1,
-            config.hidden_size,
+            hidden_size,
             init_scale=TIME2VEC_ABSPOS_MULTIPLIER,
             clip_min=TIME2VEC_MIN_CLIP,
             clip_max=TIME2VEC_MAX_CLIP,
         )
-        self.segment_embeddings = nn.Embedding(
-            config.type_vocab_size, config.hidden_size
-        )
+        self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size)
 
     def forward(
         self,
@@ -128,8 +127,19 @@ class EhrEmbeddings(BaseEmbeddings):
 
 class PerturbedEHREmbeddings(EhrEmbeddings):
     def __init__(self, config):
-        super().__init__(config)
-        self.initialize_linear_params(config)
+        # Extract required parameters from config
+        vocab_size = config.vocab_size
+        hidden_size = config.hidden_size
+        type_vocab_size = config.type_vocab_size
+        embedding_dropout = config.embedding_dropout
+
+        # Initialize parent class with extracted parameters
+        super().__init__(
+            vocab_size=vocab_size,
+            hidden_size=hidden_size,
+            type_vocab_size=type_vocab_size,
+            embedding_dropout=embedding_dropout,
+        )
 
     def forward(
         self, batch: Dict[str, torch.Tensor], noise_simulator: nn.Module, **kwargs
