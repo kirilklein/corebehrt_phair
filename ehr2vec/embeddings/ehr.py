@@ -127,8 +127,19 @@ class EhrEmbeddings(BaseEmbeddings):
 
 class PerturbedEHREmbeddings(EhrEmbeddings):
     def __init__(self, config):
-        super().__init__(config)
-        self.initialize_linear_params(config)
+        # Extract required parameters from config
+        vocab_size = config.vocab_size
+        hidden_size = config.hidden_size
+        type_vocab_size = config.type_vocab_size
+        embeddings_dropout = config.hidden_dropout_prob
+
+        # Initialize parent class with extracted parameters
+        super().__init__(
+            vocab_size=vocab_size,
+            hidden_size=hidden_size,
+            type_vocab_size=type_vocab_size,
+            embeddings_dropout=embeddings_dropout,
+        )
 
     def forward(
         self, batch: Dict[str, torch.Tensor], noise_simulator: nn.Module, **kwargs
