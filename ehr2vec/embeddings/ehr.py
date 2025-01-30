@@ -3,7 +3,6 @@ from typing import Dict
 
 import torch
 import torch.nn as nn
-from transformers import ModernBertConfig
 
 from ehr2vec.embeddings.time2vec import Time2Vec
 
