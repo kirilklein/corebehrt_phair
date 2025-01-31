@@ -303,7 +303,11 @@ class EffectEstimator_with_bias(EffectEstimator):
         self._log_basic_stats(df)
 
         # Get bias parameters from config
-        bias_params = self.cfg.get("bias_params", [(0, 0)])  # Default to no bias case
+        bias_config = self.cfg.get("bias_params", {"delta_ps": [0], "delta_y": [0]})
+        # Create grid of all combinations
+        delta_ps_values = bias_config.get("delta_ps", [0])
+        delta_y_values = bias_config.get("delta_y", [0])
+        bias_params = [(ps, y) for ps in delta_ps_values for y in delta_y_values]
 
         # Create lists to store results
         results = {

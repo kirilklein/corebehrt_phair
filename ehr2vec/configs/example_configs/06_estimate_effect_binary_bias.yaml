@@ -23,9 +23,8 @@ paths:
   run_name: *default_run_name
 
 bias_params:
-  - [0.1, 0.1]
-  - [0.1, 0.2]
-  - [0.1, 0.3]
+  delta_ps: [0.1, 0.2, 0.3]
+  delta_y: [0.1, 0.2, 0.3]
 
 
 estimator:
