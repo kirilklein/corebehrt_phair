@@ -330,10 +330,7 @@ class EffectEstimator_with_bias(EffectEstimator):
             effect_df["delta_ps"] = delta_ps
             effect_df["delta_y"] = delta_y
 
-            # Save individual effect dataframe
-            filename = f"effect_ps{delta_ps}_y{delta_y}.csv"
-            effect_df.to_csv(join(self.exp_folder, "effects", filename), index=False)
-            log_dataframe(effect_df, f"effect_df_ps{delta_ps}_y{delta_y}")
+            log_dataframe(effect_df, f"effect_df_delta_ps{delta_ps}_delta_y{delta_y}")
 
             # Store results for consolidated dataframe
             results["delta_ps"].append(delta_ps)
@@ -359,14 +356,12 @@ class EffectEstimator_with_bias(EffectEstimator):
                 df_biased, common_support, threshold
             )
             if counterfactual_effect is not None:
-                effect_df["effect_counterfactual"] = counterfactual_effect
-                # Initialize counterfactual list if first time
                 if "effect_counterfactual" not in results:
                     results["effect_counterfactual"] = []
                 results["effect_counterfactual"].append(counterfactual_effect)
 
                 self.logger.info(
-                    f"Causal effect from counterfactuals (bias δps={delta_ps}, δy={delta_y}): {counterfactual_effect}"
+                    f"Causal effect from counterfactuals (bias delta_ps={delta_ps}, delta_y={delta_y}): {counterfactual_effect}"
                 )
 
         # Create and save consolidated results dataframe
