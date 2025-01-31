@@ -17,13 +17,13 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
-
+            
             - name: Setup dependencies.
               run: |
                 python -m venv .venv
                 source .venv/bin/activate
                 pip install -r requirements.txt
-
+            ## basic ## 
             - name: create_data
               run: |
                 source .venv/bin/activate  
@@ -44,6 +44,7 @@ jobs:
                 source .venv/bin/activate  
                 python -m ehr2vec.main.04_finetune_cv --config_path example_configs/04_finetune_exposure.yaml
             
+            ## causal inference ##
             - name: train_tab_outcome
               run: |
                 source .venv/bin/activate  
@@ -74,6 +75,7 @@ jobs:
                 source .venv/bin/activate  
                 python -m ehr2vec.main.04_finetune_cv --config_path example_configs/05_02_finetune_simulated.yaml
 
+            ## effect estimation ##
             - name: estimate_causal_effect
               run: |
                 source .venv/bin/activate  
@@ -97,13 +99,14 @@ jobs:
             - name: estimate_causal_effect_robustness
               run: |
                 source .venv/bin/activate  
-                python -m ehr2vec.main.06_estimate_causal_effect_robustness --config_path example_configs/06_estimate_effect_binary_bias.yaml
+                python -m ehr2vec.main.06_estimate_causal_effect_bias --config_path example_configs/06_estimate_effect_binary_bias.yaml
             
             - name: estimate_causal_effect_double_robust_true_outcome_probas
               run: |
                 source .venv/bin/activate  
                 python -m ehr2vec.main.06_estimate_causal_effect --config_path example_configs/06_estimate_effect_binary_double_robust_true_outcome_probas.yaml
 
+            ## additional ##
             - name: finetune
               run: |
                 source .venv/bin/activate  
