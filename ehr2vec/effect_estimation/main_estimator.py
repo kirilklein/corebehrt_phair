@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from os.path import join
-from typing import Any, Optional
+from typing import Any, Optional, Callable
 
 import numpy as np
 import pandas as pd
@@ -296,112 +296,125 @@ class EffectEstimator:
             self.mount_context.stop()
 
 
-class EffectEstimator_with_bias(EffectEstimator):
+class EffectEstimator_with_transform(EffectEstimator):
     def run(self):
         df = self._load_data()
         df.to_parquet(join(self.exp_folder, "data.parquet"), index=True)
         self._log_basic_stats(df)
 
-        # Get bias parameters from config
-        bias_config = self.cfg.get("bias_params", {"delta_ps": [0], "delta_y": [0]})
-        # Create grid of all combinations
-        delta_ps_values = bias_config.get("delta_ps", [0])
-        delta_y_values = bias_config.get("delta_y", [0])
-        bias_params = [(ps, y) for ps in delta_ps_values for y in delta_y_values]
-
-        # Create lists to store results
-        results = {
-            "delta_ps": [],
-            "delta_y": [],
-        }
-
         os.makedirs(join(self.exp_folder, "effects"), exist_ok=True)
 
-        for delta_ps, delta_y in bias_params:
+        transformation_params = self.get_transform_params()
+
+        transform_function = self.get_transform_function()
+        results = self._initialize_results(transformation_params[0])
+        for param_combination in transformation_params:
+            results = self._append_to_results(results, param_combination)
             self.logger.info(
-                f"Computing effect with bias parameters: delta_ps={delta_ps}, delta_y={delta_y}"
+                f"Computing effect with transformation parameters: {param_combination}"
+            )
+            df_transformed = self._transform_data(
+                df, param_combination, transform_function
             )
 
-            # Apply bias to the data
-            df_biased = self._add_bias(df, delta_ps, delta_y)
-
-            # Compute effect with biased data
             effect_df, common_support, threshold = self._compute_causal_effect(
-                df_biased
+                df_transformed
             )
 
-            # Add bias parameters to effect dataframe
-            effect_df["delta_ps"] = delta_ps
-            effect_df["delta_y"] = delta_y
-
-            log_dataframe(effect_df, f"effect_df_delta_ps{delta_ps}_delta_y{delta_y}")
-
-            # Store results for consolidated dataframe
-            results["delta_ps"].append(delta_ps)
-            results["delta_y"].append(delta_y)
-
-            # Add effect and std for each method
             for method in effect_df["method"].unique():
                 method_data = effect_df[effect_df["method"] == method]
                 effect_col = f"effect_{method}"
                 std_col = f"effect_std_{method}"
 
-                # Initialize lists for new methods
                 if effect_col not in results:
                     results[effect_col] = []
                 if std_col not in results:
                     results[std_col] = []
-                # Store results
+
                 results[effect_col].append(method_data["effect"].iloc[0])
                 results[std_col].append(method_data["std_err"].iloc[0])
 
-            # Compute counterfactual effect if available
             counterfactual_effect = self._compute_counterfactual_effect(
-                df_biased, common_support, threshold
+                df_transformed, common_support, threshold
             )
             if counterfactual_effect is not None:
                 if "effect_counterfactual" not in results:
                     results["effect_counterfactual"] = []
                 results["effect_counterfactual"].append(counterfactual_effect)
 
-                self.logger.info(
-                    f"Causal effect from counterfactuals (bias delta_ps={delta_ps}, delta_y={delta_y}): {counterfactual_effect}"
-                )
-
         # Create and save consolidated results dataframe
         results_df = pd.DataFrame(results)
         results_df.to_csv(
             join(self.exp_folder, "consolidated_results.csv"), index=False
         )
-        log_dataframe(results_df, "consolidated_results")
 
         self._cleanup()
 
+    def get_transform_function(self):
+        transform_function = self.cfg.get("transform_function", "add_bias")
+        if transform_function == "add_bias":
+            return self._add_bias
+        elif transform_function == "power_distortion":
+            return self._power_distortion
+        else:
+            raise ValueError(
+                f"Unknown transform function: {transform_function}. Choose from: add_bias, power_distortion"
+            )
+
     @staticmethod
-    def _add_bias(df: pd.DataFrame, delta_ps: float, delta_y: float) -> pd.DataFrame:
-        """
-        Add bias to propensity scores and outcomes for sensitivity analysis.
-        This is a placeholder - implement your specific bias mechanism here.
+    def _initialize_results(params: dict):
+        results = {}
+        # Add bias parameters to effect dataframe
+        for k, v in params.items():
+            if k != "constants":
+                results[k] = []
+            else:
+                for kk, vv in v.items():
+                    results[kk] = []
+        return results
 
-        Args:
-            df: Original dataframe
-            delta_ps: Bias parameter for propensity scores
-            delta_y: Bias parameter for outcomes
+    @staticmethod
+    def _append_to_results(results: dict, params: dict):
+        for k, v in params.items():
+            if k != "constants":
+                results[k].append(v)
+            else:
+                for kk, vv in v.items():
+                    results[kk].append(vv)
+        return results
 
-        Returns:
-            DataFrame with added bias
-        """
-        df = df.copy(deep=True)
-        # Implement your bias mechanism here
-        # For example:
-        df[PS_COL] = EffectEstimator_with_bias._transform_column(df[PS_COL], delta_ps)
-        df[OUTCOME_PROBABILITY_COL] = EffectEstimator_with_bias._transform_column(
-            df[OUTCOME_PROBABILITY_COL], delta_y
+    def get_transform_params(self) -> list[dict]:
+        transformation_config = self.cfg.get(
+            "transform_params",
+            {"ps": [0], "y": [0], "cf_offset": 0, "constants": {}},
+        )
+        ps_values = transformation_config.get("ps", [0])
+        y_values = transformation_config.get("y", [0])
+        cf_offset = transformation_config.get("cf_offset", 0)
+        constants = transformation_config.get("constants", {})
+        return [
+            {"ps": ps, "y": y, "cf": y + cf_offset, "constants": constants}
+            for ps in ps_values
+            for y in y_values
+        ]
+
+    def _transform_data(
+        self, df: pd.DataFrame, params: dict, transform_function: Callable
+    ) -> pd.DataFrame:
+        df[PS_COL] = transform_function(df[PS_COL], params["ps"], *params["constants"])
+        df[OUTCOME_PROBABILITY_COL] = transform_function(
+            df[OUTCOME_PROBABILITY_COL], params["y"], *params["constants"]
+        )
+        df[CF_TREATED_COL] = transform_function(
+            df[CF_TREATED_COL], params["cf"], *params["constants"]
+        )
+        df[CF_CONTROL_COL] = transform_function(
+            df[CF_CONTROL_COL], params["cf"], *params["constants"]
         )
         return df
 
     @staticmethod
-    def _transform_column(column: pd.Series, delta: float) -> pd.Series:
+    def _add_bias(probas: pd.Series, delta: float, constants: dict) -> pd.Series:
         """Transform column to logit space, add bias, transform back to probability space.
 
         Args:
@@ -411,9 +424,30 @@ class EffectEstimator_with_bias(EffectEstimator):
         Returns:
             Series of biased probabilities
         """
+        if constants.get("sigma", 0) > 0:
+            sigmas = np.random.normal(0, constants.get("sigma", 0), len(probas))
+        else:
+            sigmas = np.zeros(len(probas))
         # Convert to logit space using scipy's stable implementation
-        logits = logit(column)
+        logits = logit(probas)
         # Add bias in logit space
-        biased_logits = logits + delta
+        biased_logits = logits + delta + sigmas
         # Convert back to probability space using scipy's stable implementation
         return expit(biased_logits)
+
+    @staticmethod
+    def _power_distortion(
+        probas: pd.Series, alpha: float = 1.0, constants: dict = {}
+    ) -> pd.Series:
+        """Apply power distortion to probabilities.
+
+        Args:
+            prob: Series of probabilities
+            alpha: Power parameter (>1 for sharpening, <1 for flattening)
+            constants: Dictionary of constants
+        Returns:
+            Series of transformed probabilities
+        """
+        p_alpha = probas**alpha
+        q_alpha = (1 - probas) ** alpha
+        return p_alpha / (p_alpha + q_alpha)
