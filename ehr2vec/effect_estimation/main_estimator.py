@@ -401,15 +401,15 @@ class EffectEstimator_with_transform(EffectEstimator):
     def _transform_data(
         self, df: pd.DataFrame, params: dict, transform_function: Callable
     ) -> pd.DataFrame:
-        df[PS_COL] = transform_function(df[PS_COL], params["ps"], *params["constants"])
+        df[PS_COL] = transform_function(df[PS_COL], params["ps"], params["constants"])
         df[OUTCOME_PROBABILITY_COL] = transform_function(
-            df[OUTCOME_PROBABILITY_COL], params["y"], *params["constants"]
+            df[OUTCOME_PROBABILITY_COL], params["y"], params["constants"]
         )
         df[CF_TREATED_COL] = transform_function(
-            df[CF_TREATED_COL], params["cf"], *params["constants"]
+            df[CF_TREATED_COL], params["cf"], params["constants"]
         )
         df[CF_CONTROL_COL] = transform_function(
-            df[CF_CONTROL_COL], params["cf"], *params["constants"]
+            df[CF_CONTROL_COL], params["cf"], params["constants"]
         )
         return df
 
@@ -437,7 +437,7 @@ class EffectEstimator_with_transform(EffectEstimator):
 
     @staticmethod
     def _power_distortion(
-        probas: pd.Series, alpha: float = 1.0, constants: dict = {}
+        probas: pd.Series, alpha: float = 1.0, constants: dict = None
     ) -> pd.Series:
         """Apply power distortion to probabilities.
 
