@@ -16,6 +16,7 @@ data/formatted/synthea10k/concept.diagnose.csv
 notebooks/*.png
 notebooks/test*
 notebooks/*.ipynb
+notebooks/**/*.ipynb
 notebooks/figures/tmp*
 wandb/
 p1_cluster/
