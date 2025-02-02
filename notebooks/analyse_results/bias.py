@@ -18,18 +18,23 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from typing import Tuple
 
+
+# %% [markdown]
+# ## Example Data
+#
 
 # %%
 # Create meshgrid of delta_ps and delta_y
-delta_ps = np.linspace(-1, 1, 11)
-delta_y = np.linspace(-1, 1, 11)
-delta_ps_grid, delta_y_grid = np.meshgrid(delta_ps, delta_y)
+dps = np.linspace(-1, 1, 11)
+dy = np.linspace(-1, 1, 11)
+dps_grid, dy_grid = np.meshgrid(dps, dy)
 
 # Create example results with all combinations
 example_results = {
-    "delta_ps": delta_ps_grid.flatten(),
-    "delta_y": delta_y_grid.flatten(),
+    "dps": dps_grid.flatten(),
+    "dy": dy_grid.flatten(),
     "effect_TMLE": np.random.rand(11*11),
     "effect_std_TMLE": np.random.rand(11*11),
     "effect_IPW": np.random.rand(11*11),
@@ -39,7 +44,10 @@ example_results = {
 
 df = pd.DataFrame(example_results)
 
-# Calculate z-scores
+# %% [markdown]
+# ## Z scores
+
+# %%
 df['z_score_TMLE'] = (df['effect_TMLE'] - df['effect_counterfactual']) / df['effect_std_TMLE']
 df['z_score_IPW'] = (df['effect_IPW'] - df['effect_counterfactual']) / df['effect_std_IPW']
 
@@ -57,132 +65,124 @@ sns.heatmap(z_score_grid_IPW, annot=False, fmt=".2f", cmap='RdBu_r', center=0)
 plt.title('Z-scores: (IPW - Counterfactual) / std_IPW')
 plt.show()
 
-# %%
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-# Create meshgrid of delta_ps and delta_y
-delta_ps = np.linspace(-1, 1, 11)
-delta_y = np.linspace(-1, 1, 11)
-delta_ps_grid, delta_y_grid = np.meshgrid(delta_ps, delta_y)
-
-# Create example results with all combinations
-example_results = {
-    "delta_ps": delta_ps_grid.flatten(),
-    "delta_y": delta_y_grid.flatten(),
-    "effect_TMLE": np.random.rand(11*11),
-    "effect_std_TMLE": np.random.rand(11*11),
-    "effect_IPW": np.random.rand(11*11),
-    "effect_AIPW": np.random.rand(11*11),
-    "effect_std_IPW": np.random.rand(11*11),
-    "effect_std_AIPW": np.random.rand(11*11),
-    "effect_counterfactual": np.ones(11*11) * 0.1
-}
-
-df = pd.DataFrame(example_results)
-
-# Calculate z-scores
-df['z_score_TMLE'] = (df['effect_TMLE'] - df['effect_counterfactual']) / df['effect_std_TMLE']
-df['z_score_IPW'] = (df['effect_IPW'] - df['effect_counterfactual']) / df['effect_std_IPW']
-df['z_score_AIPW'] = (df['effect_AIPW'] - df['effect_counterfactual']) / df['effect_std_AIPW']
-
-# Reshape data into 2D grid for heatmap
-z_score_grid_TMLE = df['z_score_TMLE'].values.reshape(11, 11)
-z_score_grid_IPW = df['z_score_IPW'].values.reshape(11, 11)
-z_score_grid_AIPW = df['z_score_AIPW'].values.reshape(11, 11)
-# Plot heatmaps with actual delta values as tick labels
-plt.figure(figsize=(12, 6))
-
-# TMLE heatmap
-plt.subplot(1, 2, 1)
-ax1 = sns.heatmap(
-    z_score_grid_TMLE,
-    annot=False,
-    fmt=".2f",
-    cmap='RdBu_r',
-    center=0,
-    xticklabels=[f'{x:.1f}' for x in delta_ps],
-    yticklabels=[f'{x:.1f}' for x in delta_y]
-)
-ax1.set_xlabel('delta_ps')
-ax1.set_ylabel('delta_y')
-plt.title('Z-scores: (TMLE - Counterfactual) / std_TMLE')
-
-# IPW heatmap
-plt.subplot(1, 2, 2)
-ax2 = sns.heatmap(
-    z_score_grid_IPW,
-    annot=False,
-    fmt=".2f",
-    cmap='RdBu_r',
-    center=0,
-    xticklabels=[f'{x:.1f}' for x in delta_ps],
-    yticklabels=[f'{x:.1f}' for x in delta_y]
-)
-ax2.set_xlabel('delta_ps')
-ax2.set_ylabel('delta_y')
-plt.title('Z-scores: (IPW - Counterfactual) / std_IPW')
-
-plt.tight_layout()
-plt.show()
-
+# %% [markdown]
+# ## Difference
 
 # %%
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+def get_diff_grids(df: pd.DataFrame, methods: list, dps_col: str, dy_col: str, clip_min: float = None, clip_max: float = None) -> Tuple[dict, np.ndarray, np.ndarray]:  
+    """
+    Create 2D grids of differences between each method and counterfactual for heatmap plotting.
+    
+    Args:
+        df: DataFrame containing the results
+        methods: List of method names to process
+        dps_col: Name of the propensity score delta column
+        dy_col: Name of the outcome delta column
+    
+    Returns:
+        Tuple containing:
+        - dict: Method-specific difference grids
+        - np.ndarray: Sorted unique propensity score deltas
+        - np.ndarray: Sorted unique outcome deltas
+    """
+    diff_grids = {}
+    dps_sorted = np.sort(df[dps_col].unique())
+    dy_sorted = np.sort(df[dy_col].unique())
+    for method in methods:
+        diffs_sorted = []
+        for dy in dy_sorted:
+            for dps in dps_sorted:
+                diffs_sorted.append(
+                    df.loc[(df[dy_col] == dy) & (df[dps_col] == dps), f"diff_{method}"].values[0]
+                )
+        effect_grid = np.array(diffs_sorted).reshape(len(dy_sorted), len(dps_sorted))
+        if clip_min is not None or clip_max is not None:
+            effect_grid = np.clip(effect_grid, clip_min, clip_max)
+        diff_grids[method] = effect_grid
+    return diff_grids, dps_sorted, dy_sorted
+def get_ticklabels(sorted_values: np.ndarray, skip: int = 2) -> list:
+    """
+    Convert array of values to formatted strings for plot tick labels.
+    
+    Args:
+        sorted_values: Array of values to convert to labels
+        skip: Show every nth label (default=2 for every second label)
+    """
+    labels = [f'{x:.2f}' if abs(x - round(x, 1)) > 0.001 else f'{x:.1f}' for x in sorted_values]
+    # Replace labels we want to hide with empty strings
+    return [label if i % skip == 0 else '' for i, label in enumerate(labels)]
 
-# Suppose 'df' is your DataFrame with columns:
-# ["delta_ps", "delta_y", "effect_TMLE", "effect_AIPW", "effect_IPW", "effect_counterfactual"]
+def get_vmin_vmax(diff_grids: dict, methods: list) -> Tuple[float, float]:
+    """Calculate the global min and max values across all method differences."""
+    all_values = np.concatenate([diff_grids[m].flatten() for m in methods])
+    return all_values.min(), all_values.max()
 
-methods = ["TMLE", "IPW", "AIPW"]
+def plot_method_differences(
+    df: pd.DataFrame,
+    methods: list,
+    dps_col: str = "dps",
+    dy_col: str = "dy",
+    xlabel: str = "delta_ps",
+    ylabel: str = "delta_y",
+    title_prefix: str = "Difference:",
+    figsize: tuple = (18, 6),
+    clip_min: float = None,
+    clip_max: float = None,
+    tick_skip: int = 1,
+) -> None:
+    """
+    Plot heatmaps comparing different methods against counterfactual results.
+    
+    Args:
+        df: DataFrame containing the results
+        methods: List of method names to process
+        dps_col: Name of the propensity score delta column
+        dy_col: Name of the outcome delta column
+        xlabel: Label for x-axis
+        ylabel: Label for y-axis
+        title_prefix: Prefix for plot titles
+        figsize: Figure size as (width, height)
+    """
+    # Compute the differences relative to the counterfactual
+    for method in methods:
+        df[f'diff_{method}'] = df[f'effect_{method}'] - df['effect_counterfactual']
 
-# 1. Compute the differences relative to the counterfactual
-for method in methods:
-    df[f'diff_{method}'] = df[f'effect_{method}'] - df['effect_counterfactual']
+    # Get grids and value ranges
+    diff_grids, dps_sorted, dy_sorted = get_diff_grids(df, methods, dps_col, dy_col, clip_min, clip_max)
+    vmin, vmax = get_vmin_vmax(diff_grids, methods)
 
-# 2. Sort the unique delta values so the axes will be labeled in ascending order
-delta_ps_sorted = np.sort(df["delta_ps"].unique())  # for the X-axis
-delta_y_sorted = np.sort(df["delta_y"].unique())    # for the Y-axis
+    # Plot heatmaps
+    plt.figure(figsize=figsize)
+    
+    for i, method in enumerate(methods, start=1):
+        ax = plt.subplot(1, len(methods), i)
+        sns.heatmap(
+            diff_grids[method],
+            annot=False,
+            fmt=".2f",
+            cmap='RdBu_r',
+            center=0,
+            xticklabels=get_ticklabels(dps_sorted, tick_skip),
+            yticklabels=get_ticklabels(dy_sorted, tick_skip),
+            vmin=vmin,
+            vmax=vmax
+        )
 
-# 3. Create 2D arrays (grids) matching (# of delta_y) rows × (# of delta_ps) columns
-diff_grids = {}
-for method in methods:
-    diffs_sorted = []
-    for dy in delta_y_sorted:
-        for dps in delta_ps_sorted:
-            diffs_sorted.append(
-                df.loc[(df["delta_y"] == dy) & (df["delta_ps"] == dps), f"diff_{method}"].values[0]
-            )
-    diff_grids[method] = np.array(diffs_sorted).reshape(len(delta_y_sorted), len(delta_ps_sorted))
+        # Keep only every nth tick
+        ax.set_xticks(ax.get_xticks()[::tick_skip])
+        ax.set_yticks(ax.get_yticks()[::tick_skip])
+        
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
-# Determine global color scale limits (same for all heatmaps)
-all_values = np.concatenate([diff_grids[m].flatten() for m in methods])
-vmin, vmax = all_values.min(), all_values.max()
+        plt.title(f'{title_prefix} {method} - Counterfactual')
 
-# 4. Plot heatmaps
-plt.figure(figsize=(18, 6))
+    plt.tight_layout()
+    plt.show()
 
-for i, method in enumerate(methods, start=1):
-    ax = plt.subplot(1, 3, i)
-    sns.heatmap(
-        diff_grids[method],
-        annot=False,
-        fmt=".2f",
-        cmap='RdBu_r',
-        center=0,
-        xticklabels=[f'{x:.1f}' for x in delta_ps_sorted],
-        yticklabels=[f'{y:.1f}' for y in delta_y_sorted],
-        vmin=vmin,  # Set fixed color range
-        vmax=vmax
-    )
-    ax.set_xlabel('delta_ps')
-    ax.set_ylabel('delta_y')
-    plt.title(f'Difference: {method} - Counterfactual')
 
-plt.tight_layout()
-plt.show()
 
+# %%
+methods = ["TMLE", "IPW", ]
+plot_method_differences(df, methods, "dps", "dy", clip_min=-1, clip_max=.6)

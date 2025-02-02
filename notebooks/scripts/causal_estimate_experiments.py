@@ -140,6 +140,12 @@ true_ate, estimated_ate, std_ate = estimate_causal_effects_with_multiple_methods
 )
 
 # %%
+true_ate
+
+# %%
+estimated_ate
+
+# %%
 fig, ax = plt.subplots(figsize=(12, 5))
 plot_causal_effect_estimation_comparison(
     ax,
@@ -449,3 +455,97 @@ plt.tight_layout()
 plt.show()
 
 fig.savefig("figures/ATE_comparison_ps_RF_out_LR.png", dpi=300)
+
+# %% [markdown]
+# # New Experiments on Azure
+#
+
+# %%
+MODEL1 = "model_3_0_-3"
+MODEL2 = "model_1_0.2_-1"
+MODEL3 = "model_1_0.5_-1"
+MODEL4 = "model_1_1_-2"
+MODEL5 = "model_1_2_-3"
+true_ate = {
+    MODEL1: 0.4560,
+    MODEL2: 0.2322,
+    MODEL3: 0.2318,
+    MODEL4: 0.0782,
+    MODEL5: 0.0782,
+}
+
+estimated_ate = {
+    MODEL1: {"TMLE": 0.4595, "AIPW": 0.4592, "IPW": 0.4603},
+    MODEL2: {"TMLE": 0.2329, "AIPW": 0.2286, "IPW": 0.2318},
+    MODEL3: {"TMLE": 0.2346, "AIPW": 0.2293, "IPW": 0.2325},
+    MODEL4: {"TMLE": 0.0713, "AIPW": 0.0696, "IPW": 0.0704},
+    MODEL5: {"TMLE": 0.0713, "AIPW": 0.0696, "IPW": 0.0704},
+}
+
+estimated_ate_std = {
+    MODEL1: {"TMLE": 0.0044, "AIPW": 0.0044, "IPW": 0.0055},
+    MODEL2: {"TMLE": 0.0073, "AIPW": 0.0100, "IPW": 0.0098},
+    MODEL3: {"TMLE": 0.0048, "AIPW": 0.0082, "IPW": 0.0071},
+    MODEL4: {"TMLE": 0.0038, "AIPW": 0.0040, "IPW": 0.0041},
+    MODEL5: {"TMLE": 0.0038, "AIPW": 0.0040, "IPW": 0.0041},
+}
+
+
+# %%
+fig, ax = plt.subplots(figsize=(12, 5))
+methods = ["TMLE", "AIPW", "IPW"]
+plot_causal_effect_estimation_comparison(
+    ax,
+    true_ate,
+    estimated_ate,
+    estimated_ate_std,
+    methods,
+    "Estimation Error Compared to True ATE: Real EHR",
+    "ATE",
+)
+ax.set_ylim(-0.1, 0.1)
+plt.tight_layout()
+plt.show()
+fig.savefig("figures/ATE_comparison_z_ts_sim.png", dpi=300)
+
+# %% [markdown]
+# ### Extended model with outcome contributing to simulation
+
+# %%
+MODEL1 = "a1_b0.5_c1_d-3"
+MODEL2 = "a1_b1_c0.5_d-3"
+MODEL3 = "a1_b1_c2_d-3"
+MODEL4 = "a1_b1_c1_d-3"
+true_ate = {MODEL1: 0.0989, MODEL2: 0.0876, MODEL3: 0.1152, MODEL4: 0.1009}
+
+estimated_ate = {
+    MODEL1: {"TMLE": 0.0957, "AIPW": 0.0934, "IPW": 0.0940},
+    MODEL2: {"TMLE": 0.0889, "AIPW": 0.0884, "IPW": 0.0884},
+    MODEL3: {"TMLE": 0.1170, "AIPW": 0.1124, "IPW": 0.1135},
+    MODEL4: {"TMLE": 0.1091, "AIPW": 0.1071, "IPW": 0.1085},
+}
+
+estimated_ate_std = {
+    MODEL1: {"TMLE": 0.0042, "AIPW": 0.0047, "IPW": 0.0044},
+    MODEL2: {"TMLE": 0.0040, "AIPW": 0.0047, "IPW": 0.0043},
+    MODEL3: {"TMLE": 0.0061, "AIPW": 0.0080, "IPW": 0.0074},
+    MODEL4: {"TMLE": 0.0039, "AIPW": 0.0040, "IPW": 0.0041},
+}
+
+
+# %%
+fig, ax = plt.subplots(figsize=(12, 5))
+methods = ["TMLE", "AIPW", "IPW"]
+plot_causal_effect_estimation_comparison(
+    ax,
+    true_ate,
+    estimated_ate,
+    estimated_ate_std,
+    methods,
+    "Estimation Error Compared to True ATE: Real EHR",
+    "ATE",
+)
+ax.set_ylim(-0.1, 0.1)
+plt.tight_layout()
+plt.show()
+fig.savefig("figures/ATE_comparison_zt_zo_sim.png", dpi=300)
