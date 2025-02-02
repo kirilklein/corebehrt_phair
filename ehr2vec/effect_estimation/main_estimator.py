@@ -281,6 +281,12 @@ class EffectEstimator:
             self.mount_context.stop()
 
 
+CONSTANTS: str = "constants"
+DELTA_PS: str = "dps"
+DELTA_Y: str = "dy"
+DELTA_CF: str = "dcf"
+
+
 class EffectEstimator_with_transform(EffectEstimator):
     def run(self):
         df = self._load_data()
@@ -328,15 +334,15 @@ class EffectEstimator_with_transform(EffectEstimator):
     def _transform_data(
         df: pd.DataFrame, params: dict, transform_function: Callable
     ) -> pd.DataFrame:
-        df[PS_COL] = transform_function(df[PS_COL], params["ps"], params["constants"])
+        df[PS_COL] = transform_function(df[PS_COL], params[DELTA_PS], params[CONSTANTS])
         df[OUTCOME_PROBABILITY_COL] = transform_function(
-            df[OUTCOME_PROBABILITY_COL], params["y"], params["constants"]
+            df[OUTCOME_PROBABILITY_COL], params[DELTA_Y], params[CONSTANTS]
         )
         df[CF_TREATED_COL] = transform_function(
-            df[CF_TREATED_COL], params["cf"], params["constants"]
+            df[CF_TREATED_COL], params[DELTA_CF], params[CONSTANTS]
         )
         df[CF_CONTROL_COL] = transform_function(
-            df[CF_CONTROL_COL], params["cf"], params["constants"]
+            df[CF_CONTROL_COL], params[DELTA_CF], params[CONSTANTS]
         )
         return df
 
@@ -397,7 +403,7 @@ class EffectEstimator_with_transform(EffectEstimator):
         results = {}
         # Add bias parameters to effect dataframe
         for k, v in params.items():
-            if k != "constants":
+            if k != CONSTANTS:
                 results[k] = []
             else:
                 for kk, _ in v.items():
@@ -408,7 +414,7 @@ class EffectEstimator_with_transform(EffectEstimator):
     def _append_to_results(results: dict, params: dict) -> dict:
         """Append parameters to results dictionary."""
         for k, v in params.items():
-            if k != "constants":
+            if k != CONSTANTS:
                 results[k].append(v)
             else:
                 for kk, vv in v.items():
@@ -435,14 +441,14 @@ class EffectEstimator_with_transform(EffectEstimator):
     def get_transform_params(self) -> list[dict]:
         transformation_config = self.cfg.get(
             "transform_params",
-            {"ps": [0], "y": [0], "cf_offset": 0, "constants": {}},
+            {DELTA_PS: [0], DELTA_Y: [0], "cf_offset": 0, CONSTANTS: {}},
         )
-        ps_values = transformation_config.get("ps", [0])
-        y_values = transformation_config.get("y", [0])
+        ps_values = transformation_config.get(DELTA_PS, [0])
+        y_values = transformation_config.get(DELTA_Y, [0])
         cf_offset = transformation_config.get("cf_offset", 0)
-        constants = transformation_config.get("constants", {})
+        constants = transformation_config.get(CONSTANTS, {})
         return [
-            {"ps": ps, "y": y, "cf": y + cf_offset, "constants": constants}
+            {DELTA_PS: ps, DELTA_Y: y, DELTA_CF: y + cf_offset, CONSTANTS: constants}
             for ps in ps_values
             for y in y_values
         ]

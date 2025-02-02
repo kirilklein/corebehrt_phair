@@ -15,6 +15,10 @@ from ehr2vec.common.default_args import (
 from ehr2vec.effect_estimation.main_estimator import (
     EffectEstimator,
     EffectEstimator_with_transform,
+    DELTA_PS,
+    DELTA_Y,
+    DELTA_CF,
+    CONSTANTS,
 )
 
 
@@ -129,7 +133,7 @@ class TestEffectEstimatorWithTransform(unittest.TestCase):
             }
         )
 
-        params = {"ps": 1.0, "y": 0.5, "cf": 0.5, "constants": {"sigma": 0}}
+        params = {DELTA_PS: 1.0, DELTA_Y: 0.5, DELTA_CF: 0.5, CONSTANTS: {"sigma": 0}}
 
         result = self.estimator._transform_data(
             df.copy(), params, self.estimator._add_bias
@@ -162,62 +166,67 @@ class TestEffectEstimatorWithTransform(unittest.TestCase):
     def test_initialize_results(self):
         # Test with simple parameters
         params = {
-            "ps": 1.0,
-            "y": 0.5,
-            "cf": 0.3,
-            "constants": {"sigma": 0.1, "alpha": 2.0},
+            DELTA_PS: 1.0,
+            DELTA_Y: 0.5,
+            DELTA_CF: 0.3,
+            CONSTANTS: {"sigma": 0.1, "alpha": 2.0},
         }
 
         results = self.estimator._initialize_results(params)
 
         # Check that all parameters are initialized as empty lists
-        self.assertEqual(results["ps"], [])
-        self.assertEqual(results["y"], [])
-        self.assertEqual(results["cf"], [])
+        self.assertEqual(results[DELTA_PS], [])
+        self.assertEqual(results[DELTA_Y], [])
+        self.assertEqual(results[DELTA_CF], [])
         self.assertEqual(results["sigma"], [])
         self.assertEqual(results["alpha"], [])
 
         # Test with empty constants
-        params_no_constants = {"ps": 1.0, "y": 0.5, "cf": 0.3, "constants": {}}
+        params_no_constants = {
+            DELTA_PS: 1.0,
+            DELTA_Y: 0.5,
+            DELTA_CF: 0.3,
+            CONSTANTS: {},
+        }
 
         results = self.estimator._initialize_results(params_no_constants)
-        self.assertEqual(list(results.keys()), ["ps", "y", "cf"])
+        self.assertEqual(list(results.keys()), [DELTA_PS, DELTA_Y, DELTA_CF])
 
     def test_append_to_results(self):
         # Initialize results dict
-        results = {"ps": [], "y": [], "cf": [], "sigma": [], "alpha": []}
+        results = {DELTA_PS: [], DELTA_Y: [], DELTA_CF: [], "sigma": [], "alpha": []}
 
         # Test appending single set of parameters
         params = {
-            "ps": 1.0,
-            "y": 0.5,
-            "cf": 0.3,
-            "constants": {"sigma": 0.1, "alpha": 2.0},
+            DELTA_PS: 1.0,
+            DELTA_Y: 0.5,
+            DELTA_CF: 0.3,
+            CONSTANTS: {"sigma": 0.1, "alpha": 2.0},
         }
 
         results = self.estimator._append_to_results(results, params)
 
         # Check that values were appended correctly
-        self.assertEqual(results["ps"], [1.0])
-        self.assertEqual(results["y"], [0.5])
-        self.assertEqual(results["cf"], [0.3])
+        self.assertEqual(results[DELTA_PS], [1.0])
+        self.assertEqual(results[DELTA_Y], [0.5])
+        self.assertEqual(results[DELTA_CF], [0.3])
         self.assertEqual(results["sigma"], [0.1])
         self.assertEqual(results["alpha"], [2.0])
 
         # Test appending another set of parameters
         params2 = {
-            "ps": 0.8,
-            "y": 0.6,
-            "cf": 0.4,
-            "constants": {"sigma": 0.2, "alpha": 1.5},
+            DELTA_PS: 0.8,
+            DELTA_Y: 0.6,
+            DELTA_CF: 0.4,
+            CONSTANTS: {"sigma": 0.2, "alpha": 1.5},
         }
 
         results = self.estimator._append_to_results(results, params2)
 
         # Check that values were appended correctly
-        self.assertEqual(results["ps"], [1.0, 0.8])
-        self.assertEqual(results["y"], [0.5, 0.6])
-        self.assertEqual(results["cf"], [0.3, 0.4])
+        self.assertEqual(results[DELTA_PS], [1.0, 0.8])
+        self.assertEqual(results[DELTA_Y], [0.5, 0.6])
+        self.assertEqual(results[DELTA_CF], [0.3, 0.4])
         self.assertEqual(results["sigma"], [0.1, 0.2])
         self.assertEqual(results["alpha"], [2.0, 1.5])
 
@@ -258,6 +267,23 @@ class TestEffectEstimatorWithTransform(unittest.TestCase):
         self.assertEqual(results["effect_std_AIPW"], [0.05, 0.07])
         self.assertEqual(results["effect_TMLE"], [0.30, 0.40])
         self.assertEqual(results["effect_std_TMLE"], [0.06, 0.08])
+
+    def test_results_alignment(self):
+        # Create test parameters
+        test_params = [
+            {DELTA_PS: 0, DELTA_Y: 0, DELTA_CF: 0, CONSTANTS: {"sigma": 0}},
+            {DELTA_PS: 1, DELTA_Y: 1, DELTA_CF: 1, CONSTANTS: {"sigma": 0}},
+        ]
+
+        # Initialize results
+        results = self.estimator._initialize_results(test_params[0])
+        for param in test_params:
+            results = self.estimator._append_to_results(results, param)
+
+        # Verify all arrays have same length
+        lengths = {k: len(v) for k, v in results.items()}
+        assert len(set(lengths.values())) == 1
+        assert list(lengths.values())[0] == len(test_params)
 
 
 if __name__ == "__main__":
