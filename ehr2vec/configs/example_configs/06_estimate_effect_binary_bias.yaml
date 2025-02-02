@@ -26,8 +26,8 @@ transform_function: "power_distortion"
 transform_params:
   constants:
     sigma: 1.0
-  ps: [0.1, 0.2, 0.3]
-  y: [0.1, 0.2, 0.3]
+  dps: [0.1, 0.2, 0.3]
+  dy: [0.1, 0.2, 0.3]
   cf_offset: 1.0 # on top of y
   
 
