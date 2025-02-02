@@ -276,6 +276,7 @@ class EffectEstimator:
                     "effect",
                     self.cfg.paths.run_name,
                 ),
+                overwrite=True,
             )
         if self.mount_context is not None and hasattr(self.mount_context, "stop"):
             self.mount_context.stop()
@@ -334,9 +335,12 @@ class EffectEstimator_with_transform(EffectEstimator):
     def _transform_data(
         df: pd.DataFrame, params: dict, transform_function: Callable
     ) -> pd.DataFrame:
+        df_transformed = df.copy()
         for col in [PS_COL, OUTCOME_PROBABILITY_COL, CF_TREATED_COL, CF_CONTROL_COL]:
-            df[col] = transform_function(df[col], params[DELTA_PS], params[CONSTANTS])
-        return df
+            df_transformed[col] = transform_function(
+                df_transformed[col], params[DELTA_PS], params[CONSTANTS]
+            )
+        return df_transformed
 
     @staticmethod
     def _add_bias(probas: pd.Series, delta: float, constants: dict) -> pd.Series:

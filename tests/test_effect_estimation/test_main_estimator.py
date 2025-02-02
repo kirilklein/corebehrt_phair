@@ -483,6 +483,43 @@ class TestEffectEstimatorWithTransform(unittest.TestCase):
             msg="IPW standard errors differ despite unchanged propensity scores",
         )
 
+    def test_transform_preserves_original_data(self):
+        """
+        Test that multiple transformations don't modify the original DataFrame.
+        This test ensures that each transformation operates on a fresh copy.
+        """
+        # Create test data
+        original_df = pd.DataFrame(
+            {
+                PS_COL: [0.2, 0.5, 0.8],
+                OUTCOME_PROBABILITY_COL: [0.3, 0.6, 0.7],
+                CF_TREATED_COL: [0.4, 0.5, 0.6],
+                CF_CONTROL_COL: [0.2, 0.3, 0.4],
+            }
+        )
+
+        # Store original values for comparison
+        original_values = original_df.copy()
+
+        # Define multiple transformation parameters
+        transform_params = [
+            {DELTA_PS: 1.0, DELTA_Y: 0.5, DELTA_CF: 0.5, CONSTANTS: {"sigma": 0}},
+            {DELTA_PS: -1.0, DELTA_Y: -0.5, DELTA_CF: -0.5, CONSTANTS: {"sigma": 0}},
+            {DELTA_PS: 2.0, DELTA_Y: 1.0, DELTA_CF: 1.0, CONSTANTS: {"sigma": 0}},
+        ]
+
+        # Apply multiple transformations
+        for params in transform_params:
+            transformed_df = self.estimator._transform_data(
+                original_df, params, self.estimator._add_bias
+            )
+
+            # Verify transformed data is different from original
+            self.assertFalse(transformed_df.equals(original_df))
+
+            # Verify original data remains unchanged
+            pd.testing.assert_frame_equal(original_df, original_values)
+
 
 if __name__ == "__main__":
     unittest.main()
