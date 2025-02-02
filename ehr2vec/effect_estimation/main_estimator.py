@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from os.path import join
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, Tuple
 
 import numpy as np
 import pandas as pd
@@ -55,10 +55,8 @@ class EffectEstimator:
         df.to_parquet(join(self.exp_folder, "data.parquet"), index=True)
         self._log_basic_stats(df)
 
-        df_noisy = self._add_noise(df)  # optional
-
         self.logger.info("Estimating causal effect")
-        effect_df, common_support, threshold = self._compute_causal_effect(df_noisy)
+        effect_df, common_support, threshold = self._compute_causal_effect(df)
 
         counterfactual_effect = self._compute_counterfactual_effect(
             df, common_support, threshold
@@ -162,7 +160,9 @@ class EffectEstimator:
             .set_index(PID_COL)
         )
 
-    def _compute_causal_effect(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _compute_causal_effect(
+        self, df: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, bool, Optional[float]]:
         estimator_cfg = self.cfg.get("estimator")
         estimator = Estimator(
             methods=estimator_cfg.methods,
@@ -254,21 +254,6 @@ class EffectEstimator:
         stats_table.reset_index(inplace=True)
         log_dataframe(stats_table, "stats_table")
 
-    def _add_noise(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        This function is intended to test the robustness of the causal effect estimation.
-        This adds noise to the propensity scores.
-        """
-        df_copy = df.copy(deep=True)
-        noise = self.cfg.get("ps_noise", 0)
-
-        if noise > 0:
-            self.logger.info(f"Adding {noise} noise to propensity scores")
-            df_copy[PS_COL] *= 1 + np.random.uniform(-noise, noise, len(df_copy))
-            df_copy[PS_COL] = df_copy[PS_COL].clip(lower=1e-6, upper=1 - 1e-6)
-
-        return df_copy
-
     def _sample_patients(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         This function is intended to test the robustness of the causal effect estimation.
@@ -321,18 +306,7 @@ class EffectEstimator_with_transform(EffectEstimator):
                 df_transformed
             )
 
-            for method in effect_df["method"].unique():
-                method_data = effect_df[effect_df["method"] == method]
-                effect_col = f"effect_{method}"
-                std_col = f"effect_std_{method}"
-
-                if effect_col not in results:
-                    results[effect_col] = []
-                if std_col not in results:
-                    results[std_col] = []
-
-                results[effect_col].append(method_data["effect"].iloc[0])
-                results[std_col].append(method_data["std_err"].iloc[0])
+            results = self._append_effect_to_results(results, effect_df)
 
             counterfactual_effect = self._compute_counterfactual_effect(
                 df_transformed, common_support, threshold
@@ -350,56 +324,9 @@ class EffectEstimator_with_transform(EffectEstimator):
 
         self._cleanup()
 
-    def get_transform_function(self):
-        transform_function = self.cfg.get("transform_function", "add_bias")
-        if transform_function == "add_bias":
-            return self._add_bias
-        elif transform_function == "power_distortion":
-            return self._power_distortion
-        else:
-            raise ValueError(
-                f"Unknown transform function: {transform_function}. Choose from: add_bias, power_distortion"
-            )
-
     @staticmethod
-    def _initialize_results(params: dict):
-        results = {}
-        # Add bias parameters to effect dataframe
-        for k, v in params.items():
-            if k != "constants":
-                results[k] = []
-            else:
-                for kk, vv in v.items():
-                    results[kk] = []
-        return results
-
-    @staticmethod
-    def _append_to_results(results: dict, params: dict):
-        for k, v in params.items():
-            if k != "constants":
-                results[k].append(v)
-            else:
-                for kk, vv in v.items():
-                    results[kk].append(vv)
-        return results
-
-    def get_transform_params(self) -> list[dict]:
-        transformation_config = self.cfg.get(
-            "transform_params",
-            {"ps": [0], "y": [0], "cf_offset": 0, "constants": {}},
-        )
-        ps_values = transformation_config.get("ps", [0])
-        y_values = transformation_config.get("y", [0])
-        cf_offset = transformation_config.get("cf_offset", 0)
-        constants = transformation_config.get("constants", {})
-        return [
-            {"ps": ps, "y": y, "cf": y + cf_offset, "constants": constants}
-            for ps in ps_values
-            for y in y_values
-        ]
-
     def _transform_data(
-        self, df: pd.DataFrame, params: dict, transform_function: Callable
+        df: pd.DataFrame, params: dict, transform_function: Callable
     ) -> pd.DataFrame:
         df[PS_COL] = transform_function(df[PS_COL], params["ps"], params["constants"])
         df[OUTCOME_PROBABILITY_COL] = transform_function(
@@ -451,3 +378,71 @@ class EffectEstimator_with_transform(EffectEstimator):
         p_alpha = probas**alpha
         q_alpha = (1 - probas) ** alpha
         return p_alpha / (p_alpha + q_alpha)
+
+    def get_transform_function(self) -> Callable:
+        """Get the transformation function from the config."""
+        transform_function = self.cfg.get("transform_function", "add_bias")
+        if transform_function == "add_bias":
+            return self._add_bias
+        elif transform_function == "power_distortion":
+            return self._power_distortion
+        else:
+            raise ValueError(
+                f"Unknown transform function: {transform_function}. Choose from: add_bias, power_distortion"
+            )
+
+    @staticmethod
+    def _initialize_results(params: dict) -> dict:
+        """Initialize the results dictionary."""
+        results = {}
+        # Add bias parameters to effect dataframe
+        for k, v in params.items():
+            if k != "constants":
+                results[k] = []
+            else:
+                for kk, _ in v.items():
+                    results[kk] = []
+        return results
+
+    @staticmethod
+    def _append_to_results(results: dict, params: dict) -> dict:
+        """Append parameters to results dictionary."""
+        for k, v in params.items():
+            if k != "constants":
+                results[k].append(v)
+            else:
+                for kk, vv in v.items():
+                    results[kk].append(vv)
+        return results
+
+    @staticmethod
+    def _append_effect_to_results(results: dict, effect_df: pd.DataFrame) -> dict:
+        """Append effect and standard error to results dictionary."""
+        for method in effect_df["method"].unique():
+            method_data = effect_df[effect_df["method"] == method]
+            effect_col = f"effect_{method}"
+            std_col = f"effect_std_{method}"
+
+            if effect_col not in results:
+                results[effect_col] = []
+            if std_col not in results:
+                results[std_col] = []
+
+            results[effect_col].append(method_data["effect"].iloc[0])
+            results[std_col].append(method_data["std_err"].iloc[0])
+        return results
+
+    def get_transform_params(self) -> list[dict]:
+        transformation_config = self.cfg.get(
+            "transform_params",
+            {"ps": [0], "y": [0], "cf_offset": 0, "constants": {}},
+        )
+        ps_values = transformation_config.get("ps", [0])
+        y_values = transformation_config.get("y", [0])
+        cf_offset = transformation_config.get("cf_offset", 0)
+        constants = transformation_config.get("constants", {})
+        return [
+            {"ps": ps, "y": y, "cf": y + cf_offset, "constants": constants}
+            for ps in ps_values
+            for y in y_values
+        ]
