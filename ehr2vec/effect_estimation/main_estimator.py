@@ -10,7 +10,6 @@ from CausalEstimate.interface.estimator import Estimator
 from CausalEstimate.stats.stats import compute_treatment_outcome_table
 from ehr2vec.common.azure import save_to_blobstore
 from ehr2vec.common.cli import override_config_from_cli
-from ehr2vec.common.config import Config
 from ehr2vec.common.default_args import (
     CF_CONTROL_COL,
     CF_TREATED_COL,
@@ -24,6 +23,7 @@ from ehr2vec.common.default_args import (
     TARGET_COL,
     TREATMENT_COL,
 )
+from ehr2vec.common.config import Config
 from ehr2vec.common.loader import (
     load_config,
     load_counterfactual_outcomes,
@@ -334,16 +334,8 @@ class EffectEstimator_with_transform(EffectEstimator):
     def _transform_data(
         df: pd.DataFrame, params: dict, transform_function: Callable
     ) -> pd.DataFrame:
-        df[PS_COL] = transform_function(df[PS_COL], params[DELTA_PS], params[CONSTANTS])
-        df[OUTCOME_PROBABILITY_COL] = transform_function(
-            df[OUTCOME_PROBABILITY_COL], params[DELTA_Y], params[CONSTANTS]
-        )
-        df[CF_TREATED_COL] = transform_function(
-            df[CF_TREATED_COL], params[DELTA_CF], params[CONSTANTS]
-        )
-        df[CF_CONTROL_COL] = transform_function(
-            df[CF_CONTROL_COL], params[DELTA_CF], params[CONSTANTS]
-        )
+        for col in [PS_COL, OUTCOME_PROBABILITY_COL, CF_TREATED_COL, CF_CONTROL_COL]:
+            df[col] = transform_function(df[col], params[DELTA_PS], params[CONSTANTS])
         return df
 
     @staticmethod
