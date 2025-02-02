@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pandas as pd
 
+from ehr2vec.common.config import Config
 from ehr2vec.common.default_args import (
     CF_CONTROL_COL,
     CF_TREATED_COL,
@@ -13,13 +14,14 @@ from ehr2vec.common.default_args import (
     TREATMENT_COL,
 )
 from ehr2vec.effect_estimation.main_estimator import (
-    EffectEstimator,
-    EffectEstimator_with_transform,
+    CONSTANTS,
+    DELTA_CF,
     DELTA_PS,
     DELTA_Y,
-    DELTA_CF,
-    CONSTANTS,
+    EffectEstimator,
+    EffectEstimator_with_transform,
 )
+from tests.common.simulate import create_synthetic_test_data
 
 
 class TestEffectEstimator(unittest.TestCase):
@@ -284,6 +286,202 @@ class TestEffectEstimatorWithTransform(unittest.TestCase):
         lengths = {k: len(v) for k, v in results.items()}
         assert len(set(lengths.values())) == 1
         assert list(lengths.values())[0] == len(test_params)
+
+    @patch.object(EffectEstimator, "_load_data")
+    @patch.object(EffectEstimator_with_transform, "_load_data")
+    def test_no_transform_params_produces_same_results(
+        self, mock_load_data_transform, mock_load_data_standard
+    ):
+        """
+        Check that if the transformation parameters (delta_ps, delta_y, etc.) are zero,
+        the effect results match those from the standard estimator within a small tolerance.
+        """
+        # 1. Create synthetic test data
+        df_synthetic = create_synthetic_test_data(10_000)
+        COMMON_SUPPORT_THRESHOLD = 0.005
+        N_BOOTSTRAP = 50
+        # 2. Mock both _load_data() calls to return the same DataFrame
+        mock_load_data_transform.return_value = df_synthetic.copy()
+        mock_load_data_standard.return_value = df_synthetic.copy()
+
+        # 3. Configure the standard estimator
+        #    We only need to ensure that it doesn't apply transformations:
+        #    The standard estimator has no transform logic by default.
+        #    We'll also ensure it has the same methods, e.g., AIPW and TMLE.
+        self.mock_cfg = Config(
+            {
+                "estimator": {
+                    "methods": ["AIPW", "TMLE"],
+                    "effect_type": "ATE",
+                    "common_support_threshold": COMMON_SUPPORT_THRESHOLD,
+                    "n_bootstrap": N_BOOTSTRAP,
+                }
+            }
+        )
+
+        standard_estimator = EffectEstimator(
+            cfg=self.mock_cfg,
+            logger=self.mock_logger,
+            exp_folder="test_folder",
+            mount_context=self.mock_mount_context,
+        )
+
+        # 4. Configure the transform estimator with zero deltas
+        #    We need to ensure transform_function is "add_bias" (or whichever) but with zero parameters.
+        self.mock_cfg = Config(
+            {
+                "transform_function": "add_bias",
+                "transform_params": {
+                    DELTA_PS: [0],  # zero bias
+                    DELTA_Y: [0],  # zero bias
+                    "cf_offset": 0,
+                    CONSTANTS: {"sigma": 0},  # no noise
+                },
+                "estimator": {
+                    "methods": ["AIPW", "TMLE"],
+                    "effect_type": "ATE",
+                    "common_support_threshold": COMMON_SUPPORT_THRESHOLD,
+                    "n_bootstrap": N_BOOTSTRAP,
+                },
+            }
+        )
+        transform_estimator = EffectEstimator_with_transform(
+            cfg=self.mock_cfg,
+            logger=self.mock_logger,
+            exp_folder="test_folder",
+            mount_context=self.mock_mount_context,
+        )
+
+        # 5. Call the effect computation methods directly (bypassing .run())
+        df_standard = standard_estimator._load_data()
+        effect_df_standard, cs_std, thresh_std = (
+            standard_estimator._compute_causal_effect(df_standard)
+        )
+
+        df_transform = transform_estimator._load_data()
+        effect_df_transform, cs_trans, thresh_trans = (
+            transform_estimator._compute_causal_effect(df_transform)
+        )
+
+        # 6. Compare the effect estimates
+        # Pivot or index by method for easy comparison
+        standard_effects = effect_df_standard.set_index("method")["effect"]
+        standard_stds = effect_df_standard.set_index("method")["std_err"]
+        transform_effects = effect_df_transform.set_index("method")["effect"]
+        transform_stds = effect_df_transform.set_index("method")["std_err"]
+
+        for method in standard_effects.index:
+            e_std = standard_effects[method]
+            e_trans = transform_effects[method]
+            # Check they are approximately equal
+            self.assertAlmostEqual(
+                e_std,
+                e_trans,
+                delta=np.sqrt(standard_stds[method] ** 2 + transform_stds[method] ** 2),
+                msg=f"Effects differ for method {method}: standard={e_std}, transform={e_trans}",
+            )
+
+        # Optionally compare standard errors too
+        standard_stds = effect_df_standard.set_index("method")["std_err"]
+        transform_stds = effect_df_transform.set_index("method")["std_err"]
+        for method in standard_stds.index:
+            s_std = standard_stds[method]
+            s_trans = transform_stds[method]
+            self.assertAlmostEqual(
+                s_std,
+                s_trans,
+                delta=np.sqrt(standard_stds[method] ** 2 + transform_stds[method] ** 2),
+                msg=f"Std errs differ for method {method}: standard={s_std}, transform={s_trans}",
+            )
+
+        # If you want, also ensure the common support flags or thresholds are the same
+        self.assertEqual(cs_std, cs_trans, "Common support flags do not match.")
+        self.assertEqual(
+            thresh_std, thresh_trans, "Common support thresholds do not match."
+        )
+
+    @patch.object(EffectEstimator_with_transform, "_load_data")
+    def test_ipw_invariant_to_outcome_transform(self, mock_load_data):
+        """
+        Test that IPW estimates remain unchanged when only outcome probabilities
+        are transformed (delta_ps = 0, but delta_y and cf_offset ≠ 0).
+        This is because IPW only depends on propensity scores.
+        """
+        COMMON_SUPPORT_THRESHOLD = 0.005
+        N_BOOTSTRAP = 50
+        # Create synthetic test data
+        df_synthetic = create_synthetic_test_data(10_000)
+        mock_load_data.return_value = df_synthetic.copy()
+
+        # Base config with IPW only
+        base_config = Config(
+            {
+                "transform_function": "add_bias",
+                "estimator": {
+                    "methods": ["IPW"],
+                    "effect_type": "ATE",
+                    "common_support_threshold": COMMON_SUPPORT_THRESHOLD,
+                    "n_bootstrap": N_BOOTSTRAP,
+                },
+            }
+        )
+
+        # First estimator with all zeros
+        base_config.transform_params = {
+            DELTA_PS: [0],
+            DELTA_Y: [0],
+            "cf_offset": 0,
+            CONSTANTS: {"sigma": 0},
+        }
+
+        estimator_zero = EffectEstimator_with_transform(
+            cfg=base_config,
+            logger=self.mock_logger,
+            exp_folder="test_folder",
+            mount_context=self.mock_mount_context,
+        )
+
+        # Second estimator with non-zero outcome transforms
+        base_config.transform_params = {
+            DELTA_PS: [0],  # keep PS unchanged
+            DELTA_Y: [1.0],  # non-zero outcome bias
+            "cf_offset": 1.5,  # non-zero counterfactual bias
+            CONSTANTS: {"sigma": 0},
+        }
+
+        estimator_nonzero = EffectEstimator_with_transform(
+            cfg=base_config,
+            logger=self.mock_logger,
+            exp_folder="test_folder",
+            mount_context=self.mock_mount_context,
+        )
+
+        # Compute effects
+        effect_df_zero, _, _ = estimator_zero._compute_causal_effect(df_synthetic)
+        effect_df_nonzero, _, _ = estimator_nonzero._compute_causal_effect(df_synthetic)
+
+        # Compare IPW effects
+        ipw_effect_zero = effect_df_zero.set_index("method").loc["IPW", "effect"]
+        ipw_std_zero = effect_df_zero.set_index("method").loc["IPW", "std_err"]
+        ipw_effect_nonzero = effect_df_nonzero.set_index("method").loc["IPW", "effect"]
+        ipw_std_nonzero = effect_df_nonzero.set_index("method").loc["IPW", "std_err"]
+
+        self.assertAlmostEqual(
+            ipw_effect_zero,
+            ipw_effect_nonzero,
+            delta=np.sqrt(ipw_std_zero**2 + ipw_std_nonzero**2),
+            msg="IPW effects differ despite unchanged propensity scores",
+        )
+
+        # Compare standard errors
+        ipw_std_zero = effect_df_zero.set_index("method").loc["IPW", "std_err"]
+        ipw_std_nonzero = effect_df_nonzero.set_index("method").loc["IPW", "std_err"]
+        self.assertAlmostEqual(
+            ipw_std_zero,
+            ipw_std_nonzero,
+            delta=np.sqrt(ipw_std_zero**2 + ipw_std_nonzero**2),
+            msg="IPW standard errors differ despite unchanged propensity scores",
+        )
 
 
 if __name__ == "__main__":
