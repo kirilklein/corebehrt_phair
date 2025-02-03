@@ -1,6 +1,16 @@
 import numpy as np
 import pandas as pd
 
+from ehr2vec.common.default_args import (
+    CF_CONTROL_COL,
+    CF_TREATED_COL,
+    OUTCOME_COL,
+    OUTCOME_PROBABILITY_COL,
+    PID_COL,
+    PS_COL,
+    TREATMENT_COL,
+)
+
 
 def simulate_binary_data_complex(
     n: int, alpha: list, beta: list, seed=None
@@ -71,3 +81,45 @@ def simulate_binary_data_complex(
     )
 
     return data
+
+
+def create_synthetic_test_data(n: int = 5) -> pd.DataFrame:
+    """Create a tiny DataFrame with T, Y, PS, and some CF columns for testing."""
+    # For reproducibility
+    np.random.seed(42)
+    df = pd.DataFrame(
+        {
+            PID_COL: range(n),
+            TREATMENT_COL: np.random.binomial(1, 0.5, n),
+        }
+    )
+
+    # Generate PS with slight shift for treated individuals
+    base_ps = np.random.beta(2, 3, n)  # base propensity scores
+    ps_shift = 0.1  # shift amount for treated individuals
+    df[PS_COL] = np.where(
+        df[TREATMENT_COL] == 1,
+        np.minimum(base_ps + ps_shift, 1),  # ensure PS doesn't exceed 1
+        base_ps,
+    )
+
+    def sigmoid(x):
+        return 1 / (1 + np.exp(-x))
+
+    # Create base probability and treatment effect in logit space
+    base_prob = np.random.beta(2, 2, n)  # baseline probability
+    treatment_logit = np.log(1.4 / 0.6)  # logit equivalent of 0.4 treatment effect
+
+    # Calculate outcome probability using logit space
+    df[OUTCOME_PROBABILITY_COL] = sigmoid(
+        np.log(base_prob / (1 - base_prob)) + df[TREATMENT_COL] * treatment_logit
+    )
+
+    # Simulate outcome based on treatment-adjusted probability
+    df[OUTCOME_COL] = np.random.binomial(1, df[OUTCOME_PROBABILITY_COL], n)
+
+    # Simulate counterfactual outcomes under treatment and control
+    df[CF_TREATED_COL] = sigmoid(np.log(base_prob / (1 - base_prob)) + treatment_logit)
+    df[CF_CONTROL_COL] = sigmoid(np.log(base_prob / (1 - base_prob)))
+
+    return df

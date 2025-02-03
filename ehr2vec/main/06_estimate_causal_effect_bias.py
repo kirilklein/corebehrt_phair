@@ -1,11 +1,11 @@
 from os.path import abspath, dirname, join
 
 from ehr2vec.common.setup import get_args
-from ehr2vec.effect_estimation.main_estimator import EffectEstimator_with_bias
+from ehr2vec.effect_estimation.main_estimator import EffectEstimator_with_transform
 
 
 def main(config_path: str):
-    estimator = EffectEstimator_with_bias.from_config(config_path)
+    estimator = EffectEstimator_with_transform.from_config(config_path)
     estimator.run()
 
 
