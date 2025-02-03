@@ -335,10 +335,30 @@ class EffectEstimator_with_transform(EffectEstimator):
     def _transform_data(
         df: pd.DataFrame, params: dict, transform_function: Callable
     ) -> pd.DataFrame:
+        """Transform probabilities in the dataframe using the specified transformation function.
+
+        Args:
+            df: Input dataframe containing probability columns to transform
+            params: Dictionary containing transformation parameters:
+                - DELTA_PS: Parameter for transforming propensity scores
+                - DELTA_Y: Parameter for transforming outcome probabilities
+                - DELTA_CF: Parameter for transforming counterfactual probabilities
+                - CONSTANTS: Additional constants needed by transform function
+            transform_function: Function to apply the transformation (e.g. add_bias or power_distortion)
+
+        Returns:
+            DataFrame with transformed probability columns
+        """
         df_transformed = df.copy()
-        for col in [PS_COL, OUTCOME_PROBABILITY_COL, CF_TREATED_COL, CF_CONTROL_COL]:
+        df_transformed[PS_COL] = transform_function(
+            df_transformed[PS_COL], params[DELTA_PS], params[CONSTANTS]
+        )
+        df_transformed[OUTCOME_PROBABILITY_COL] = transform_function(
+            df_transformed[OUTCOME_PROBABILITY_COL], params[DELTA_Y], params[CONSTANTS]
+        )
+        for col in [CF_TREATED_COL, CF_CONTROL_COL]:
             df_transformed[col] = transform_function(
-                df_transformed[col], params[DELTA_PS], params[CONSTANTS]
+                df_transformed[col], params[DELTA_CF], params[CONSTANTS]
             )
         return df_transformed
 
